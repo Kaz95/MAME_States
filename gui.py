@@ -17,16 +17,18 @@ from logic.main import change_mame_path
 
 # Subclass so I can alter event handling behavior
 class TreeWidget(QTreeWidget):
-    def __init__(self, mame_folder):
+    def __init__(self, mame_folder, description_db, rom_db):
         super().__init__()
 
+        self.mame_folder = mame_folder
+        self.description_db = description_db
+        self.rom_db = rom_db
 
-
-        self.description_db ={}
-        self.rom_db = build_rom_db('logic/romlist.txt')
+        # self.description_db ={}
+        # self.rom_db = build_rom_db('logic/romlist.txt')
 
         #  Fill out data structures for later use.
-        roms_with_saves = get_roms_with_saves(mame_folder)
+        roms_with_saves = get_roms_with_saves(self.mame_folder)
 
         for rom in roms_with_saves:
             real_name = get_real_name(self.rom_db, rom)
@@ -49,7 +51,7 @@ class TreeWidget(QTreeWidget):
                         print(old_text)
                         self.closePersistentEditor(item)
                         print(item.text(0))
-                        rename(rom_name, old_text ,item.text(0))
+                        rename(self.mame_folder, rom_name, old_text ,item.text(0))
             else:
                 print('Enter pressed, but no items selected')
 
@@ -114,7 +116,7 @@ class MainWindow(QMainWindow):
 
         # Widget customization
         self.setWindowTitle('MAME States')
-        self.tree_widget = TreeWidget(self.mame_folder)
+        self.tree_widget = TreeWidget(self.mame_folder, self.description_db, self.rom_db)
         self.tree_widget.setHeaderLabels(['Games'])
 
         # Signals
@@ -141,6 +143,11 @@ class MainWindow(QMainWindow):
 
 
     # Slots
+    def update_treewidget(self):
+        self.tree_widget.rom_db = self.rom_db
+        self.tree_widget.description_db = self.description_db
+        self.tree_widget.mame_folder = self.mame_folder
+
     def add_sub_items(self):
         # Adds save states as sub items to a given games main item.
         pprint.pprint(self.game_items)
@@ -175,6 +182,9 @@ class MainWindow(QMainWindow):
             self.real_names.append(real_name)
             self.description_db[real_name] = rom
 
+
+
+
         self.saves = get_save_names(roms_with_saves, self.mame_folder)
 
     def menu_button_clicked(self):
@@ -184,6 +194,7 @@ class MainWindow(QMainWindow):
         create_rom_list(self.mame_folder)
         change_mame_path(mame_path)
         self.fill_data_structures()
+        self.update_treewidget()
         print('data filled')
         self.add_top_level_items()
         print('top filled')
