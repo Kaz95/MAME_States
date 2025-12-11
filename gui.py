@@ -7,6 +7,7 @@ from PyQt6.QtGui import QAction
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, build_rom_db, rename, create_rom_list
 from logic.main import change_mame_path
 
+# TODO Look into adding type notes or hints or w.e
 # TODO Account for romlist.txt existing, but not yet having mame path. Just incase.
 # TODO What happens if no directory is chosen?
 # TODO Remove print statements
@@ -14,15 +15,18 @@ from logic.main import change_mame_path
 # TODO Comment/Code Review/Refactor
 # TODO Find more shit TODO
 
+# TODO Comment
 # Subclass so I can alter event handling behavior
 class TreeWidget(QTreeWidget):
     def __init__(self, mame_folder, description_db, rom_db):
         super().__init__()
 
+        # init attributes
         self.mame_folder = mame_folder
         self.description_db = description_db
         self.rom_db = rom_db
 
+        # TODO Figure out if this can be replaced with method
         #  Fill out data structures for later use.
         roms_with_saves = get_roms_with_saves(self.mame_folder)
 
@@ -55,6 +59,8 @@ class TreeWidget(QTreeWidget):
         else:
             super().keyPressEvent(event)
 
+# TODO Comment
+# TODO Clean up init
 class MainWindow(QMainWindow):
 
     def __init__(self):

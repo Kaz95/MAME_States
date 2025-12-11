@@ -2,11 +2,13 @@
 import subprocess
 import os
 
+# TODO More descriptive comment
 # Get list of rom names
 def create_rom_list(mame_path):
     with open("logic/romlist.txt", "w") as romlist:
         subprocess.run([mame_path + '\\mame.exe', "-ll"], stdout=romlist)
 
+# TODO Comment
 def build_rom_db(romlist):
     rom_db = {}
     with open(romlist, 'r') as romlist:
@@ -21,16 +23,18 @@ def build_rom_db(romlist):
             rom_db[rom_name] = description
     return rom_db
 
-# Get list of save folders
+# Get list of save folder names
 def get_roms_with_saves(mame_path):
     contents = os.listdir(mame_path + '\\sta')
     return contents
 
+# TODO Update Comment
 # For save folder in list, get real name
 def get_real_name(rom_db, rom_name):
     real_name = rom_db[rom_name]
     return real_name
 
+# TODO Update Comment
 # For save folder in list, get save file names
 def get_save_names(games_with_saves, mame_folder):
     save_states = {}
@@ -45,6 +49,7 @@ def get_save_names(games_with_saves, mame_folder):
         save_states[game] = saves
     return save_states
 
+# TODO Comment
 def rename(mame_folder, rom_folder, old_save_name, new_save_name):
     os.rename(mame_folder + "\\sta\\" + rom_folder + "\\" + old_save_name + '.sta',
               mame_folder + "\\sta\\" + rom_folder + "\\" + new_save_name + '.sta')
