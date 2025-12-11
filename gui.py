@@ -9,7 +9,6 @@ from logic.main import change_mame_path
 
 # TODO Account for romlist.txt existing, but not yet having mame path. Just incase.
 # TODO What happens if no directory is chosen?
-# TODO Allow changing of MAME path.
 # TODO Remove print statements
 # TODO Sort some list at some point to ensure alphabetical. Maybe use treewidget functionality.
 # TODO Comment/Code Review/Refactor

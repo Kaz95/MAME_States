@@ -31,7 +31,6 @@ def get_roms_with_saves(mame_path):
     contents = os.listdir(mame_path + '\\sta')
     return contents
 
-# TODO Bugged. Roms like 'vr' can trigger wrong description. Make dict and use as DB for now.
 # For save folder in list, get real name
 def get_real_name(rom_db, rom_name):
     real_name = rom_db[rom_name]
@@ -70,8 +69,8 @@ def change_mame_path(new_path):
 
 # Fine
 
-if __name__ == '__main__':
-    change_mame_path('something else')
+# if __name__ == '__main__':
+    # change_mame_path('something else')
     # with open('romlist.txt', 'r') as romlist:
     #     data = romlist.read().splitlines(True)
     #     data[0] = 'hasdasdssssssasdsdasssssssssssssasd\n'
