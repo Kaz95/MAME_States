@@ -1,5 +1,4 @@
 """This will be a program to rename MAME save states"""
-import pprint
 import subprocess
 import os
 
