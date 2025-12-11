@@ -23,9 +23,6 @@ class TreeWidget(QTreeWidget):
         self.description_db = description_db
         self.rom_db = rom_db
 
-        # self.description_db ={}
-        # self.rom_db = build_rom_db('logic/romlist.txt')
-
         #  Fill out data structures for later use.
         roms_with_saves = get_roms_with_saves(self.mame_folder)
 
@@ -74,15 +71,6 @@ class MainWindow(QMainWindow):
             self.mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory', options=QFileDialog.Option.ShowDirsOnly)
             create_rom_list(self.mame_folder)
             change_mame_path(self.mame_folder)
-            # with open('logic/romlist.txt', 'r') as romlist:
-            #     data = romlist.read().splitlines(True)
-            #     data[0] = self.mame_folder
-            # with open('logic/romlist.txt', 'w') as romlist:
-            #     romlist.writelines(data)
-
-
-
-
 
         self.text_before_editing = None
 
@@ -168,7 +156,7 @@ class MainWindow(QMainWindow):
         print(self.game_items)
 
     def fill_data_structures(self):
-        #reset data structs
+        # reset data structs
         self.rom_db = build_rom_db('logic/romlist.txt')
         self.real_names = []
         self.description_db = {}
@@ -198,9 +186,7 @@ class MainWindow(QMainWindow):
         self.add_top_level_items()
         print('top filled')
         print(self.mame_folder)
-        # pprint.pp(self.game_items)
         self.add_sub_items()
-        # print('sub filled')
 
 
         print('clicked', mame_path)
@@ -215,8 +201,6 @@ class MainWindow(QMainWindow):
             self.text_before_editing = item.text(0)
             print(self.text_before_editing)
             self.tree_widget.openPersistentEditor(item, col)
-        # if self.prev.parent() is None and item.parent() != self.prev:
-        #     self.tree_widget.collapseItem(self.prev)
 
         # close all expanded child items except for the parent of the current selected item.
         for item in self.game_items:
@@ -228,18 +212,9 @@ class MainWindow(QMainWindow):
     # TODO Clean this up and remove text prompts.
     def selection_changed(self, cur, prev):
         if prev and cur:
-            # print(f'selection changed from {prev.text(0)}, to {cur.text(0)}')
             if prev.parent():
                 prev.setText(0, self.text_before_editing)
             self.tree_widget.closePersistentEditor(prev)
-            # rename()
-        # elif prev is None:
-            # print(f'prev was none, but cur is {cur.text(0)}')
-
-        # I don't think there is a condition where this is reached.
-        # else:
-            # print('selection changed')
-
 
 
 if __name__ == '__main__':

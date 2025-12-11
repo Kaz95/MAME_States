@@ -3,10 +3,6 @@ import pprint
 import subprocess
 import os
 
-# Hardcode an address path to mame folder
-# mame_folder = "C:\\Users\\kazac\\Downloads\\wolfmame-0273"
-
-
 # Get list of rom names
 def create_rom_list(mame_path):
     with open("logic/romlist.txt", "w") as romlist:
@@ -47,7 +43,6 @@ def get_save_names(games_with_saves, mame_folder):
             save, _ = os.path.splitext(save)
             saves[i] = save
 
-        # print(saves)
         save_states[game] = saves
     return save_states
 
@@ -63,31 +58,4 @@ def change_mame_path(new_path):
     with open('logic/romlist.txt', 'w') as romlist:
         romlist.writelines(data)
 
-# Collate and list information
-
-# Write GUI
-
-# Fine
-
-# if __name__ == '__main__':
-    # change_mame_path('something else')
-    # with open('romlist.txt', 'r') as romlist:
-    #     data = romlist.read().splitlines(True)
-    #     data[0] = 'hasdasdssssssasdsdasssssssssssssasd\n'
-    # with open('romlist.txt', 'w') as romlist:
-    #
-    #     romlist.writelines(data)
-
-
-    # get_romlist(mame_folder)
-    # has_saves = get_roms_with_saves(mame_folder)
-    # pprint.pprint(get_save_names(has_saves))
-    # pprint.pprint(has_saves)
-    # for rom in has_saves:
-    #     real_name = get_real_name('romlist.txt', rom)
-    #     real_name.strip('"')
-    #     print(real_name)
-    # savess = get_save_names(has_saves)
-
-    # pprint.pp(saves)
 
