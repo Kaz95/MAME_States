@@ -38,16 +38,13 @@ class TreeWidget(QTreeWidget):
             selected_items = self.selectedItems()
             if selected_items:
                 for item in selected_items:
-                    print(f'Enter was pressed with {item.text(0)} selected')
                     if self.isPersistentEditorOpen(item):
                         rom_item = item.parent()
                         rom_name = self.description_db[rom_item.text(0)]
-                        print(rom_name)
                         old_text = item.text(0)
-                        print(old_text)
                         self.closePersistentEditor(item)
-                        print(item.text(0))
                         rename(self.mame_folder, rom_name, old_text ,item.text(0))
+            # TODO Figure out if this is needed needed.
             else:
                 print('Enter pressed, but no items selected')
 
@@ -139,10 +136,8 @@ class MainWindow(QMainWindow):
         # Adds save states as sub items to a given games main item.
         pprint.pprint(self.game_items)
         for game in self.game_items:
-            print(game.text(0))
             if game.text(0) in self.description_db:
                 rom_name = self.description_db[game.text(0)]
-                print(rom_name)
                 if rom_name in self.saves:
                     for state in self.saves[rom_name]:
                         QTreeWidgetItem(game, [state])
@@ -153,7 +148,6 @@ class MainWindow(QMainWindow):
         for game in self.real_names:
             game_item = QTreeWidgetItem(self.tree_widget, [game])
             self.game_items.append(game_item)
-        print(self.game_items)
 
     def fill_data_structures(self):
         # reset data structs
@@ -182,10 +176,7 @@ class MainWindow(QMainWindow):
         change_mame_path(mame_path)
         self.fill_data_structures()
         self.update_treewidget()
-        print('data filled')
         self.add_top_level_items()
-        print('top filled')
-        print(self.mame_folder)
         self.add_sub_items()
 
 
@@ -193,19 +184,16 @@ class MainWindow(QMainWindow):
 
     def item_clicked(self, item, col):
         if item.parent() is None:
-            print('This is a top level item.')
-        print(f'an item: {item.text(col)} was clicked on column: {str(col)}')
+            pass
 
     def item_double_clicked(self, item, col):
         if item.parent() is not None:
             self.text_before_editing = item.text(0)
-            print(self.text_before_editing)
             self.tree_widget.openPersistentEditor(item, col)
 
         # close all expanded child items except for the parent of the current selected item.
         for item in self.game_items:
             if item.isExpanded() and not item.isSelected() and self.tree_widget.selectedItems()[0].parent() != item:
-                print(self.tree_widget.selectedItems()[0].text(0))
                 self.tree_widget.collapseItem(item)
 
     # On program load, prev is always None, and cur is first item.
