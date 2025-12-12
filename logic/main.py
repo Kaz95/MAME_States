@@ -27,21 +27,21 @@ def build_rom_db(romlist: str) -> dict[str, str]:
 
 
 # Get list of save folder names
-def get_roms_with_saves(mame_path):
+def get_roms_with_saves(mame_path: str) -> list[str]:
     contents = os.listdir(mame_path + '\\sta')
     return contents
 
 
 # TODO Update Comment
 # For save folder in list, get real name
-def get_real_name(rom_db, rom_name):
+def get_real_name(rom_db: dict[str, str], rom_name: str) -> str:
     real_name = rom_db[rom_name]
     return real_name
 
 
 # TODO Update Comment
 # For save folder in list, get save file names
-def get_save_names(games_with_saves, mame_folder):
+def get_save_names(games_with_saves: list[str], mame_folder: str) -> dict[str, list[str]]:
     save_states = {}
     for game in games_with_saves:
         saves = os.listdir(mame_folder + "\\sta" + '\\' + game)
@@ -56,13 +56,13 @@ def get_save_names(games_with_saves, mame_folder):
 
 
 # TODO Comment
-def rename(mame_folder, rom_folder, old_save_name, new_save_name):
+def rename(mame_folder: str, rom_folder: str, old_save_name: str, new_save_name: str) -> None:
     os.rename(mame_folder + "\\sta\\" + rom_folder + "\\" + old_save_name + '.sta',
               mame_folder + "\\sta\\" + rom_folder + "\\" + new_save_name + '.sta')
 
 
 # TODO Rename to be more descriptive.
-def change_mame_path(new_path):
+def change_mame_path(new_path: str) -> None:
     with open('logic/romlist.txt', 'r') as romlist:
         data = romlist.read().splitlines(True)
         data[0] = new_path + '\n'
