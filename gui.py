@@ -132,12 +132,12 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.button_action)
 
     # Slots
-    def update_treewidget(self):
+    def update_treewidget(self) -> None:
         self.tree_widget.rom_db = self.rom_db
         self.tree_widget.description_db = self.description_db
         self.tree_widget.mame_folder = self.mame_folder
 
-    def add_sub_items(self):
+    def add_sub_items(self) -> None:
         # Adds save states as sub items to a given games main item.
         pprint.pprint(self.game_items)
         for game in self.game_items:
@@ -147,14 +147,14 @@ class MainWindow(QMainWindow):
                     for state in self.saves[rom_name]:
                         QTreeWidgetItem(game, [state])
 
-    def add_top_level_items(self):
+    def add_top_level_items(self) -> None:
         # Creates top level list items. Also captures reference to every item created in a list.
         # These references will be used to create sub items.
         for game in self.real_names:
             game_item = QTreeWidgetItem(self.tree_widget, [game])
             self.game_items.append(game_item)
 
-    def fill_data_structures(self):
+    def fill_data_structures(self) -> None:
         # reset data structs
         self.rom_db = build_rom_db('logic/romlist.txt')
         self.real_names = []
@@ -170,7 +170,7 @@ class MainWindow(QMainWindow):
 
         self.saves = get_save_names(roms_with_saves, self.mame_folder)
 
-    def menu_button_clicked(self):
+    def menu_button_clicked(self) -> None:
         mame_path = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
                                                      options=QFileDialog.Option.ShowDirsOnly)
         self.mame_folder = mame_path
@@ -188,7 +188,7 @@ class MainWindow(QMainWindow):
     #     if item.parent() is None:
     #         pass
 
-    def item_double_clicked(self, item, col):
+    def item_double_clicked(self, item: QTreeWidgetItem, col: int) -> None:
         if item.parent() is not None:
             self.text_before_editing = item.text(0)
             self.tree_widget.openPersistentEditor(item, col)
@@ -200,7 +200,7 @@ class MainWindow(QMainWindow):
 
     # On program load, prev is always None, and cur is first item.
     # TODO Clean this up and remove text prompts.
-    def selection_changed(self, cur, prev):
+    def selection_changed(self, cur: QTreeWidgetItem, prev: QTreeWidgetItem) -> None:
         if prev and cur:
             if prev.parent():
                 prev.setText(0, self.text_before_editing)
