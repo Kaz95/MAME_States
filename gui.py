@@ -7,6 +7,7 @@ from PyQt6.QtGui import QAction
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, build_rom_db, rename, create_rom_list
 from logic.main import change_mame_path
 
+
 # TODO Look into adding type notes or hints or w.e
 # TODO Account for romlist.txt existing, but not yet having mame path. Just incase.
 # TODO What happens if no directory is chosen?
@@ -34,7 +35,6 @@ class TreeWidget(QTreeWidget):
             real_name = get_real_name(self.rom_db, rom)
             self.description_db[real_name] = rom
 
-
     # Override Key press event for purposes of custom behavior
     def keyPressEvent(self, event):
         # Capturing both return and enter is important for compatibility
@@ -47,7 +47,7 @@ class TreeWidget(QTreeWidget):
                         rom_name = self.description_db[rom_item.text(0)]
                         old_text = item.text(0)
                         self.closePersistentEditor(item)
-                        rename(self.mame_folder, rom_name, old_text ,item.text(0))
+                        rename(self.mame_folder, rom_name, old_text, item.text(0))
             # TODO Figure out if this is needed needed.
             else:
                 print('Enter pressed, but no items selected')
@@ -58,6 +58,7 @@ class TreeWidget(QTreeWidget):
         # Pass to normal event handler if the given keys were not pressed.
         else:
             super().keyPressEvent(event)
+
 
 # TODO Comment
 # TODO Clean up init
@@ -71,7 +72,8 @@ class MainWindow(QMainWindow):
                 first_line = romlist.readline()
                 self.mame_folder = first_line.strip()
         else:
-            self.mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory', options=QFileDialog.Option.ShowDirsOnly)
+            self.mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
+                                                                options=QFileDialog.Option.ShowDirsOnly)
             create_rom_list(self.mame_folder)
             change_mame_path(self.mame_folder)
 
@@ -100,9 +102,7 @@ class MainWindow(QMainWindow):
 
         self.saves = None
 
-
         self.fill_data_structures()
-
 
         # Widget customization
         self.setWindowTitle('MAME States')
@@ -130,7 +130,6 @@ class MainWindow(QMainWindow):
         self.button_action.triggered.connect(self.menu_button_clicked)
 
         self.file_menu.addAction(self.button_action)
-
 
     # Slots
     def update_treewidget(self):
@@ -169,13 +168,11 @@ class MainWindow(QMainWindow):
             self.real_names.append(real_name)
             self.description_db[real_name] = rom
 
-
-
-
         self.saves = get_save_names(roms_with_saves, self.mame_folder)
 
     def menu_button_clicked(self):
-        mame_path =  QFileDialog.getExistingDirectory(self, 'Choose a Directory', options=QFileDialog.Option.ShowDirsOnly)
+        mame_path = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
+                                                     options=QFileDialog.Option.ShowDirsOnly)
         self.mame_folder = mame_path
         self.tree_widget.clear()
         create_rom_list(self.mame_folder)
@@ -184,7 +181,6 @@ class MainWindow(QMainWindow):
         self.update_treewidget()
         self.add_top_level_items()
         self.add_sub_items()
-
 
         print('clicked', mame_path)
 
@@ -212,7 +208,6 @@ class MainWindow(QMainWindow):
 
 
 if __name__ == '__main__':
-
     # The order the objects are initialized in matters.
     app = QApplication([])
 
@@ -220,4 +215,3 @@ if __name__ == '__main__':
     window.show()
 
     app.exec()
-
