@@ -184,9 +184,9 @@ class MainWindow(QMainWindow):
 
         print('clicked', mame_path)
 
-    def item_clicked(self, item, col):
-        if item.parent() is None:
-            pass
+    # def item_clicked(self, item):
+    #     if item.parent() is None:
+    #         pass
 
     def item_double_clicked(self, item, col):
         if item.parent() is not None:
