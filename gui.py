@@ -8,10 +8,9 @@ from logic.main import get_roms_with_saves, get_save_names, get_real_name, build
 from logic.main import change_mame_path
 
 
-# TODO Look into adding type notes or hints or w.e
+# TODO Add docstrings
 # TODO Account for romlist.txt existing, but not yet having mame path. Just incase.
 # TODO What happens if no directory is chosen?
-# TODO Remove print statements
 # TODO Sort some list at some point to ensure alphabetical. Maybe use treewidget functionality.
 # TODO Comment/Code Review/Refactor
 # TODO Find more shit TODO
