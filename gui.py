@@ -28,17 +28,34 @@ class TreeWidget(QTreeWidget):
     """Subclasses and extends the QTreeWidget class of the PyQt6.QtWidgets Module
 
     This class extends the keyPressEvent method for the purposes of capturing a custom key press
+
+    Attributes:
+        self.mame_folder: Some description
+        self.description_db: Description
+        self.rom_db: Description
+
     """
     def __init__(self, mame_folder: str, description_db: dict[str, str], rom_db: dict[str, str]):
+        """Initiate the TreeWidget Subclass
+
+        The TreeWidget subclass inherits most of its behavior from its parent class QTreeWidget.
+        TreeWidget initializes with all the data needed by its single extended method
+
+        """
         super().__init__()
 
         # init attributes
         self.mame_folder = mame_folder
+        "Path to base MAME folder."
+
         self.description_db = description_db
+        "Maps a roms long name to its short name in the format: \n{'description': 'rom'}"
+
         self.rom_db = rom_db
+        "Maps a roms long name to its short name in the format: \n{'rom': 'description'}"
 
         # TODO Figure out if this can be replaced with method
-        #  Fill out data structures for later use.
+        # Fill out data structures for later use.
         roms_with_saves = get_roms_with_saves(self.mame_folder)
 
         for rom in roms_with_saves:
@@ -47,6 +64,13 @@ class TreeWidget(QTreeWidget):
 
     # Override Key press event for purposes of custom behavior
     def keyPressEvent(self, event):
+        """Extended key press event handler
+
+        Extends key press event handler to capture 'enter' and 'return'. If the key press event is triggered,
+        the currently selected QTreeWidgetItem will have its editor closed, the corresponding save file will be
+        renamed, and the event will be marked as handled. If the key press is not triggered, the event will be handled
+        by the parent method.
+        """
         # Capturing both return and enter is important for compatibility
         if event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return:
             selected_items = self.selectedItems()
@@ -117,6 +141,7 @@ class MainWindow(QMainWindow):
         # Widget customization
         self.setWindowTitle('MAME States')
         self.tree_widget = TreeWidget(self.mame_folder, self.description_db, self.rom_db)
+        print(self.tree_widget.__doc__)
         self.tree_widget.setHeaderLabels(['Games'])
 
         # Signals
