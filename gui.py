@@ -3,7 +3,8 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Add docstrings
+    * Add Class, method docstrings
+    * Consider adding attribute type hints to classes.
     * Account for romlist.txt existing, but not yet having mame path. Just incase.
     * What happens if no directory is chosen?
     * Sort some list at some point to ensure alphabetical. Maybe use treewidget functionality.
@@ -19,6 +20,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, build_rom_db, rename, create_rom_list
 from logic.main import change_mame_path
+
 
 # TODO Comment
 # Subclass so I can alter event handling behavior
