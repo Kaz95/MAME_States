@@ -1,3 +1,16 @@
+"""MAMEStates GUI
+
+This module contains the graphical user interface for the MAMEStates application.
+
+TODO:
+    * Add docstrings
+    * Account for romlist.txt existing, but not yet having mame path. Just incase.
+    * What happens if no directory is chosen?
+    * Sort some list at some point to ensure alphabetical. Maybe use treewidget functionality.
+    * Comment/Code Review/Refactor
+    * Find more shit
+"""
+
 import os.path
 import pprint
 
@@ -6,14 +19,6 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, build_rom_db, rename, create_rom_list
 from logic.main import change_mame_path
-
-
-# TODO Add docstrings
-# TODO Account for romlist.txt existing, but not yet having mame path. Just incase.
-# TODO What happens if no directory is chosen?
-# TODO Sort some list at some point to ensure alphabetical. Maybe use treewidget functionality.
-# TODO Comment/Code Review/Refactor
-# TODO Find more shit TODO
 
 # TODO Comment
 # Subclass so I can alter event handling behavior
