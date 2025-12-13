@@ -83,30 +83,30 @@ class MainWindow(QMainWindow):
             create_rom_list(self.mame_folder)
             change_mame_path(self.mame_folder)
 
-        self.text_before_editing = None
+        self.text_before_editing: str | None = None
 
         # TODO Figure this out
         # Setup class variables to be used later. They *may* need to be accessed by other methods.
         # If they are not needed by other methods, I suppose they don't need to be class var.
 
         # Previous selected item in TreeWidget
-        self.prev = None
+        self.prev: QTreeWidgetItem | None = None
 
         # {'real_name': 'rom_name'}
-        self.description_db = {}
+        self.description_db: dict[str, str] = {}
 
         # TODO Do I really need two dictionaries that mirror each other?
         # {'rom_name':'real_name'}
-        self.rom_db = build_rom_db('logic/romlist.txt')
+        self.rom_db: dict[str, str] = build_rom_db('logic/romlist.txt')
 
         # List of actual game names, rather than rom name.
-        self.real_names = []
+        self.real_names: list[str] = []
 
         # List that hold references to all items in tree. Needed to create sub items.
         # Could assign each item its own var, but with no way of knowing how many this seems best.
-        self.game_items = []
+        self.game_items: list[QTreeWidgetItem] = []
 
-        self.saves = None
+        self.saves: dict[str, list[str]] | None = None
 
         self.fill_data_structures()
 
