@@ -25,6 +25,10 @@ from logic.main import change_mame_path
 # TODO Comment
 # Subclass so I can alter event handling behavior
 class TreeWidget(QTreeWidget):
+    """Subclasses and extends the QTreeWidget class of the PyQt6.QtWidgets Module
+
+    This class extends the keyPressEvent method for the purposes of capturing a custom key press
+    """
     def __init__(self, mame_folder: str, description_db: dict[str, str], rom_db: dict[str, str]):
         super().__init__()
 
@@ -116,7 +120,7 @@ class MainWindow(QMainWindow):
         self.tree_widget.setHeaderLabels(['Games'])
 
         # Signals
-        self.tree_widget.itemClicked.connect(self.item_clicked)
+        # self.tree_widget.itemClicked.connect(self.item_clicked)
         self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
         self.tree_widget.currentItemChanged.connect(self.selection_changed)
 
