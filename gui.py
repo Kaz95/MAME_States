@@ -25,7 +25,7 @@ from logic.main import change_mame_path
 # TODO Comment
 # Subclass so I can alter event handling behavior
 class TreeWidget(QTreeWidget):
-    def __init__(self, mame_folder, description_db, rom_db):
+    def __init__(self, mame_folder: str, description_db: dict[str, str], rom_db: dict[str, str]):
         super().__init__()
 
         # init attributes
