@@ -16,28 +16,11 @@ def create_rom_list(mame_path: str) -> None:
         subprocess.run([mame_path + '\\mame.exe', "-ll"], stdout=romlist)
 
 
-# def build_rom_db(romlist: str) -> dict[str, str]:
-#     """Create and return a dictionary containing save file names, for roms that have them.
-#
-#     All resulting strings are stripped of white space and double quotes."""
-#     rom_db = {}
-#     with open(romlist, 'r') as romlist:
-#         next(romlist)
-#         for line in romlist:
-#             description_start = line.index('"')
-#             description = line[description_start:]
-#             description = description.strip()
-#             description = description.strip('"')
-#             rom_name = line[:description_start]
-#             rom_name = rom_name.strip()
-#             rom_db[rom_name] = description
-#     return rom_db
-
-
 def build_description_db(romlist: str) -> dict[str, str]:
     """Create and return a dictionary containing save file names, for roms that have them.
 
-    All resulting strings are stripped of white space and double quotes."""
+    All resulting strings are stripped of white space and double quotes.
+    """
     rom_db = {}
     with open(romlist, 'r') as romlist:
         next(romlist)
@@ -57,11 +40,6 @@ def get_roms_with_saves(mame_path: str) -> list[str]:
     contents = os.listdir(mame_path + '\\sta')
     return contents
 
-
-# def get_real_name(rom_db: dict[str, str], rom_name: str) -> str:
-#     """Return the full name of a given rom"""
-#     real_name = rom_db[rom_name]
-#     return real_name
 
 def get_real_name(description_db: dict[str, str], rom_name: str) -> str:
     """Return the full name of a given rom"""
@@ -96,7 +74,8 @@ def change_mame_path(new_path: str) -> None:
     """Change the saved MAME path
 
     Finds and replaces the first line, in the romlist.txt file, with a MAME path that will be used as the working
-    directory for the MAMEStates application."""
+    directory for the MAMEStates application.
+    """
     with open('logic/romlist.txt', 'r') as romlist:
         data = romlist.read().splitlines(True)
         data[0] = new_path + '\n'

@@ -18,7 +18,7 @@ import pprint
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
-from logic.main import get_roms_with_saves, get_save_names, get_real_name, build_rom_db, rename, create_rom_list
+from logic.main import get_roms_with_saves, get_save_names, get_real_name, rename, create_rom_list
 from logic.main import change_mame_path, build_description_db
 
 
@@ -27,14 +27,12 @@ class TreeWidget(QTreeWidget):
     """Subclasses and extends the QTreeWidget class of the PyQt6.QtWidgets Module
 
     This class extends the keyPressEvent method for the purposes of capturing a custom key press
-
     """
     def __init__(self, mame_folder: str, description_db: dict[str, str]):
         """Initialize the TreeWidget Subclass
 
         The TreeWidget subclass inherits most of its behavior from its parent class QTreeWidget.
         TreeWidget initializes with all the data needed by its single extended method
-
         """
         super().__init__()
 
@@ -44,17 +42,6 @@ class TreeWidget(QTreeWidget):
 
         self.description_db = description_db
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
-
-        # self.rom_db = rom_db
-        # """Maps a roms long name to its short name in the format: \n{'rom': 'description'}"""
-
-        # TODO Redundant code. Consider method.
-        # Fill out data structures for later use.
-        # roms_with_saves = get_roms_with_saves(self.mame_folder)
-        #
-        # for rom in roms_with_saves:
-        #     real_name = get_real_name(self.description_db, rom)
-            # self.description_db[real_name] = rom
 
     def keyPressEvent(self, event):
         """Extended key press event handler
@@ -90,7 +77,6 @@ class MainWindow(QMainWindow):
 
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Houses all GUI elements of the MAMEStates application.
-
     """
     def __init__(self):
         """Initialize the MainWindow subclass
@@ -99,7 +85,6 @@ class MainWindow(QMainWindow):
         initialization process setups the GUI elements present on program launch, as well as connecting signals to
         slots. In addition, the initialization process also creates persistent files required by the MAMEStates
         application.
-
         """
         super().__init__()
 
@@ -128,10 +113,6 @@ class MainWindow(QMainWindow):
         # {'real_name': 'rom_name'}
         self.description_db: dict[str, str] = {}
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
-
-        # {'rom_name':'real_name'}
-        self.rom_db: dict[str, str] = build_rom_db('logic/romlist.txt')
-        """Maps a roms long name to its short name in the format: \n{'rom': 'description'}"""
 
         # List of actual game names, rather than rom name.
         self.real_names: list[str] = []
@@ -185,7 +166,6 @@ class MainWindow(QMainWindow):
 
         Use pre-filled data structures to create a sub item referencing each save state's name as text, with the top
         level tree item representing its corresponding rom as a parent item.
-
         """
         for game in self.game_items:
             if game.text(0) in self.description_db:
@@ -207,46 +187,25 @@ class MainWindow(QMainWindow):
             game_item = QTreeWidgetItem(self.tree_widget, [game])
             self.game_items.append(game_item)
 
-    # def fill_data_structures(self) -> None:
-    #     """Reset and refill data structures used to derive TreeWidget items.
-    #
-    #     Reset the data structures used to fill the tree widget. Then, fill them again. Used for both initial filling of
-    #     TreeWidget, and the reloading of the TreeWidget when a new MAME path is chosen."""
-    #     # reset data structs
-    #     self.rom_db = build_rom_db('logic/romlist.txt')
-    #     self.real_names = []
-    #     self.description_db = {}
-    #     self.game_items = []
-    #     #  Fill out data structures for later use.
-    #     roms_with_saves = get_roms_with_saves(self.mame_folder)
-    #
-    #     # TODO Redundant code. Consider method.
-    #     for rom in roms_with_saves:
-    #         real_name = get_real_name(self.rom_db, rom)
-    #         self.real_names.append(real_name)
-    #         self.description_db[real_name] = rom
-    #
-    #     self.saves = get_save_names(roms_with_saves, self.mame_folder)
-
 
     def fill_data_structures(self) -> None:
         """Reset and refill data structures used to derive TreeWidget items.
 
         Reset the data structures used to fill the tree widget. Then, fill them again. Used for both initial filling of
-        TreeWidget, and the reloading of the TreeWidget when a new MAME path is chosen."""
+        TreeWidget, and the reloading of the TreeWidget when a new MAME path is chosen.
+        """
+
         # reset data structs
-        # self.rom_db = build_rom_db('logic/romlist.txt')
         self.real_names = []
         self.description_db = build_description_db('logic/romlist.txt')
         self.game_items = []
+
         #  Fill out data structures for later use.
         roms_with_saves = get_roms_with_saves(self.mame_folder)
 
-        # TODO Redundant code. Consider method.
         for rom in roms_with_saves:
             real_name = get_real_name(self.description_db, rom)
             self.real_names.append(real_name)
-            # self.description_db[real_name] = rom
 
         self.saves = get_save_names(roms_with_saves, self.mame_folder)
 
@@ -254,7 +213,8 @@ class MainWindow(QMainWindow):
         """Change active MAME directory and reload TreeWidget.
 
         Open a full file dialog window and have user choose a MAME base directory. Only directories may be chosen. Then,
-        the TreeWidget is cleared and reloaded with data from the new MAME directory."""
+        the TreeWidget is cleared and reloaded with data from the new MAME directory.
+        """
         mame_path = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
                                                      options=QFileDialog.Option.ShowDirsOnly)
         self.mame_folder = mame_path
