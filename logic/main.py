@@ -17,7 +17,9 @@ def create_rom_list(mame_path: str) -> None:
 
 
 def build_rom_db(romlist: str) -> dict[str, str]:
-    """Create and return a dictionary containing save file names, for roms that have them."""
+    """Create and return a dictionary containing save file names, for roms that have them.
+
+    All resulting strings are stripped of white space and double quotes."""
     rom_db = {}
     with open(romlist, 'r') as romlist:
         next(romlist)
@@ -66,7 +68,10 @@ def rename(mame_folder: str, rom_folder: str, old_save_name: str, new_save_name:
 
 
 def change_mame_path(new_path: str) -> None:
-    """Change the saved MAME path"""
+    """Change the saved MAME path
+
+    Finds and replaces the first line, in the romlist.txt file, with a MAME path that will be used as the working
+    directory for the MAMEStates application."""
     with open('logic/romlist.txt', 'r') as romlist:
         data = romlist.read().splitlines(True)
         data[0] = new_path + '\n'
