@@ -154,7 +154,6 @@ class MainWindow(QMainWindow):
         self.tree_widget.setHeaderLabels(['Games'])
 
         # Signals
-        # self.tree_widget.itemClicked.connect(self.item_clicked)
         self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
         self.tree_widget.currentItemChanged.connect(self.selection_changed)
 
