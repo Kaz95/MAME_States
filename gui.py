@@ -107,6 +107,10 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
+        # Probably best to declare this before the following statements. Not sure though.
+        self.mame_folder = None
+        """Path to base MAME folder."""
+
         # TODO Consider if this should be a function for the purposes of clarity, testing, ect.
         if os.path.isfile('logic/romlist.txt'):
             with open('logic/romlist.txt', 'r') as romlist:
@@ -119,6 +123,7 @@ class MainWindow(QMainWindow):
             change_mame_path(self.mame_folder)
 
         self.text_before_editing: str | None = None
+        """Text of a TreeWidget item, before a persistent editor was opened."""
 
         # TODO Figure this out
         # Setup class variables to be used later. They *may* need to be accessed by other methods.
@@ -126,22 +131,28 @@ class MainWindow(QMainWindow):
 
         # Previous selected item in TreeWidget
         self.prev: QTreeWidgetItem | None = None
+        """The previously selected TreeWidget item."""
 
         # {'real_name': 'rom_name'}
         self.description_db: dict[str, str] = {}
+        """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
 
         # TODO Do I really need two dictionaries that mirror each other?
         # {'rom_name':'real_name'}
         self.rom_db: dict[str, str] = build_rom_db('logic/romlist.txt')
+        """Maps a roms long name to its short name in the format: \n{'rom': 'description'}"""
 
         # List of actual game names, rather than rom name.
         self.real_names: list[str] = []
+        """Long-form rom names."""
 
         # List that hold references to all items in tree. Needed to create sub items.
         # Could assign each item its own var, but with no way of knowing how many this seems best.
         self.game_items: list[QTreeWidgetItem] = []
+        """Top level TreeWidget items, representing games with save states."""
 
         self.saves: dict[str, list[str]] | None = None
+        """Names of games that have a save folder, and their respective save states"""
 
         self.fill_data_structures()
 
