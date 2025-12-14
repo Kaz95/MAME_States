@@ -3,8 +3,7 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Having both description and rom DB dicts is redundant. Rework to only have description DB.
-    * Remove redundant comments.
+    * Rework MainWindow init order.
     * Account for romlist.txt existing, but not yet having mame path. Just incase.
     * What happens if no directory is chosen?
     * Sort some list at some point to ensure alphabetical. Maybe use treewidget functionality.
@@ -22,7 +21,6 @@ from logic.main import get_roms_with_saves, get_save_names, get_real_name, renam
 from logic.main import change_mame_path, build_description_db
 
 
-# Subclass so I can alter event handling behavior
 class TreeWidget(QTreeWidget):
     """Subclasses and extends the QTreeWidget class of the PyQt6.QtWidgets Module
 
@@ -36,7 +34,6 @@ class TreeWidget(QTreeWidget):
         """
         super().__init__()
 
-        # init attributes
         self.mame_folder = mame_folder
         """Path to base MAME folder."""
 
@@ -106,20 +103,16 @@ class MainWindow(QMainWindow):
         self.text_before_editing: str | None = None
         """Text of a TreeWidget item, before a persistent editor was opened."""
 
-        # Previous selected item in TreeWidget
         self.prev: QTreeWidgetItem | None = None
         """The previously selected TreeWidget item."""
 
-        # {'real_name': 'rom_name'}
         self.description_db: dict[str, str] = {}
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
 
-        # List of actual game names, rather than rom name.
         self.real_names: list[str] = []
         """Long-form rom names."""
 
-        # List that hold references to all items in tree. Needed to create sub items.
-        # Could assign each item its own var, but with no way of knowing how many this seems best.
+        # Need these references to assign sub items later.
         self.game_items: list[QTreeWidgetItem] = []
         """Top level TreeWidget items, representing games with save states."""
 
@@ -157,7 +150,6 @@ class MainWindow(QMainWindow):
     # Slots
     def update_treewidget(self) -> None:
         """Update the data structures the TreeWidget derives its items from."""
-        self.tree_widget.rom_db = self.rom_db
         self.tree_widget.description_db = self.description_db
         self.tree_widget.mame_folder = self.mame_folder
 
@@ -181,8 +173,6 @@ class MainWindow(QMainWindow):
         created are captured in a list as references for later use. Primarily the addition of sub items(save states) at
         a later time.
         """
-        # Creates top level list items. Also captures reference to every item created in a list.
-        # These references will be used to create sub items.
         for game in self.real_names:
             game_item = QTreeWidgetItem(self.tree_widget, [game])
             self.game_items.append(game_item)
@@ -194,7 +184,6 @@ class MainWindow(QMainWindow):
         Reset the data structures used to fill the tree widget. Then, fill them again. Used for both initial filling of
         TreeWidget, and the reloading of the TreeWidget when a new MAME path is chosen.
         """
-
         # reset data structs
         self.real_names = []
         self.description_db = build_description_db('logic/romlist.txt')
