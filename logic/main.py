@@ -3,7 +3,6 @@
 This module encompasses the static functions used by the MAMEStates application.
 
 TODO:
-    * Expand docstring for each function.
     * Consider renaming functions to improve human readability.
 """
 import subprocess
