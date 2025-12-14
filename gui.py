@@ -39,13 +39,13 @@ class TreeWidget(QTreeWidget):
 
         # init attributes
         self.mame_folder = mame_folder
-        "Path to base MAME folder."
+        """Path to base MAME folder."""
 
         self.description_db = description_db
-        "Maps a roms long name to its short name in the format: \n{'description': 'rom'}"
+        """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
 
         self.rom_db = rom_db
-        "Maps a roms long name to its short name in the format: \n{'rom': 'description'}"
+        """Maps a roms long name to its short name in the format: \n{'rom': 'description'}"""
 
         # TODO Figure out if this can be replaced with method
         # Fill out data structures for later use.
