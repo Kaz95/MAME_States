@@ -3,9 +3,9 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Rework MainWindow init order.
-    * Account for romlist.txt existing, but not yet having mame path. Just incase.
-    * What happens if no directory is chosen?
+    * Account for romlist.txt existing, but not yet having mame path. Just incase. Do this....actually.
+    * What happens if no directory is chosen? Dont think this is possible actually. The dir may not be valid, but will
+        be a dir.
     * Sort some list at some point to ensure alphabetical. Maybe use treewidget functionality.
     * Comment/Code Review/Refactor
     * Find more shit
