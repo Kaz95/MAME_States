@@ -3,7 +3,8 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Expand method docstrigns.
+    * Having both description and rom DB dicts is redundant. Rework to only have description DB.
+    * Remove redundant comments.
     * Account for romlist.txt existing, but not yet having mame path. Just incase.
     * What happens if no directory is chosen?
     * Sort some list at some point to ensure alphabetical. Maybe use treewidget functionality.
@@ -47,7 +48,7 @@ class TreeWidget(QTreeWidget):
         self.rom_db = rom_db
         """Maps a roms long name to its short name in the format: \n{'rom': 'description'}"""
 
-        # TODO Figure out if this can be replaced with method
+        # TODO Redundant code. Consider method.
         # Fill out data structures for later use.
         roms_with_saves = get_roms_with_saves(self.mame_folder)
 
@@ -55,7 +56,6 @@ class TreeWidget(QTreeWidget):
             real_name = get_real_name(self.rom_db, rom)
             self.description_db[real_name] = rom
 
-    # Override Key press event for purposes of custom behavior
     def keyPressEvent(self, event):
         """Extended key press event handler
 
@@ -75,9 +75,6 @@ class TreeWidget(QTreeWidget):
                         old_text = item.text(0)
                         self.closePersistentEditor(item)
                         rename(self.mame_folder, rom_name, old_text, item.text(0))
-            # TODO Figure out if this is needed needed.
-            else:
-                print('Enter pressed, but no items selected')
 
             # Mark event as handled if the given keys were pressed.
             # Only do this if you want to override existing behavior of a given keybind.
@@ -87,7 +84,6 @@ class TreeWidget(QTreeWidget):
             super().keyPressEvent(event)
 
 
-# TODO Comment
 # TODO Clean up init
 class MainWindow(QMainWindow):
     """Subclasses and extends the QQMainWindow class of the PyQt6.QtWidgets Module
@@ -111,7 +107,7 @@ class MainWindow(QMainWindow):
         self.mame_folder = None
         """Path to base MAME folder."""
 
-        # TODO Consider if this should be a function for the purposes of clarity, testing, ect.
+        # TODO Move to method. Makes init messy. Also move after attribute declarations.
         if os.path.isfile('logic/romlist.txt'):
             with open('logic/romlist.txt', 'r') as romlist:
                 first_line = romlist.readline()
@@ -125,10 +121,6 @@ class MainWindow(QMainWindow):
         self.text_before_editing: str | None = None
         """Text of a TreeWidget item, before a persistent editor was opened."""
 
-        # TODO Figure this out
-        # Setup class variables to be used later. They *may* need to be accessed by other methods.
-        # If they are not needed by other methods, I suppose they don't need to be class var.
-
         # Previous selected item in TreeWidget
         self.prev: QTreeWidgetItem | None = None
         """The previously selected TreeWidget item."""
@@ -137,7 +129,6 @@ class MainWindow(QMainWindow):
         self.description_db: dict[str, str] = {}
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
 
-        # TODO Do I really need two dictionaries that mirror each other?
         # {'rom_name':'real_name'}
         self.rom_db: dict[str, str] = build_rom_db('logic/romlist.txt')
         """Maps a roms long name to its short name in the format: \n{'rom': 'description'}"""
@@ -169,9 +160,8 @@ class MainWindow(QMainWindow):
 
         self.add_top_level_items()
 
-        # TODO Figure out why this is needed. Showing the MainWindow(parent) should make this visible?
-        # I guess this makes the widget visible without using .show()
-        self.setCentralWidget(self.tree_widget)
+        # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
+        self.setCentralWidget(self.tree_widget) # Assigns MainWindow as parent, thus showing tree_widget.
 
         self.add_sub_items()
 
@@ -231,6 +221,7 @@ class MainWindow(QMainWindow):
         #  Fill out data structures for later use.
         roms_with_saves = get_roms_with_saves(self.mame_folder)
 
+        # TODO Redundant code. Consider method.
         for rom in roms_with_saves:
             real_name = get_real_name(self.rom_db, rom)
             self.real_names.append(real_name)
@@ -256,10 +247,6 @@ class MainWindow(QMainWindow):
 
         print('clicked', mame_path)
 
-    # def item_clicked(self, item):
-    #     if item.parent() is None:
-    #         pass
-
     def item_double_clicked(self, item: QTreeWidgetItem, col: int) -> None:
         """Open text editor on a subitem of TreeWidget.
 
@@ -277,7 +264,6 @@ class MainWindow(QMainWindow):
                 self.tree_widget.collapseItem(item)
 
     # On program load, prev is always None, and cur is first item.
-    # TODO Clean this up and remove text prompts.
     def selection_changed(self, cur: QTreeWidgetItem, prev: QTreeWidgetItem) -> None:
         """Revert text change on previously selected subitem of TreeWidget."""
         if prev and cur:
