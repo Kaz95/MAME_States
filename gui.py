@@ -88,17 +88,7 @@ class MainWindow(QMainWindow):
         # Probably best to declare this before the following statements. Not sure though.
         self.mame_folder = None
         """Path to base MAME folder."""
-
-        # TODO Move to method. Makes init messy. Also move after attribute declarations.
-        if os.path.isfile('logic/romlist.txt'):
-            with open('logic/romlist.txt', 'r') as romlist:
-                first_line = romlist.readline()
-                self.mame_folder = first_line.strip()
-        else:
-            self.mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
-                                                                options=QFileDialog.Option.ShowDirsOnly)
-            create_rom_list(self.mame_folder)
-            change_mame_path(self.mame_folder)
+        self.mame_folder = self.get_mame_path()
 
         self.text_before_editing: str | None = None
         """Text of a TreeWidget item, before a persistent editor was opened."""
@@ -123,7 +113,6 @@ class MainWindow(QMainWindow):
 
         # Widget customization
         self.setWindowTitle('MAME States')
-
         self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
         self.tree_widget.setHeaderLabels(['Games'])
 
@@ -146,6 +135,19 @@ class MainWindow(QMainWindow):
         self.button_action.triggered.connect(self.menu_button_clicked)
 
         self.file_menu.addAction(self.button_action)
+
+
+    def get_mame_path(self):
+        if os.path.isfile('logic/romlist.txt'):
+            with open('logic/romlist.txt', 'r') as romlist:
+                first_line = romlist.readline()
+                mame_folder = first_line.strip()
+        else:
+            mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
+                                                                options=QFileDialog.Option.ShowDirsOnly)
+            create_rom_list(mame_folder)
+            change_mame_path(mame_folder)
+        return mame_folder
 
     # Slots
     def update_treewidget(self) -> None:
