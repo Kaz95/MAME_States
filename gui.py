@@ -3,8 +3,7 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Add Class, method docstrings
-    * Consider adding attribute type hints to classes.
+    * Expand method docstrigns.
     * Account for romlist.txt existing, but not yet having mame path. Just incase.
     * What happens if no directory is chosen?
     * Sort some list at some point to ensure alphabetical. Maybe use treewidget functionality.
