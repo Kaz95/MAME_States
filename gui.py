@@ -135,7 +135,7 @@ class MainWindow(QMainWindow):
 
         self.file_menu.addAction(self.button_action)
 
-
+    # Methods
     def get_mame_path(self):
         if os.path.isfile('logic/romlist.txt'):
             with open('logic/romlist.txt', 'r') as romlist:
@@ -148,12 +148,25 @@ class MainWindow(QMainWindow):
             change_mame_path(mame_folder)
         return mame_folder
 
-    # Slots
-    def update_treewidget(self) -> None:
-        """Update the data structures the TreeWidget derives its items from."""
-        self.tree_widget.description_db = self.description_db
-        self.tree_widget.mame_folder = self.mame_folder
+    def fill_data_structures(self) -> None:
+        """Reset and refill data structures used to derive TreeWidget items.
 
+        Reset the data structures used to fill the tree widget. Then, fill them again. Used for both initial filling of
+        TreeWidget, and the reloading of the TreeWidget when a new MAME path is chosen.
+        """
+        # reset data structs
+        self.real_names = []
+        self.description_db = build_description_db('logic/romlist.txt')
+        self.game_items = []
+
+        #  Fill out data structures for later use.
+        roms_with_saves = get_roms_with_saves(self.mame_folder)
+
+        for rom in roms_with_saves:
+            real_name = get_real_name(self.description_db, rom)
+            self.real_names.append(real_name)
+
+        self.saves = get_save_names(roms_with_saves, self.mame_folder)
     def add_sub_items(self) -> None:
         """Add a sub items to a top level items of the TreeWidget.
 
@@ -178,27 +191,12 @@ class MainWindow(QMainWindow):
             game_item = QTreeWidgetItem(self.tree_widget, [game])
             self.game_items.append(game_item)
 
+    def update_treewidget(self) -> None:
+        """Update the data structures the TreeWidget derives its items from."""
+        self.tree_widget.description_db = self.description_db
+        self.tree_widget.mame_folder = self.mame_folder
 
-    def fill_data_structures(self) -> None:
-        """Reset and refill data structures used to derive TreeWidget items.
-
-        Reset the data structures used to fill the tree widget. Then, fill them again. Used for both initial filling of
-        TreeWidget, and the reloading of the TreeWidget when a new MAME path is chosen.
-        """
-        # reset data structs
-        self.real_names = []
-        self.description_db = build_description_db('logic/romlist.txt')
-        self.game_items = []
-
-        #  Fill out data structures for later use.
-        roms_with_saves = get_roms_with_saves(self.mame_folder)
-
-        for rom in roms_with_saves:
-            real_name = get_real_name(self.description_db, rom)
-            self.real_names.append(real_name)
-
-        self.saves = get_save_names(roms_with_saves, self.mame_folder)
-
+    # Slots
     def menu_button_clicked(self) -> None:
         """Change active MAME directory and reload TreeWidget.
 
