@@ -115,17 +115,16 @@ class MainWindow(QMainWindow):
         self.setWindowTitle('MAME States')
         self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
         self.tree_widget.setHeaderLabels(['Games'])
+        # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
+        self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
+
+        # Fill TreeWidget
+        self.add_top_level_items()
+        self.add_sub_items()
 
         # Signals
         self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
         self.tree_widget.currentItemChanged.connect(self.selection_changed)
-
-        self.add_top_level_items()
-
-        # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
-        self.setCentralWidget(self.tree_widget) # Assigns MainWindow as parent, thus showing tree_widget.
-
-        self.add_sub_items()
 
         # Add file menu
         self.menu = self.menuBar()
