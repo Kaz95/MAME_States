@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, build_rom_db, rename, create_rom_list
-from logic.main import change_mame_path
+from logic.main import change_mame_path, build_description_db
 
 
 # Subclass so I can alter event handling behavior
@@ -29,7 +29,7 @@ class TreeWidget(QTreeWidget):
     This class extends the keyPressEvent method for the purposes of capturing a custom key press
 
     """
-    def __init__(self, mame_folder: str, description_db: dict[str, str], rom_db: dict[str, str]):
+    def __init__(self, mame_folder: str, description_db: dict[str, str]):
         """Initialize the TreeWidget Subclass
 
         The TreeWidget subclass inherits most of its behavior from its parent class QTreeWidget.
@@ -45,16 +45,16 @@ class TreeWidget(QTreeWidget):
         self.description_db = description_db
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
 
-        self.rom_db = rom_db
-        """Maps a roms long name to its short name in the format: \n{'rom': 'description'}"""
+        # self.rom_db = rom_db
+        # """Maps a roms long name to its short name in the format: \n{'rom': 'description'}"""
 
         # TODO Redundant code. Consider method.
         # Fill out data structures for later use.
-        roms_with_saves = get_roms_with_saves(self.mame_folder)
-
-        for rom in roms_with_saves:
-            real_name = get_real_name(self.rom_db, rom)
-            self.description_db[real_name] = rom
+        # roms_with_saves = get_roms_with_saves(self.mame_folder)
+        #
+        # for rom in roms_with_saves:
+        #     real_name = get_real_name(self.description_db, rom)
+            # self.description_db[real_name] = rom
 
     def keyPressEvent(self, event):
         """Extended key press event handler
@@ -150,7 +150,7 @@ class MainWindow(QMainWindow):
         # Widget customization
         self.setWindowTitle('MAME States')
 
-        self.tree_widget = TreeWidget(self.mame_folder, self.description_db, self.rom_db)
+        self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
         self.tree_widget.setHeaderLabels(['Games'])
 
         # Signals
@@ -207,24 +207,46 @@ class MainWindow(QMainWindow):
             game_item = QTreeWidgetItem(self.tree_widget, [game])
             self.game_items.append(game_item)
 
+    # def fill_data_structures(self) -> None:
+    #     """Reset and refill data structures used to derive TreeWidget items.
+    #
+    #     Reset the data structures used to fill the tree widget. Then, fill them again. Used for both initial filling of
+    #     TreeWidget, and the reloading of the TreeWidget when a new MAME path is chosen."""
+    #     # reset data structs
+    #     self.rom_db = build_rom_db('logic/romlist.txt')
+    #     self.real_names = []
+    #     self.description_db = {}
+    #     self.game_items = []
+    #     #  Fill out data structures for later use.
+    #     roms_with_saves = get_roms_with_saves(self.mame_folder)
+    #
+    #     # TODO Redundant code. Consider method.
+    #     for rom in roms_with_saves:
+    #         real_name = get_real_name(self.rom_db, rom)
+    #         self.real_names.append(real_name)
+    #         self.description_db[real_name] = rom
+    #
+    #     self.saves = get_save_names(roms_with_saves, self.mame_folder)
+
+
     def fill_data_structures(self) -> None:
         """Reset and refill data structures used to derive TreeWidget items.
 
         Reset the data structures used to fill the tree widget. Then, fill them again. Used for both initial filling of
         TreeWidget, and the reloading of the TreeWidget when a new MAME path is chosen."""
         # reset data structs
-        self.rom_db = build_rom_db('logic/romlist.txt')
+        # self.rom_db = build_rom_db('logic/romlist.txt')
         self.real_names = []
-        self.description_db = {}
+        self.description_db = build_description_db('logic/romlist.txt')
         self.game_items = []
         #  Fill out data structures for later use.
         roms_with_saves = get_roms_with_saves(self.mame_folder)
 
         # TODO Redundant code. Consider method.
         for rom in roms_with_saves:
-            real_name = get_real_name(self.rom_db, rom)
+            real_name = get_real_name(self.description_db, rom)
             self.real_names.append(real_name)
-            self.description_db[real_name] = rom
+            # self.description_db[real_name] = rom
 
         self.saves = get_save_names(roms_with_saves, self.mame_folder)
 

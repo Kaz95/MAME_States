@@ -5,6 +5,7 @@ This module encompasses the static functions used by the MAMEStates application.
 TODO:
     * Consider renaming functions to improve human readability.
 """
+import pprint
 import subprocess
 import os
 
@@ -15,7 +16,25 @@ def create_rom_list(mame_path: str) -> None:
         subprocess.run([mame_path + '\\mame.exe', "-ll"], stdout=romlist)
 
 
-def build_rom_db(romlist: str) -> dict[str, str]:
+# def build_rom_db(romlist: str) -> dict[str, str]:
+#     """Create and return a dictionary containing save file names, for roms that have them.
+#
+#     All resulting strings are stripped of white space and double quotes."""
+#     rom_db = {}
+#     with open(romlist, 'r') as romlist:
+#         next(romlist)
+#         for line in romlist:
+#             description_start = line.index('"')
+#             description = line[description_start:]
+#             description = description.strip()
+#             description = description.strip('"')
+#             rom_name = line[:description_start]
+#             rom_name = rom_name.strip()
+#             rom_db[rom_name] = description
+#     return rom_db
+
+
+def build_description_db(romlist: str) -> dict[str, str]:
     """Create and return a dictionary containing save file names, for roms that have them.
 
     All resulting strings are stripped of white space and double quotes."""
@@ -29,7 +48,7 @@ def build_rom_db(romlist: str) -> dict[str, str]:
             description = description.strip('"')
             rom_name = line[:description_start]
             rom_name = rom_name.strip()
-            rom_db[rom_name] = description
+            rom_db[description] = rom_name
     return rom_db
 
 
@@ -39,10 +58,17 @@ def get_roms_with_saves(mame_path: str) -> list[str]:
     return contents
 
 
-def get_real_name(rom_db: dict[str, str], rom_name: str) -> str:
+# def get_real_name(rom_db: dict[str, str], rom_name: str) -> str:
+#     """Return the full name of a given rom"""
+#     real_name = rom_db[rom_name]
+#     return real_name
+
+def get_real_name(description_db: dict[str, str], rom_name: str) -> str:
     """Return the full name of a given rom"""
-    real_name = rom_db[rom_name]
-    return real_name
+    for item in description_db.items():
+        if item[1] == rom_name:
+            real_name = item[0]
+            return real_name
 
 
 def get_save_names(games_with_saves: list[str], mame_folder: str) -> dict[str, list[str]]:
