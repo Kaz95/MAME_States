@@ -158,6 +158,7 @@ class MainWindow(QMainWindow):
 
         # Widget customization
         self.setWindowTitle('MAME States')
+
         self.tree_widget = TreeWidget(self.mame_folder, self.description_db, self.rom_db)
         self.tree_widget.setHeaderLabels(['Games'])
 
@@ -191,9 +192,12 @@ class MainWindow(QMainWindow):
         self.tree_widget.mame_folder = self.mame_folder
 
     def add_sub_items(self) -> None:
-        """Add a sub item to a top level item of the TreeWidget."""
-        # Adds save states as sub items to a given games main item.
-        pprint.pprint(self.game_items)
+        """Add a sub items to a top level items of the TreeWidget.
+
+        Use pre-filled data structures to create a sub item referencing each save state's name as text, with the top
+        level tree item representing its corresponding rom as a parent item.
+
+        """
         for game in self.game_items:
             if game.text(0) in self.description_db:
                 rom_name = self.description_db[game.text(0)]
@@ -202,7 +206,12 @@ class MainWindow(QMainWindow):
                         QTreeWidgetItem(game, [state])
 
     def add_top_level_items(self) -> None:
-        """Create, and capture a reference to, top level items in the TreeWidget."""
+        """Create, and capture a reference to, top level items in the TreeWidget.
+
+        Each top level item represents a rom. The text of each top level item is the long form name of a rom. The items
+        created are captured in a list as references for later use. Primarily the addition of sub items(save states) at
+        a later time.
+        """
         # Creates top level list items. Also captures reference to every item created in a list.
         # These references will be used to create sub items.
         for game in self.real_names:
@@ -210,7 +219,10 @@ class MainWindow(QMainWindow):
             self.game_items.append(game_item)
 
     def fill_data_structures(self) -> None:
-        """Reset and refill data structures used to derive TreeWidget items."""
+        """Reset and refill data structures used to derive TreeWidget items.
+
+        Reset the data structures used to fill the tree widget. Then, fill them again. Used for both initial filling of
+        TreeWidget, and the reloading of the TreeWidget when a new MAME path is chosen."""
         # reset data structs
         self.rom_db = build_rom_db('logic/romlist.txt')
         self.real_names = []
@@ -227,7 +239,10 @@ class MainWindow(QMainWindow):
         self.saves = get_save_names(roms_with_saves, self.mame_folder)
 
     def menu_button_clicked(self) -> None:
-        """Change active MAME directory and reload TreeWidget."""
+        """Change active MAME directory and reload TreeWidget.
+
+        Open a full file dialog window and have user choose a MAME base directory. Only directories may be chosen. Then,
+        the TreeWidget is cleared and reloaded with data from the new MAME directory."""
         mame_path = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
                                                      options=QFileDialog.Option.ShowDirsOnly)
         self.mame_folder = mame_path
@@ -246,7 +261,12 @@ class MainWindow(QMainWindow):
     #         pass
 
     def item_double_clicked(self, item: QTreeWidgetItem, col: int) -> None:
-        """Open text editor on  a subitem of TreeWidget."""
+        """Open text editor on a subitem of TreeWidget.
+
+        Capture the previous text of the given sub item before opening the editor. This allows the items text to be
+        reverted. All top level items have their sub items collapsed, except for the top level item that is the parent
+        of the currently selected item.
+        """
         if item.parent() is not None:
             self.text_before_editing = item.text(0)
             self.tree_widget.openPersistentEditor(item, col)
