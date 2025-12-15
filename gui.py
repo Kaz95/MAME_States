@@ -13,11 +13,11 @@ TODO:
 """
 
 import os.path
+import pprint
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QDialog, \
-    QDialogButtonBox, QVBoxLayout, QLabel, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox
 
 from logic.main import change_mame_path, build_description_db
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, rename, create_rom_list
@@ -112,6 +112,8 @@ class MainWindow(QMainWindow):
         """Path to base MAME folder."""
         self.mame_folder = self.get_mame_path()
 
+        self.tree_widget = None
+
         self.text_before_editing: str | None = None
         """Text of a TreeWidget item, before a persistent editor was opened."""
 
@@ -131,22 +133,23 @@ class MainWindow(QMainWindow):
         self.saves: dict[str, list[str]] | None = None
         """Names of games that have a save folder, and their respective save states"""
 
-        self.fill_data_structures()
+        if self.mame_folder is not None:
+            self.fill_data_structures()
 
-        # Widget customization
-        self.setWindowTitle('MAME States')
-        self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
-        self.tree_widget.setHeaderLabels(['Games'])
-        # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
-        self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
+            # Widget customization
+            self.setWindowTitle('MAME States')
+            self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
+            self.tree_widget.setHeaderLabels(['Games'])
+            # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
+            self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
 
-        # Fill TreeWidget
-        self.add_top_level_items()
-        self.add_sub_items()
+            # Fill TreeWidget
+            self.add_top_level_items()
+            self.add_sub_items()
 
-        # Signals
-        self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
-        self.tree_widget.currentItemChanged.connect(self.selection_changed)
+            # Signals
+            self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
+            self.tree_widget.currentItemChanged.connect(self.selection_changed)
 
         # Add file menu
         self.menu = self.menuBar()
@@ -168,7 +171,7 @@ class MainWindow(QMainWindow):
             if message_response == QMessageBox.StandardButton.Retry:
                 return False
             if message_response == QMessageBox.StandardButton.Cancel:
-                return
+                return None
         else:
             return True
 
@@ -177,12 +180,19 @@ class MainWindow(QMainWindow):
             with open('logic/romlist.txt', 'r') as romlist:
                 first_line = romlist.readline()
                 mame_folder = first_line.strip()
+                return mame_folder
         else:
             mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
                                                                 options=QFileDialog.Option.ShowDirsOnly)
-            create_rom_list(mame_folder)
-            change_mame_path(mame_folder)
-        return mame_folder
+            res = self.valid_path(mame_folder)
+            if res is True:
+                create_rom_list(mame_folder)
+                change_mame_path(mame_folder)
+                return mame_folder
+            if res is False:
+                self.get_mame_path()
+
+            return res
 
     def fill_data_structures(self) -> None:
         """Reset and refill data structures used to derive TreeWidget items.
@@ -243,21 +253,21 @@ class MainWindow(QMainWindow):
                                                      options=QFileDialog.Option.ShowDirsOnly)
         res = self.valid_path(mame_path)
         if res is True:
-        # mame_exe = mame_path + '\\mame.exe'
-        # if not os.path.exists(mame_exe):
-        #     message_response = QMessageBox.critical(self,
-        #                                             'Path Invalid',
-        #                                             'Please choose a valid MAME folder.',
-        #                                             QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Cancel)
-        #     if message_response == QMessageBox.StandardButton.Retry:
-        #         self.menu_button_clicked()
-        #     if message_response == QMessageBox.StandardButton.Cancel:
-        #         return
             self.mame_folder = mame_path
-            self.tree_widget.clear()
+
+
             create_rom_list(self.mame_folder)
             change_mame_path(mame_path)
             self.fill_data_structures()
+            if self.tree_widget:
+                self.tree_widget.clear()
+            else:
+                self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
+                self.tree_widget.setHeaderLabels(['Games'])
+                self.setCentralWidget(self.tree_widget)
+                self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
+                self.tree_widget.currentItemChanged.connect(self.selection_changed)
+
             self.update_treewidget()
             self.add_top_level_items()
             self.add_sub_items()
