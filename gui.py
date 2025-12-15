@@ -158,6 +158,20 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.button_action)
 
     # Methods
+    def valid_path(self, mame_folder):
+        mame_exe = mame_folder + '\\mame.exe'
+        if not os.path.exists(mame_exe):
+            message_response = QMessageBox.critical(self,
+                                                    'Path Invalid',
+                                                    'Please choose a valid MAME folder.',
+                                                    QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Cancel)
+            if message_response == QMessageBox.StandardButton.Retry:
+                return False
+            if message_response == QMessageBox.StandardButton.Cancel:
+                return
+        else:
+            return True
+
     def get_mame_path(self):
         if os.path.isfile('logic/romlist.txt'):
             with open('logic/romlist.txt', 'r') as romlist:
@@ -227,27 +241,30 @@ class MainWindow(QMainWindow):
         """
         mame_path = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
                                                      options=QFileDialog.Option.ShowDirsOnly)
-        mame_exe = mame_path + '\\mame.exe'
-        if not os.path.exists(mame_exe):
-            message_response = QMessageBox.critical(self,
-                                                    'Path Invalid',
-                                                    'Please choose a valid MAME folder.',
-                                                    QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Cancel)
-            if message_response == QMessageBox.StandardButton.Retry:
-                self.menu_button_clicked()
-            if message_response == QMessageBox.StandardButton.Cancel:
-                return
-        self.mame_folder = mame_path
-        self.tree_widget.clear()
-        create_rom_list(self.mame_folder)
-        change_mame_path(mame_path)
-        self.fill_data_structures()
-        self.update_treewidget()
-        self.add_top_level_items()
-        self.add_sub_items()
+        res = self.valid_path(mame_path)
+        if res is True:
+        # mame_exe = mame_path + '\\mame.exe'
+        # if not os.path.exists(mame_exe):
+        #     message_response = QMessageBox.critical(self,
+        #                                             'Path Invalid',
+        #                                             'Please choose a valid MAME folder.',
+        #                                             QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Cancel)
+        #     if message_response == QMessageBox.StandardButton.Retry:
+        #         self.menu_button_clicked()
+        #     if message_response == QMessageBox.StandardButton.Cancel:
+        #         return
+            self.mame_folder = mame_path
+            self.tree_widget.clear()
+            create_rom_list(self.mame_folder)
+            change_mame_path(mame_path)
+            self.fill_data_structures()
+            self.update_treewidget()
+            self.add_top_level_items()
+            self.add_sub_items()
 
-        print('clicked', mame_path)
-
+            print('clicked', mame_path)
+        if res is False:
+            self.menu_button_clicked()
     # def menu_button_clicked(self):
         # print('click', s)
         # dlg = CustomDialog()
