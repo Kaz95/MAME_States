@@ -17,7 +17,7 @@ import os.path
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QDialog, \
-    QDialogButtonBox, QVBoxLayout, QLabel
+    QDialogButtonBox, QVBoxLayout, QLabel, QMessageBox
 
 from logic.main import change_mame_path, build_description_db
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, rename, create_rom_list
@@ -69,21 +69,22 @@ class TreeWidget(QTreeWidget):
         else:
             super().keyPressEvent(event)
 
-class CustomDialog(QDialog):
-    def __init__(self):
-        super().__init__()
-
-        self.setWindowTitle('Ni Hao')
-        d_button = (QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-        self.buttonBox = QDialogButtonBox(d_button)
-        self.buttonBox.accepted.connect(self.accept)
-        self.buttonBox.rejected.connect(self.reject)
-
-        layout = QVBoxLayout()
-        message = QLabel('Say some things...')
-        layout.addWidget(message)
-        layout.addWidget(self.buttonBox)
-        self.setLayout(layout)
+# Left i as example for now.
+# class CustomDialog(QDialog):
+#     def __init__(self):
+#         super().__init__()
+#
+#         self.setWindowTitle('Ni Hao')
+#         d_button = (QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
+#         self.buttonBox = QDialogButtonBox(d_button)
+#         self.buttonBox.accepted.connect(self.accept)
+#         self.buttonBox.rejected.connect(self.reject)
+#
+#         layout = QVBoxLayout()
+#         message = QLabel('Say some things...')
+#         layout.addWidget(message)
+#         layout.addWidget(self.buttonBox)
+#         self.setLayout(layout)
 
 
 
@@ -218,34 +219,51 @@ class MainWindow(QMainWindow):
         self.tree_widget.mame_folder = self.mame_folder
 
     # Slots
-    # def menu_button_clicked(self) -> None:
-    #     """Change active MAME directory and reload TreeWidget.
-    #
-    #     Open a full file dialog window and have user choose a MAME base directory. Only directories may be chosen. Then,
-    #     the TreeWidget is cleared and reloaded with data from the new MAME directory.
-    #     """
-    #     mame_path = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
-    #                                                  options=QFileDialog.Option.ShowDirsOnly)
-    #     self.mame_folder = mame_path
-    #     self.tree_widget.clear()
-    #     create_rom_list(self.mame_folder)
-    #     change_mame_path(mame_path)
-    #     self.fill_data_structures()
-    #     self.update_treewidget()
-    #     self.add_top_level_items()
-    #     self.add_sub_items()
-    #
-    #     print('clicked', mame_path)
+    def menu_button_clicked(self) -> None:
+        """Change active MAME directory and reload TreeWidget.
 
-    def menu_button_clicked(self):
+        Open a full file dialog window and have user choose a MAME base directory. Only directories may be chosen. Then,
+        the TreeWidget is cleared and reloaded with data from the new MAME directory.
+        """
+        mame_path = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
+                                                     options=QFileDialog.Option.ShowDirsOnly)
+        mame_exe = mame_path + '\\mame.exe'
+        if not os.path.exists(mame_exe):
+            message_response = QMessageBox.critical(self,
+                                                    'Path Invalid',
+                                                    'Please choose a valid MAME folder.',
+                                                    QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Cancel)
+            if message_response == QMessageBox.StandardButton.Retry:
+                self.menu_button_clicked()
+            if message_response == QMessageBox.StandardButton.Cancel:
+                return
+        self.mame_folder = mame_path
+        self.tree_widget.clear()
+        create_rom_list(self.mame_folder)
+        change_mame_path(mame_path)
+        self.fill_data_structures()
+        self.update_treewidget()
+        self.add_top_level_items()
+        self.add_sub_items()
+
+        print('clicked', mame_path)
+
+    # def menu_button_clicked(self):
         # print('click', s)
-        dlg = CustomDialog()
-        dlg.setWindowTitle('Ni Hao')
-        retunr_value_of_dialog = dlg.exec()
-        if retunr_value_of_dialog:
-            print('True')
-        else:
-            print('falsy')
+        # dlg = CustomDialog()
+        # dlg.setWindowTitle('Ni Hao')
+        # retunr_value_of_dialog = dlg.exec()
+        # if retunr_value_of_dialog:
+        #     print('True')
+        # else:
+        #     print('falsy')
+        #
+        # res = QMessageBox.critical(self, 'Not a MAME path' , 'Please select a MAME path', QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Cancel)
+        # if res == QMessageBox.StandardButton.Retry:
+        #     print('retry was pressed')
+        #     self.menu_button_clicked()
+        # if res == QMessageBox.StandardButton.Cancel:
+        #     print('cancel was pressed')
 
     def item_double_clicked(self, item: QTreeWidgetItem, col: int) -> None:
         """Open text editor on a subitem of TreeWidget.
