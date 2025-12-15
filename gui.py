@@ -28,6 +28,7 @@ class TreeWidget(QTreeWidget):
 
     This class extends the keyPressEvent method for the purposes of capturing a custom key press
     """
+
     def __init__(self, mame_folder: str, description_db: dict[str, str]):
         """Initialize the TreeWidget Subclass
 
@@ -69,26 +70,6 @@ class TreeWidget(QTreeWidget):
         else:
             super().keyPressEvent(event)
 
-# Left i as example for now.
-# class CustomDialog(QDialog):
-#     def __init__(self):
-#         super().__init__()
-#
-#         self.setWindowTitle('Ni Hao')
-#         d_button = (QDialogButtonBox.StandardButton.Ok | QDialogButtonBox.StandardButton.Cancel)
-#         self.buttonBox = QDialogButtonBox(d_button)
-#         self.buttonBox.accepted.connect(self.accept)
-#         self.buttonBox.rejected.connect(self.reject)
-#
-#         layout = QVBoxLayout()
-#         message = QLabel('Say some things...')
-#         layout.addWidget(message)
-#         layout.addWidget(self.buttonBox)
-#         self.setLayout(layout)
-
-
-
-
 
 # TODO Clean up init
 class MainWindow(QMainWindow):
@@ -97,6 +78,7 @@ class MainWindow(QMainWindow):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Houses all GUI elements of the MAMEStates application.
     """
+
     def __init__(self):
         """Initialize the MainWindow subclass
 
@@ -107,11 +89,11 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
-        # Probably best to declare this before the following statements. Not sure though.
         self.mame_folder = None
         """Path to base MAME folder."""
-        self.mame_folder = self.get_mame_path()
-
+        # self.mame_folder = self.get_mame_path()
+        #
+        # self.tree_widget = None
         self.tree_widget = None
 
         self.text_before_editing: str | None = None
@@ -132,6 +114,9 @@ class MainWindow(QMainWindow):
 
         self.saves: dict[str, list[str]] | None = None
         """Names of games that have a save folder, and their respective save states"""
+
+
+        self.mame_folder = self.get_mame_path()
 
         if self.mame_folder is not None:
             self.fill_data_structures()
@@ -213,6 +198,7 @@ class MainWindow(QMainWindow):
             self.real_names.append(real_name)
 
         self.saves = get_save_names(roms_with_saves, self.mame_folder)
+
     def add_sub_items(self) -> None:
         """Add a sub items to a top level items of the TreeWidget.
 
@@ -255,7 +241,6 @@ class MainWindow(QMainWindow):
         if res is True:
             self.mame_folder = mame_path
 
-
             create_rom_list(self.mame_folder)
             change_mame_path(mame_path)
             self.fill_data_structures()
@@ -275,22 +260,6 @@ class MainWindow(QMainWindow):
             print('clicked', mame_path)
         if res is False:
             self.menu_button_clicked()
-    # def menu_button_clicked(self):
-        # print('click', s)
-        # dlg = CustomDialog()
-        # dlg.setWindowTitle('Ni Hao')
-        # retunr_value_of_dialog = dlg.exec()
-        # if retunr_value_of_dialog:
-        #     print('True')
-        # else:
-        #     print('falsy')
-        #
-        # res = QMessageBox.critical(self, 'Not a MAME path' , 'Please select a MAME path', QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Cancel)
-        # if res == QMessageBox.StandardButton.Retry:
-        #     print('retry was pressed')
-        #     self.menu_button_clicked()
-        # if res == QMessageBox.StandardButton.Cancel:
-        #     print('cancel was pressed')
 
     def item_double_clicked(self, item: QTreeWidgetItem, col: int) -> None:
         """Open text editor on a subitem of TreeWidget.
