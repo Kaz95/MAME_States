@@ -12,7 +12,7 @@ import os.path
 import pprint
 
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QAction
+from PyQt6.QtGui import QAction, QFont
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, \
     QSizePolicy
 
@@ -118,6 +118,10 @@ class MainWindow(QMainWindow):
 
             # Widget customization
             self.setWindowTitle('MAME States')
+            self.top_level_item_font = QFont()
+            self.top_level_item_font.setPointSize(26)
+            self.sub_item_font = QFont()
+            self.sub_item_font.setPointSize(20)
             self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
             self.tree_widget.setHeaderLabels(['Games'])
             # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
@@ -208,7 +212,8 @@ class MainWindow(QMainWindow):
                 rom_name = self.description_db[game.text(0)]
                 if rom_name in self.saves:
                     for state in self.saves[rom_name]:
-                        QTreeWidgetItem(game, [state])
+                        item = QTreeWidgetItem(game, [state])
+                        item.setFont(0, self.sub_item_font)
 
     def add_top_level_items(self) -> None:
         """Create, and capture a reference to, top level items in the TreeWidget.
@@ -219,6 +224,7 @@ class MainWindow(QMainWindow):
         """
         for game in self.real_names:
             game_item = QTreeWidgetItem(self.tree_widget, [game])
+            game_item.setFont(0, self.top_level_item_font)
             self.game_items.append(game_item)
 
     def update_treewidget(self) -> None:
