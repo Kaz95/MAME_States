@@ -66,7 +66,6 @@ class TreeWidget(QTreeWidget):
             super().keyPressEvent(event)
 
 
-# TODO Clean up init
 class MainWindow(QMainWindow):
     """Subclasses and extends the QQMainWindow class of the PyQt6.QtWidgets Module
 
