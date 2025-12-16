@@ -9,12 +9,10 @@ TODO:
 """
 
 import os.path
-import pprint
 
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QAction, QFont
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, \
-    QSizePolicy
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox
 
 from logic.main import change_mame_path, build_description_db
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, rename, create_rom_list
