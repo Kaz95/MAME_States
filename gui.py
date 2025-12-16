@@ -11,9 +11,10 @@ TODO:
 import os.path
 import pprint
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, \
+    QSizePolicy
 
 from logic.main import change_mame_path, build_description_db
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, rename, create_rom_list
@@ -140,6 +141,9 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.button_action)
 
     # Methods
+    def sizeHint(self):
+        return QSize(1920, 1080)
+
     def valid_path(self, mame_folder):
         mame_exe = mame_folder + '\\mame.exe'
         if not os.path.exists(mame_exe):
