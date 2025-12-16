@@ -3,9 +3,10 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Sort some list at some point to ensure alphabetical. Maybe use treewidget functionality.
+    * Disallow spaces in save state names. Maybe replace space with hyphen before saving?
+        Do I need to disallow any other characters? Should I limit length(file name length limit)?
     * Comment/Code Review/Refactor
-    * Find more shit
+    * Decide on new features to add.
 """
 
 import os.path
