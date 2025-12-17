@@ -57,6 +57,7 @@ class TreeWidget(QTreeWidget):
                         rom_name = self.description_db[rom_item.text(0)]
                         old_text = item.text(0)
                         self.closePersistentEditor(item)
+                        # TODO add user input validation here. If invalid input, rollback. Use message box. 
                         rename(self.mame_folder, rom_name, old_text, item.text(0))
 
             # Mark event as handled if the given keys were pressed.
