@@ -57,8 +57,8 @@ class TreeWidget(QTreeWidget):
                         rom_name = self.description_db[rom_item.text(0)]
                         old_text = item.text(0)
                         self.closePersistentEditor(item)
-                        formatted_text =  item.text(0)
-                        formatted_text = formatted_text.replace(' ', '-')
+                        new_text =  item.text(0)
+                        formatted_text = new_text.replace(' ', '-')
                         item.setText(0, formatted_text)
                         # TODO add user input validation here. If invalid input, rollback. Use message box. 
                         rename(self.mame_folder, rom_name, old_text, formatted_text)
