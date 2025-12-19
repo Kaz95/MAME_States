@@ -57,8 +57,11 @@ class TreeWidget(QTreeWidget):
                         rom_name = self.description_db[rom_item.text(0)]
                         old_text = item.text(0)
                         self.closePersistentEditor(item)
+                        formatted_text =  item.text(0)
+                        formatted_text = formatted_text.replace(' ', '-')
+                        item.setText(0, formatted_text)
                         # TODO add user input validation here. If invalid input, rollback. Use message box. 
-                        rename(self.mame_folder, rom_name, old_text, item.text(0))
+                        rename(self.mame_folder, rom_name, old_text, formatted_text)
 
             # Mark event as handled if the given keys were pressed.
             # Only do this if you want to override existing behavior of a given keybind.
