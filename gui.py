@@ -58,6 +58,11 @@ class TreeWidget(QTreeWidget):
                         old_text = item.text(0)
                         self.closePersistentEditor(item)
                         new_text =  item.text(0)
+                        forbidden_characters = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
+                        if any(character in new_text for character in forbidden_characters):
+                            item.setText(0, old_text)
+                            QMessageBox.critical(self, 'Invalid Input', 'Save state name contains forbidden character.')
+                            return
                         if len(new_text) > 250:
                             item.setText(0, old_text)
                             QMessageBox.critical(self,
