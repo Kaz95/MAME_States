@@ -235,6 +235,7 @@ class MainWindow(QMainWindow):
         """
         for game in self.real_names:
             game_item = QTreeWidgetItem(self.tree_widget, [game])
+            game_item.setToolTip(0, self.description_db[game])
             game_item.setFont(0, self.top_level_item_font)
             self.game_items.append(game_item)
 
