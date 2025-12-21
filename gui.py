@@ -3,8 +3,6 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Disallow spaces in save state names. Maybe replace space with hyphen before saving?
-        Do I need to disallow any other characters? Should I limit length(file name length limit)?
     * Comment/Code Review/Refactor
     * Decide on new features to add.
 """
@@ -72,7 +70,6 @@ class TreeWidget(QTreeWidget):
                             return
                         formatted_text = new_text.replace(' ', '-')
                         item.setText(0, formatted_text)
-                        # TODO add user input validation here. If invalid input, rollback. Use message box. 
                         rename(self.mame_folder, rom_name, old_text, formatted_text)
 
             # Mark event as handled if the given keys were pressed.
@@ -297,7 +294,9 @@ class MainWindow(QMainWindow):
 
     # On program load, prev is always None, and cur is first item.
     def selection_changed(self, cur: QTreeWidgetItem, prev: QTreeWidgetItem) -> None:
-        """Revert text change on previously selected subitem of TreeWidget."""
+        """Revert text change on previously selected subitem of TreeWidget.
+
+        Checks if previous subitem has an open persistent editor to avoid changing on every new item selection."""
         if prev and cur:
             if prev.parent() and self.tree_widget.isPersistentEditorOpen(prev, 0):
                 prev.setText(0, self.text_before_editing)
