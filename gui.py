@@ -299,7 +299,7 @@ class MainWindow(QMainWindow):
     def selection_changed(self, cur: QTreeWidgetItem, prev: QTreeWidgetItem) -> None:
         """Revert text change on previously selected subitem of TreeWidget."""
         if prev and cur:
-            if prev.parent():
+            if prev.parent() and self.tree_widget.isPersistentEditorOpen(prev, 0):
                 prev.setText(0, self.text_before_editing)
             self.tree_widget.closePersistentEditor(prev)
 
