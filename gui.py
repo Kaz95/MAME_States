@@ -285,7 +285,8 @@ class MainWindow(QMainWindow):
         """Revert text change on previously selected subitem of TreeWidget."""
         if prev and cur:
             if prev.parent():
-                prev.setText(0, self.text_before_editing)
+                if self.text_before_editing:
+                    prev.setText(0, self.text_before_editing)
             self.tree_widget.closePersistentEditor(prev)
 
 
