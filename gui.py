@@ -290,6 +290,7 @@ class MainWindow(QMainWindow):
             change_mame_path(mame_path)
             self.fill_data_structures()
             if self.tree_widget:
+                self.last_changed = None
                 self.tree_widget.clear()
                 # This needs to be disconnect temp to allow items to change without a loop.
                 self.tree_widget.itemChanged.disconnect(self.item_changed)
