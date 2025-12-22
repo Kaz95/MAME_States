@@ -97,6 +97,8 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
+        self.forbidden_characters = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
+
         self.mame_folder = None
         """Path to base MAME folder."""
 
@@ -268,6 +270,7 @@ class MainWindow(QMainWindow):
             self.fill_data_structures()
             if self.tree_widget:
                 self.tree_widget.clear()
+                # This needs to be disconnect temp to allow items to change without a loop.
                 self.tree_widget.itemChanged.disconnect(self.item_changed)
             else:
                 self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
@@ -292,8 +295,7 @@ class MainWindow(QMainWindow):
     def item_changed(self, item: QTreeWidgetItem, col):
         item_text = item.text(col)
         if item.childCount() == 0:
-            forbidden_characters = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
-            if any(character in forbidden_characters for character in item_text):
+            if any(character in self.forbidden_characters for character in item_text):
                 item.setText(col, self.text_before_editing)
             elif len(item_text) > 10:
                 item.setText(col, self.text_before_editing)
