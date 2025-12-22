@@ -154,6 +154,12 @@ class MainWindow(QMainWindow):
             # self.tree_widget.currentItemChanged.connect(self.selection_changed)
             self.tree_widget.itemChanged.connect(self.item_changed)
 
+        # Add undo action
+        self.undo_action = QAction('Undo', self)
+        self.undo_action.triggered.connect(self.undo_triggered)
+        self.undo_action.setShortcut(QKeySequence.StandardKey.Undo)
+        self.addAction(self.undo_action)
+        print(self.undo_action.shortcut().toString())
 
         # Add file menu
         self.menu = self.menuBar()
@@ -163,12 +169,9 @@ class MainWindow(QMainWindow):
         self.button_action.triggered.connect(self.menu_button_clicked)
 
         self.file_menu.addAction(self.button_action)
+        self.file_menu.addAction(self.undo_action)
 
-        self.undo_action = QAction('Undo', self)
-        self.undo_action.triggered.connect(self.undo_triggered)
-        self.undo_action.setShortcut(QKeySequence.StandardKey.Undo)
-        self.addAction(self.undo_action)
-        print(self.undo_action.shortcut().toString())
+
 
     # Methods
     def sizeHint(self):
