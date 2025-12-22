@@ -263,10 +263,14 @@ class MainWindow(QMainWindow):
         self.tree_widget.mame_folder = self.mame_folder
 
     # Slots
+    # FIXME What happens when there is no last__changed?
     def undo_triggered(self):
-        col = self.last_changed[0]
-        print(self.last_changed)
-        self.last_changed[1].setText(col, self.text_before_editing)
+        if self.last_changed:
+            col = self.last_changed[0]
+            print(self.last_changed)
+            self.last_changed[1].setText(col, self.text_before_editing)
+        else:
+            print('nothing to undo')
     def menu_button_clicked(self) -> None:
         """Change active MAME directory and reload TreeWidget.
 
