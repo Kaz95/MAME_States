@@ -268,17 +268,21 @@ class MainWindow(QMainWindow):
             self.fill_data_structures()
             if self.tree_widget:
                 self.tree_widget.clear()
+                self.tree_widget.itemChanged.disconnect(self.item_changed)
             else:
                 self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
-                self.tree_widget.setHeaderLabels(['Games'])
-                self.setCentralWidget(self.tree_widget)
+                self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.NoEditTriggers)
+                self.tree_widget.setHeaderLabels(['Games', 'High Score', 'Distance PB'])
+                # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
+                self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
                 self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
                 # self.tree_widget.currentItemChanged.connect(self.selection_changed)
+
 
             self.update_treewidget()
             self.add_top_level_items()
             self.add_sub_items()
-
+            self.tree_widget.itemChanged.connect(self.item_changed)
             print('clicked', mame_path)
         if res is False:
             self.menu_button_clicked()
