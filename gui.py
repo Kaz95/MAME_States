@@ -290,6 +290,7 @@ class MainWindow(QMainWindow):
                 self.tree_widget.clear()
                 # This needs to be disconnect temp to allow items to change without a loop.
                 self.tree_widget.itemChanged.disconnect(self.item_changed)
+            # FIXME Determine if this can even happen. If yes, update. If no, delete.
             else:
                 self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
                 self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.NoEditTriggers)
