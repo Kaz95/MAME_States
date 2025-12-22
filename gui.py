@@ -138,12 +138,15 @@ class MainWindow(QMainWindow):
             self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
             self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.NoEditTriggers)
             self.tree_widget.setHeaderLabels(['Games', 'High Score', 'Distance PB'])
+
             # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
             self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
 
             # Fill TreeWidget
             self.add_top_level_items()
             self.add_sub_items()
+            for _ in range(3):
+                self.tree_widget.resizeColumnToContents(_)
 
             # Signals
             self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
