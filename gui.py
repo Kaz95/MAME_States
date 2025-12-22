@@ -3,6 +3,7 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
+    * Account for romlist.txt being deleted.....somehow. It's partially done, but not up to date.
     * Comment/Code Review/Refactor
     * Decide on new features to add.
 """
