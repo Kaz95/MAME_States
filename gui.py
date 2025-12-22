@@ -10,7 +10,7 @@ TODO:
 import os.path
 
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QAction, QFont
+from PyQt6.QtGui import QAction, QFont, QKeySequence
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox
 
 from logic.main import change_mame_path, build_description_db
@@ -96,6 +96,7 @@ class MainWindow(QMainWindow):
         application.
         """
         super().__init__()
+        self.last_changed: tuple[int, QTreeWidgetItem] | None = None
 
         self.forbidden_characters = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
 
@@ -162,6 +163,12 @@ class MainWindow(QMainWindow):
         self.button_action.triggered.connect(self.menu_button_clicked)
 
         self.file_menu.addAction(self.button_action)
+
+        self.undo_action = QAction('Undo', self)
+        self.undo_action.triggered.connect(self.undo_triggered)
+        self.undo_action.setShortcut(QKeySequence.StandardKey.Undo)
+        self.addAction(self.undo_action)
+        print(self.undo_action.shortcut().toString())
 
     # Methods
     def sizeHint(self):
@@ -256,6 +263,10 @@ class MainWindow(QMainWindow):
         self.tree_widget.mame_folder = self.mame_folder
 
     # Slots
+    def undo_triggered(self):
+        col = self.last_changed[0]
+        print(self.last_changed)
+        self.last_changed[1].setText(col, self.text_before_editing)
     def menu_button_clicked(self) -> None:
         """Change active MAME directory and reload TreeWidget.
 
@@ -296,6 +307,7 @@ class MainWindow(QMainWindow):
     #I can figure out when the text has been submitted here and do things.
     # TODO Change to warning dialogs
     def item_changed(self, item: QTreeWidgetItem, col):
+        self.last_changed = (col, item)
         item_text = item.text(col)
         if item.childCount() == 0:
             if any(character in self.forbidden_characters for character in item_text):
