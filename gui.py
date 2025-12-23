@@ -19,6 +19,7 @@ from logic.main import change_mame_path, build_description_db
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, rename, create_rom_list
 
 
+
 class TreeWidget(QTreeWidget):
     """Subclasses and extends the QTreeWidget class of the PyQt6.QtWidgets Module
 
@@ -39,33 +40,33 @@ class TreeWidget(QTreeWidget):
         self.description_db = description_db
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
 
-    def keyPressEvent(self, event):
-        """Extended key press event handler
-
-        Extends key press event handler to capture 'enter' and 'return'. If the key press event is triggered,
-        the currently selected QTreeWidgetItem will have its editor closed, the corresponding save file will be
-        renamed, and the event will be marked as handled. If the key press is not triggered, the event will be handled
-        by the parent method.
-        """
-        # Capturing both return and enter is important for compatibility
-        if event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return:
-            selected_items = self.selectedItems()
-            if selected_items:
-                for item in selected_items:
-                    if self.isPersistentEditorOpen(item):
-                        rom_item = item.parent()
-                        rom_name = self.description_db[rom_item.text(0)]
-                        old_text = item.text(0)
-                        self.closePersistentEditor(item)
-                        # TODO add user input validation here. If invalid input, rollback. Use message box. 
-                        rename(self.mame_folder, rom_name, old_text, item.text(0))
-
-            # Mark event as handled if the given keys were pressed.
-            # Only do this if you want to override existing behavior of a given keybind.
-            event.accept()
-        # Pass to normal event handler if the given keys were not pressed.
-        else:
-            super().keyPressEvent(event)
+    # def keyPressEvent(self, event):
+    #     """Extended key press event handler
+    #
+    #     Extends key press event handler to capture 'enter' and 'return'. If the key press event is triggered,
+    #     the currently selected QTreeWidgetItem will have its editor closed, the corresponding save file will be
+    #     renamed, and the event will be marked as handled. If the key press is not triggered, the event will be handled
+    #     by the parent method.
+    #     """
+    #     # Capturing both return and enter is important for compatibility
+    #     if event.key() == Qt.Key.Key_Enter or event.key() == Qt.Key.Key_Return:
+    #         selected_items = self.selectedItems()
+    #         if selected_items:
+    #             for item in selected_items:
+    #                 if self.isPersistentEditorOpen(item):
+    #                     rom_item = item.parent()
+    #                     rom_name = self.description_db[rom_item.text(0)]
+    #                     old_text = item.text(0)
+    #                     self.closePersistentEditor(item)
+    #                     # TODO add user input validation here. If invalid input, rollback. Use message box.
+    #                     rename(self.mame_folder, rom_name, old_text, item.text(0))
+    #
+    #         # Mark event as handled if the given keys were pressed.
+    #         # Only do this if you want to override existing behavior of a given keybind.
+    #         event.accept()
+    #     # Pass to normal event handler if the given keys were not pressed.
+    #     else:
+    #         super().keyPressEvent(event)
 
 
 class MainWindow(QMainWindow):
@@ -122,7 +123,9 @@ class MainWindow(QMainWindow):
             self.sub_item_font = QFont()
             self.sub_item_font.setPointSize(20)
             self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
-            self.tree_widget.setHeaderLabels(['Games'])
+            self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.NoEditTriggers)
+            self.tree_widget.setHeaderLabels(['Games', 'High Score', 'Distance PB'])
+            self.tree_widget.setColumnWidth(0, 1000)
             # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
             self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
 
@@ -132,7 +135,7 @@ class MainWindow(QMainWindow):
 
             # Signals
             self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
-            self.tree_widget.currentItemChanged.connect(self.selection_changed)
+            # self.tree_widget.currentItemChanged.connect(self.selection_changed)
 
         # Add file menu
         self.menu = self.menuBar()
@@ -212,6 +215,8 @@ class MainWindow(QMainWindow):
                 if rom_name in self.saves:
                     for state in self.saves[rom_name]:
                         item = QTreeWidgetItem(game, [state])
+                        item.setFirstColumnSpanned(True)
+                        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
                         item.setFont(0, self.sub_item_font)
 
     def add_top_level_items(self) -> None:
@@ -223,6 +228,7 @@ class MainWindow(QMainWindow):
         """
         for game in self.real_names:
             game_item = QTreeWidgetItem(self.tree_widget, [game])
+            game_item.setFlags(game_item.flags() | Qt.ItemFlag.ItemIsEditable)
             game_item.setFont(0, self.top_level_item_font)
             self.game_items.append(game_item)
 
@@ -273,21 +279,24 @@ class MainWindow(QMainWindow):
         """
         if item.parent() is not None:
             self.text_before_editing = item.text(0)
-            self.tree_widget.openPersistentEditor(item, col)
+            self.tree_widget.editItem(item, col)
+        else:
+            if col in (1, 2):
+                self.tree_widget.editItem(item, col)
 
         # close all expanded child items except for the parent of the current selected item.
         for item in self.game_items:
             if item.isExpanded() and not item.isSelected() and self.tree_widget.selectedItems()[0].parent() != item:
                 self.tree_widget.collapseItem(item)
 
-    # On program load, prev is always None, and cur is first item.
-    def selection_changed(self, cur: QTreeWidgetItem, prev: QTreeWidgetItem) -> None:
-        """Revert text change on previously selected subitem of TreeWidget."""
-        if prev and cur:
-            if prev.parent():
-                if self.text_before_editing:
-                    prev.setText(0, self.text_before_editing)
-            self.tree_widget.closePersistentEditor(prev)
+    # # On program load, prev is always None, and cur is first item.
+    # def selection_changed(self, cur: QTreeWidgetItem, prev: QTreeWidgetItem) -> None:
+    #     """Revert text change on previously selected subitem of TreeWidget."""
+    #     if prev and cur:
+    #         if prev.parent():
+    #             if self.text_before_editing:
+    #                 prev.setText(0, self.text_before_editing)
+    #         self.tree_widget.closePersistentEditor(prev)
 
 
 if __name__ == '__main__':
