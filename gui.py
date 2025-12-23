@@ -11,17 +11,29 @@ TODO:
 
 import os.path
 
-from PyQt6.QtCore import Qt, QSize, QRegularExpression
-from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator, QIntValidator
+from PyQt6.QtCore import Qt, QSize, QRegularExpression, QObject, QEvent
+from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator, QIntValidator, QKeyEvent
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, \
     QStyledItemDelegate, QLineEdit
 
 from logic.main import change_mame_path, build_description_db
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, rename, create_rom_list
+class EditorKeyFilter(QObject):
+    def eventFilter(self, widget, event):
+        if event.type() == QEvent.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+                print('Enter pressed')
+                # TODO DO shit here
+                # self.parent().commitData.emit(widget)
+                # return True
+        return super().eventFilter(widget, event)
+
 
 class InputValidator(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         editor = super().createEditor(parent ,option ,index)
+        editor_filter = EditorKeyFilter(self)
+        editor.installEventFilter(editor_filter)
         if isinstance(editor, QLineEdit):
             match index.column():
                 case 0:
