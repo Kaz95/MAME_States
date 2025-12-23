@@ -11,14 +11,33 @@ TODO:
 
 import os.path
 
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QAction, QFont
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox
+from PyQt6.QtCore import Qt, QSize, QRegularExpression
+from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator, QIntValidator
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, \
+    QStyledItemDelegate, QLineEdit
 
 from logic.main import change_mame_path, build_description_db
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, rename, create_rom_list
 
+class InputValidator(QStyledItemDelegate):
+    def createEditor(self, parent, option, index):
+        editor = super().createEditor(parent ,option ,index)
+        if isinstance(editor, QLineEdit):
+            match index.column():
+                case 0:
+                    editor.setMaxLength(10)
+                    # TODO Fully understand this regex.
+                    pattern = QRegularExpression(r'^[^<>:"/\|?*]*$')
+                    validator = QRegularExpressionValidator(pattern, editor)
+                    editor.setValidator(validator)
+                case 1:
+                    editor.setMaxLength(10)
+                    validator = QIntValidator(editor)
+                    editor.setValidator(validator)
+                case 2:
+                    editor.setMaxLength(20)
 
+        return editor
 
 class TreeWidget(QTreeWidget):
     """Subclasses and extends the QTreeWidget class of the PyQt6.QtWidgets Module
@@ -126,6 +145,7 @@ class MainWindow(QMainWindow):
             self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.NoEditTriggers)
             self.tree_widget.setHeaderLabels(['Games', 'High Score', 'Distance PB'])
             self.tree_widget.setColumnWidth(0, 1000)
+            self.tree_widget.setItemDelegate(InputValidator(self))
             # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
             self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
 
