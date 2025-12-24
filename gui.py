@@ -155,7 +155,7 @@ class MainWindow(QMainWindow):
             self.sub_item_font.setPointSize(20)
             self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
             self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.NoEditTriggers)
-            self.tree_widget.setHeaderLabels(['Games', 'High Score', 'Distance PB'])
+            self.tree_widget.setHeaderLabels(['Games'])
             self.tree_widget.setColumnWidth(0, 1000)
             self.tree_widget.setItemDelegate(InputValidator(self))
             # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
