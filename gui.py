@@ -260,7 +260,7 @@ class MainWindow(QMainWindow):
         """
         for game in self.real_names:
             game_item = QTreeWidgetItem(self.tree_widget, [game])
-            game_item.setFlags(game_item.flags() | Qt.ItemFlag.ItemIsEditable)
+            # game_item.setFlags(game_item.flags() | Qt.ItemFlag.ItemIsEditable)
             game_item.setFont(0, self.top_level_item_font)
             self.game_items.append(game_item)
 
