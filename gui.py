@@ -262,7 +262,7 @@ class MainWindow(QMainWindow):
             if self.tree_widget:
                 self.tree_widget.clear()
             else:
-                self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
+                self.tree_widget = TreeWidget()
                 self.tree_widget.setHeaderLabels(['Games'])
                 self.setCentralWidget(self.tree_widget)
 
