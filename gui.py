@@ -3,20 +3,61 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Account for romlist.txt being deleted.....somehow. It's partially done, but not up to date.
+    * Disallow spaces in save state names. Maybe replace space with hyphen before saving?
+        Do I need to disallow any other characters? Should I limit length(file name length limit)?
     * Comment/Code Review/Refactor
     * Decide on new features to add.
 """
 
 import os.path
 
-from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QAction, QFont, QKeySequence
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox
+from PyQt6.QtCore import Qt, QSize, QRegularExpression, QObject, QEvent
+from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator, QIntValidator, QKeyEvent
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, \
+    QStyledItemDelegate, QLineEdit
 
 from logic.main import change_mame_path, build_description_db
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, rename, create_rom_list
 
+# class EditorKeyFilter(QObject):
+#     def eventFilter(self, widget, event):
+#         if event.type() == QEvent.Type.KeyPress:
+#             if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+#                 print('Enter pressed')
+#                 # TODO DO shit here
+#                 # self.parent().commitData.emit(widget)
+#                 # return True
+#         return super().eventFilter(widget, event)
+
+
+class InputValidator(QStyledItemDelegate):
+    def createEditor(self, parent, option, index):
+        editor = super().createEditor(parent ,option ,index)
+        # editor_filter = EditorKeyFilter(self)
+        # editor.installEventFilter(editor_filter)
+        if isinstance(editor, QLineEdit):
+            match index.column():
+                case 0:
+                    editor.setMaxLength(10)
+                    # TODO Fully understand this regex.
+                    pattern = QRegularExpression(r'^[^<>:"/\|?* ]*$')
+                    validator = QRegularExpressionValidator(pattern, editor)
+                    editor.setValidator(validator)
+                case 1:
+                    editor.setMaxLength(10)
+                    validator = QIntValidator(editor)
+                    editor.setValidator(validator)
+                case 2:
+                    editor.setMaxLength(20)
+
+        return editor
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Space:
+                watched.insert('-')
+                return True
+        return super().eventFilter(watched, event)
 
 class TreeWidget(QTreeWidget):
     """Subclasses and extends the QTreeWidget class of the PyQt6.QtWidgets Module
@@ -56,22 +97,8 @@ class TreeWidget(QTreeWidget):
     #                     rom_name = self.description_db[rom_item.text(0)]
     #                     old_text = item.text(0)
     #                     self.closePersistentEditor(item)
-    #                     new_text =  item.text(0)
-    #                     forbidden_characters = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
-    #                     if any(character in new_text for character in forbidden_characters):
-    #                         item.setText(0, old_text)
-    #                         QMessageBox.critical(self, 'Invalid Input', 'Save state name contains forbidden character.')
-    #                         return
-    #                     if len(new_text) > 250:
-    #                         item.setText(0, old_text)
-    #                         QMessageBox.critical(self,
-    #                                              'Invalid Input',
-    #                                              'Save state name is way, way too long. Try again.')
-    #
-    #                         return
-    #                     formatted_text = new_text.replace(' ', '-')
-    #                     item.setText(0, formatted_text)
-    #                     rename(self.mame_folder, rom_name, old_text, formatted_text)
+    #                     # TODO add user input validation here. If invalid input, rollback. Use message box.
+    #                     rename(self.mame_folder, rom_name, old_text, item.text(0))
     #
     #         # Mark event as handled if the given keys were pressed.
     #         # Only do this if you want to override existing behavior of a given keybind.
@@ -97,9 +124,6 @@ class MainWindow(QMainWindow):
         application.
         """
         super().__init__()
-        self.last_changed: tuple[int, QTreeWidgetItem] | None = None
-
-        self.forbidden_characters = ['<', '>', ':', '"', '/', '\\', '|', '?', '*']
 
         self.mame_folder = None
         """Path to base MAME folder."""
@@ -138,29 +162,20 @@ class MainWindow(QMainWindow):
             self.sub_item_font = QFont()
             self.sub_item_font.setPointSize(20)
             self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
-            self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.NoEditTriggers)
-            self.tree_widget.setHeaderLabels(['Games', 'High Score', 'Distance PB'])
-
+            self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
+            self.tree_widget.setHeaderLabels(['Games'])
+            self.tree_widget.setColumnWidth(0, 1000)
+            self.tree_widget.setItemDelegate(InputValidator(self))
             # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
             self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
 
             # Fill TreeWidget
             self.add_top_level_items()
             self.add_sub_items()
-            for _ in range(3):
-                self.tree_widget.resizeColumnToContents(_)
 
             # Signals
-            self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
+            # self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
             # self.tree_widget.currentItemChanged.connect(self.selection_changed)
-            self.tree_widget.itemChanged.connect(self.item_changed)
-
-        # Add undo action
-        self.undo_action = QAction('Undo', self)
-        self.undo_action.triggered.connect(self.undo_triggered)
-        self.undo_action.setShortcut(QKeySequence.StandardKey.Undo)
-        self.addAction(self.undo_action)
-        print(self.undo_action.shortcut().toString())
 
         # Add file menu
         self.menu = self.menuBar()
@@ -170,9 +185,6 @@ class MainWindow(QMainWindow):
         self.button_action.triggered.connect(self.menu_button_clicked)
 
         self.file_menu.addAction(self.button_action)
-        self.file_menu.addAction(self.undo_action)
-
-
 
     # Methods
     def sizeHint(self):
@@ -255,9 +267,8 @@ class MainWindow(QMainWindow):
         a later time.
         """
         for game in self.real_names:
-            game_item = QTreeWidgetItem(self.tree_widget, [game, '9999', 'Stage-69'])
-            game_item.setFlags(game_item.flags() | Qt.ItemFlag.ItemIsEditable)
-            game_item.setToolTip(0, self.description_db[game])
+            game_item = QTreeWidgetItem(self.tree_widget, [game])
+            # game_item.setFlags(game_item.flags() | Qt.ItemFlag.ItemIsEditable)
             game_item.setFont(0, self.top_level_item_font)
             self.game_items.append(game_item)
 
@@ -267,14 +278,6 @@ class MainWindow(QMainWindow):
         self.tree_widget.mame_folder = self.mame_folder
 
     # Slots
-    # FIXME What happens when there is no last__changed?
-    def undo_triggered(self):
-        if self.last_changed:
-            col = self.last_changed[0]
-            print(self.last_changed)
-            self.last_changed[1].setText(col, self.text_before_editing)
-        else:
-            print('nothing to undo')
     def menu_button_clicked(self) -> None:
         """Change active MAME directory and reload TreeWidget.
 
@@ -291,86 +294,48 @@ class MainWindow(QMainWindow):
             change_mame_path(mame_path)
             self.fill_data_structures()
             if self.tree_widget:
-                self.last_changed = None
                 self.tree_widget.clear()
-                # This needs to be disconnect temp to allow items to change without a loop.
-                self.tree_widget.itemChanged.disconnect(self.item_changed)
-            # FIXME Determine if this can even happen. If yes, update. If no, delete.
             else:
                 self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
-                self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.NoEditTriggers)
-                self.tree_widget.setHeaderLabels(['Games', 'High Score', 'Distance PB'])
-                # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
-                self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
-                self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
+                self.tree_widget.setHeaderLabels(['Games'])
+                self.setCentralWidget(self.tree_widget)
+                # self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
                 # self.tree_widget.currentItemChanged.connect(self.selection_changed)
-
 
             self.update_treewidget()
             self.add_top_level_items()
             self.add_sub_items()
-            self.tree_widget.itemChanged.connect(self.item_changed)
+
             print('clicked', mame_path)
         if res is False:
             self.menu_button_clicked()
 
-    #I can figure out when the text has been submitted here and do things.
-    # TODO Change to warning dialogs
-    def item_changed(self, item: QTreeWidgetItem, col):
-        self.last_changed = (col, item)
-        item_text = item.text(col)
-        if item.childCount() == 0:
-            if any(character in self.forbidden_characters for character in item_text):
-                item.setText(col, self.text_before_editing)
-            elif len(item_text) > 10:
-                item.setText(col, self.text_before_editing)
-            else:
-                formatted_text = item_text.replace(' ', '-')
-                item.setText(col, formatted_text)
-        else:
-            if col == 1:
-                if len(item_text) > 10:
-                    item.setText(col, self.text_before_editing)
-                if not item_text.isdigit():
-                    item.setText(col, self.text_before_editing)
-            if col == 2:
-                if len(item_text) > 20:
-                    item.setText(col, self.text_before_editing)
-        # Use rename func
-        print(f'The text for the item is {item_text}')
-
-    def item_double_clicked(self, item: QTreeWidgetItem, col: int) -> None:
-        """Open text editor on a subitem of TreeWidget.
-
-        Capture the previous text of the given sub item before opening the editor. This allows the items text to be
-        reverted. All top level items have their sub items collapsed, except for the top level item that is the parent
-        of the currently selected item.
-        """
-        if item.parent() is not None:
-            self.text_before_editing = item.text(col)
-            self.tree_widget.editItem(item, col)
-            #Can capture old text still, editor will be open
-            #So I won't be able to get new text
-            #Don't think I cant add a specific trigger like enter, easily. maybe make a keybind 'ctrl-z' that reverts.
-            print(f'{item.text(0)}')
-        else:
-            if col in (1, 2):
-                self.text_before_editing = item.text(col)
-                self.tree_widget.editItem(item, col)
-
-        # close all expanded child items except for the parent of the current selected item.
-        for item in self.game_items:
-            if item.isExpanded() and not item.isSelected() and self.tree_widget.selectedItems()[0].parent() != item:
-                self.tree_widget.collapseItem(item)
+    # def item_double_clicked(self, item: QTreeWidgetItem, col: int) -> None:
+    #     """Open text editor on a subitem of TreeWidget.
+    #
+    #     Capture the previous text of the given sub item before opening the editor. This allows the items text to be
+    #     reverted. All top level items have their sub items collapsed, except for the top level item that is the parent
+    #     of the currently selected item.
+    #     """
+    #     if item.parent() is not None:
+    #         self.text_before_editing = item.text(0)
+    #         self.tree_widget.editItem(item, col)
+    #     else:
+    #         if col in (1, 2):
+    #             self.tree_widget.editItem(item, col)
+    #
+    #     # close all expanded child items except for the parent of the current selected item.
+    #     for item in self.game_items:
+    #         if item.isExpanded() and not item.isSelected() and self.tree_widget.selectedItems()[0].parent() != item:
+    #             self.tree_widget.collapseItem(item)
 
     # # On program load, prev is always None, and cur is first item.
     # def selection_changed(self, cur: QTreeWidgetItem, prev: QTreeWidgetItem) -> None:
-    #     """Revert text change on previously selected subitem of TreeWidget.
-    #
-    #     Checks if previous subitem has an open persistent editor to avoid changing on every new item selection."""
+    #     """Revert text change on previously selected subitem of TreeWidget."""
     #     if prev and cur:
-    #         if prev.parent() and self.tree_widget.isPersistentEditorOpen(prev, 0):
-    #             prev.setText(0, self.text_before_editing)
+    #         if prev.parent():
+    #             if self.text_before_editing:
+    #                 prev.setText(0, self.text_before_editing)
     #         self.tree_widget.closePersistentEditor(prev)
 
 
