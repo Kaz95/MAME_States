@@ -18,28 +18,29 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 
 from logic.main import change_mame_path, build_description_db
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, rename, create_rom_list
-class EditorKeyFilter(QObject):
-    def eventFilter(self, widget, event):
-        if event.type() == QEvent.Type.KeyPress:
-            if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
-                print('Enter pressed')
-                # TODO DO shit here
-                # self.parent().commitData.emit(widget)
-                # return True
-        return super().eventFilter(widget, event)
+
+# class EditorKeyFilter(QObject):
+#     def eventFilter(self, widget, event):
+#         if event.type() == QEvent.Type.KeyPress:
+#             if event.key() == Qt.Key.Key_Return or event.key() == Qt.Key.Key_Enter:
+#                 print('Enter pressed')
+#                 # TODO DO shit here
+#                 # self.parent().commitData.emit(widget)
+#                 # return True
+#         return super().eventFilter(widget, event)
 
 
 class InputValidator(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         editor = super().createEditor(parent ,option ,index)
-        editor_filter = EditorKeyFilter(self)
-        editor.installEventFilter(editor_filter)
+        # editor_filter = EditorKeyFilter(self)
+        # editor.installEventFilter(editor_filter)
         if isinstance(editor, QLineEdit):
             match index.column():
                 case 0:
                     editor.setMaxLength(10)
                     # TODO Fully understand this regex.
-                    pattern = QRegularExpression(r'^[^<>:"/\|?*]*$')
+                    pattern = QRegularExpression(r'^[^<>:"/\|?* ]*$')
                     validator = QRegularExpressionValidator(pattern, editor)
                     editor.setValidator(validator)
                 case 1:
@@ -50,6 +51,13 @@ class InputValidator(QStyledItemDelegate):
                     editor.setMaxLength(20)
 
         return editor
+
+    def eventFilter(self, watched, event):
+        if event.type() == QEvent.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Space:
+                watched.insert('-')
+                return True
+        return super().eventFilter(watched, event)
 
 class TreeWidget(QTreeWidget):
     """Subclasses and extends the QTreeWidget class of the PyQt6.QtWidgets Module
@@ -154,7 +162,7 @@ class MainWindow(QMainWindow):
             self.sub_item_font = QFont()
             self.sub_item_font.setPointSize(20)
             self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
-            self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.NoEditTriggers)
+            self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
             self.tree_widget.setHeaderLabels(['Games'])
             self.tree_widget.setColumnWidth(0, 1000)
             self.tree_widget.setItemDelegate(InputValidator(self))
@@ -166,7 +174,7 @@ class MainWindow(QMainWindow):
             self.add_sub_items()
 
             # Signals
-            self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
+            # self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
             # self.tree_widget.currentItemChanged.connect(self.selection_changed)
 
         # Add file menu
@@ -291,8 +299,8 @@ class MainWindow(QMainWindow):
                 self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
                 self.tree_widget.setHeaderLabels(['Games'])
                 self.setCentralWidget(self.tree_widget)
-                self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
-                self.tree_widget.currentItemChanged.connect(self.selection_changed)
+                # self.tree_widget.itemDoubleClicked.connect(self.item_double_clicked)
+                # self.tree_widget.currentItemChanged.connect(self.selection_changed)
 
             self.update_treewidget()
             self.add_top_level_items()
@@ -302,24 +310,24 @@ class MainWindow(QMainWindow):
         if res is False:
             self.menu_button_clicked()
 
-    def item_double_clicked(self, item: QTreeWidgetItem, col: int) -> None:
-        """Open text editor on a subitem of TreeWidget.
-
-        Capture the previous text of the given sub item before opening the editor. This allows the items text to be
-        reverted. All top level items have their sub items collapsed, except for the top level item that is the parent
-        of the currently selected item.
-        """
-        if item.parent() is not None:
-            self.text_before_editing = item.text(0)
-            self.tree_widget.editItem(item, col)
-        else:
-            if col in (1, 2):
-                self.tree_widget.editItem(item, col)
-
-        # close all expanded child items except for the parent of the current selected item.
-        for item in self.game_items:
-            if item.isExpanded() and not item.isSelected() and self.tree_widget.selectedItems()[0].parent() != item:
-                self.tree_widget.collapseItem(item)
+    # def item_double_clicked(self, item: QTreeWidgetItem, col: int) -> None:
+    #     """Open text editor on a subitem of TreeWidget.
+    #
+    #     Capture the previous text of the given sub item before opening the editor. This allows the items text to be
+    #     reverted. All top level items have their sub items collapsed, except for the top level item that is the parent
+    #     of the currently selected item.
+    #     """
+    #     if item.parent() is not None:
+    #         self.text_before_editing = item.text(0)
+    #         self.tree_widget.editItem(item, col)
+    #     else:
+    #         if col in (1, 2):
+    #             self.tree_widget.editItem(item, col)
+    #
+    #     # close all expanded child items except for the parent of the current selected item.
+    #     for item in self.game_items:
+    #         if item.isExpanded() and not item.isSelected() and self.tree_widget.selectedItems()[0].parent() != item:
+    #             self.tree_widget.collapseItem(item)
 
     # # On program load, prev is always None, and cur is first item.
     # def selection_changed(self, cur: QTreeWidgetItem, prev: QTreeWidgetItem) -> None:
