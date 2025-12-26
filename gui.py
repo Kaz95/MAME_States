@@ -132,7 +132,7 @@ class MainWindow(QMainWindow):
         self.file_menu = self.menu.addMenu('&File')
 
         self.button_action = QAction('Add MAME Path', self)
-        self.button_action.triggered.connect(self.menu_button_clicked)
+        # self.button_action.triggered.connect(self.menu_button_clicked)
 
         self.file_menu.addAction(self.button_action)
 
@@ -140,19 +140,19 @@ class MainWindow(QMainWindow):
     def sizeHint(self):
         return QSize(1920, 1080)
 
-    def valid_path(self, mame_folder):
-        mame_exe = mame_folder + '\\mame.exe'
-        if not os.path.exists(mame_exe):
-            message_response = QMessageBox.critical(self,
-                                                    'Path Invalid',
-                                                    'Please choose a valid MAME folder.',
-                                                    QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Cancel)
-            if message_response == QMessageBox.StandardButton.Retry:
-                return False
-            if message_response == QMessageBox.StandardButton.Cancel:
-                return None
-        else:
-            return True
+    # def valid_path(self, mame_folder):
+    #     mame_exe = mame_folder + '\\mame.exe'
+    #     if not os.path.exists(mame_exe):
+    #         message_response = QMessageBox.critical(self,
+    #                                                 'Path Invalid',
+    #                                                 'Please choose a valid MAME folder.',
+    #                                                 QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Cancel)
+    #         if message_response == QMessageBox.StandardButton.Retry:
+    #             return False
+    #         if message_response == QMessageBox.StandardButton.Cancel:
+    #             return None
+    #     else:
+    #         return True
 
     # def get_mame_path(self):
     #     if os.path.isfile('logic/romlist.txt'):
@@ -240,37 +240,38 @@ class MainWindow(QMainWindow):
     #     self.tree_widget.description_db = self.description_db
     #     self.tree_widget.mame_folder = self.mame_folder
 
-    # Slots
-    def menu_button_clicked(self) -> None:
-        """Change active MAME directory and reload TreeWidget.
-
-        Open a full file dialog window and have user choose a MAME base directory. Only directories may be chosen. Then,
-        the TreeWidget is cleared and reloaded with data from the new MAME directory.
-        """
-        mame_path = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
-                                                     options=QFileDialog.Option.ShowDirsOnly)
-        res = self.valid_path(mame_path)
-        if res is True:
-            self.mame_folder = mame_path
-
-            create_rom_list(self.mame_folder)
-            change_mame_path(mame_path)
-            self.fill_data_structures()
-            if self.tree_widget:
-                self.tree_widget.clear()
-            else:
-                self.tree_widget = TreeWidget()
-                self.tree_widget.setHeaderLabels(['Games'])
-                self.setCentralWidget(self.tree_widget)
-
-
-            # self.update_treewidget()
-            # self.add_game_items()
-            # self.add_save_state_items()
-
-            print('clicked', mame_path)
-        if res is False:
-            self.menu_button_clicked()
+    # TODO Will not serve any purpose until it's updated.
+    # # Slots
+    # def menu_button_clicked(self) -> None:
+    #     """Change active MAME directory and reload TreeWidget.
+    #
+    #     Open a full file dialog window and have user choose a MAME base directory. Only directories may be chosen. Then,
+    #     the TreeWidget is cleared and reloaded with data from the new MAME directory.
+    #     """
+    #     mame_path = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
+    #                                                  options=QFileDialog.Option.ShowDirsOnly)
+    #     res = self.valid_path(mame_path)
+    #     if res is True:
+    #         self.mame_folder = mame_path
+    #
+    #         create_rom_list(self.mame_folder)
+    #         change_mame_path(mame_path)
+    #         self.fill_data_structures()
+    #         if self.tree_widget:
+    #             self.tree_widget.clear()
+    #         else:
+    #             self.tree_widget = TreeWidget()
+    #             self.tree_widget.setHeaderLabels(['Games'])
+    #             self.setCentralWidget(self.tree_widget)
+    #
+    #
+    #         # self.update_treewidget()
+    #         # self.add_game_items()
+    #         # self.add_save_state_items()
+    #
+    #         print('clicked', mame_path)
+    #     if res is False:
+    #         self.menu_button_clicked()
 
 
 if __name__ == '__main__':
