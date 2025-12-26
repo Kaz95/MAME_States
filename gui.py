@@ -123,8 +123,8 @@ class MainWindow(QMainWindow):
             self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
 
             # Fill TreeWidget
-            self.add_top_level_items()
-            self.add_sub_items()
+            self.add_game_items()
+            self.add_save_state_items()
 
             # Signals
 
@@ -195,7 +195,7 @@ class MainWindow(QMainWindow):
 
         self.saves = get_save_names(roms_with_saves, self.mame_folder)
 
-    def add_sub_items(self) -> None:
+    def add_save_state_items(self) -> None:
         """Add a sub items to a top level items of the TreeWidget.
 
         Use pre-filled data structures to create a sub item referencing each save state's name as text, with the top
@@ -211,7 +211,7 @@ class MainWindow(QMainWindow):
                         item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
                         item.setFont(0, self.sub_item_font)
 
-    def add_top_level_items(self) -> None:
+    def add_game_items(self) -> None:
         """Create, and capture a reference to, top level items in the TreeWidget.
 
         Each top level item represents a rom. The text of each top level item is the long form name of a rom. The items
@@ -253,8 +253,8 @@ class MainWindow(QMainWindow):
 
 
             self.update_treewidget()
-            self.add_top_level_items()
-            self.add_sub_items()
+            self.add_game_items()
+            self.add_save_state_items()
 
             print('clicked', mame_path)
         if res is False:
