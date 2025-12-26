@@ -205,6 +205,7 @@ class MainWindow(QMainWindow):
                 game_item.setFont(0, self.top_level_item_font)
                 for save_state in self.all_save_states[path][key]:
                     save_state_item = QTreeWidgetItem(game_item, [save_state])
+                    save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
                     save_state_item.setFont(0, self.sub_item_font)
 
     def add_game_items(self):
