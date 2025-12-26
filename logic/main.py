@@ -111,10 +111,10 @@ def change_mame_path(new_path: str) -> None:
         romlist.writelines(data)
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
     # roms = get_roms_from_paths(mame_paths)
     # new_create_romlist(roms)
     # description_db = build_description_db('romlist.txt')
-    all_states = get_all_roms_with_saves(mame_paths)
-    pprint.pprint(all_states)
+    # all_states = get_all_roms_with_saves(mame_paths)
+    # pprint.pprint(all_states)
     # print(get_real_name(description_db, 'ddp2100k'))

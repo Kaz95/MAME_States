@@ -172,8 +172,7 @@ class MainWindow(QMainWindow):
     #             self.get_mame_path()
     #
     #         return res
-    def new_fill_data_structures(self):
-        pass
+
     def fill_data_structures(self) -> None:
         """Reset and refill data structures used to derive TreeWidget items.
 
@@ -207,9 +206,6 @@ class MainWindow(QMainWindow):
                     save_state_item = QTreeWidgetItem(game_item, [save_state])
                     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
                     save_state_item.setFont(0, self.sub_item_font)
-
-    def add_game_items(self):
-        pass
 
     # def add_save_state_items(self) -> None:
     #     """Add a sub items to a top level items of the TreeWidget.
