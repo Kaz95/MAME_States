@@ -9,13 +9,13 @@ TODO:
 
 import os.path
 
-from PyQt6.QtCore import Qt, QSize, QRegularExpression, QObject, QEvent
-from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator, QIntValidator, QKeyEvent
+from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
+from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, \
     QStyledItemDelegate, QLineEdit
 
 from logic.main import change_mame_path, build_description_db
-from logic.main import get_roms_with_saves, get_save_names, get_real_name, rename, create_rom_list
+from logic.main import get_roms_with_saves, get_save_names, get_real_name, create_rom_list
 
 
 class InputValidator(QStyledItemDelegate):
