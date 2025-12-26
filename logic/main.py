@@ -9,10 +9,31 @@ import pprint
 import subprocess
 import os
 
+mame_paths = ['C:\\Users\\kazac\\Downloads\\wolfmame-0273',
+              'C:\\Users\\kazac\\Downloads\\groovymame_0273.221d_win-7-8-10',
+              'C:\\Users\\kazac\\Downloads\\mame']
+
+def get_roms_from_paths(mame_paths: list[str]) -> set[str]:
+    roms = set()
+    for path in mame_paths:
+        with open('temp-romlist.txt', 'w+') as romlist:
+            subprocess.run([path + '\\mame.exe', '-ll'], stdout=romlist)
+            romlist.seek(0)
+            for line in romlist:
+               roms.add(line)
+        os.remove('temp-romlist.txt')
+    return roms
+
+def new_create_romlist(roms: set[str]) -> None:
+    with open('romlist.txt', 'w') as romlist:
+        roms = list(roms)
+        roms.sort()
+        romlist.writelines(roms)
+
 
 def create_rom_list(mame_path: str) -> None:
     """Create text file containing all roms derived from a given MAME file path."""
-    with open("logic/romlist.txt", "w") as romlist:
+    with open("./romlist.txt", "w") as romlist:
         subprocess.run([mame_path + '\\mame.exe', "-ll"], stdout=romlist)
 
 
@@ -40,6 +61,13 @@ def get_roms_with_saves(mame_path: str) -> list[str]:
     contents = os.listdir(mame_path + '\\sta')
     return contents
 
+def get_all_roms_with_saves(mame_paths: list[str]) -> dict[str:dict[str:list[str]]]:
+    all_save_states = {}
+    for path in mame_paths:
+        games_with_saves = get_roms_with_saves(path)
+        save_states = get_save_names(games_with_saves, path)
+        all_save_states[path] = save_states
+    return all_save_states
 
 def get_real_name(description_db: dict[str, str], rom_name: str) -> str:
     """Return the full name of a given rom"""
@@ -81,3 +109,12 @@ def change_mame_path(new_path: str) -> None:
         data[0] = new_path + '\n'
     with open('logic/romlist.txt', 'w') as romlist:
         romlist.writelines(data)
+
+
+if __name__ == '__main__':
+    # roms = get_roms_from_paths(mame_paths)
+    # new_create_romlist(roms)
+    # description_db = build_description_db('romlist.txt')
+    all_states = get_all_roms_with_saves(mame_paths)
+    pprint.pprint(all_states)
+    # print(get_real_name(description_db, 'ddp2100k'))

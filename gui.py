@@ -14,7 +14,7 @@ from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, \
     QStyledItemDelegate, QLineEdit
 
-from logic.main import change_mame_path, build_description_db
+from logic.main import change_mame_path, build_description_db, mame_paths, get_all_roms_with_saves
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, create_rom_list
 
 
@@ -44,19 +44,13 @@ class TreeWidget(QTreeWidget):
     This class extends the keyPressEvent method for the purposes of capturing a custom key press
     """
 
-    def __init__(self, mame_folder: str, description_db: dict[str, str]):
+    def __init__(self):
         """Initialize the TreeWidget Subclass
 
         The TreeWidget subclass inherits most of its behavior from its parent class QTreeWidget.
         TreeWidget initializes with all the data needed by its single extended method
         """
         super().__init__()
-
-        self.mame_folder = mame_folder
-        """Path to base MAME folder."""
-
-        self.description_db = description_db
-        """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
 
 
 
@@ -99,13 +93,16 @@ class MainWindow(QMainWindow):
         self.game_items: list[QTreeWidgetItem] = []
         """Top level TreeWidget items, representing games with save states."""
 
-        self.saves: dict[str, list[str]] | None = None
+        self.mame_path_items: list[QTreeWidgetItem] = []
+
+        self.all_save_states: dict[str:dict[str:list[str]]] | None = None
         """Names of games that have a save folder, and their respective save states"""
 
 
-        self.mame_folder = self.get_mame_path()
+        # self.mame_folder = self.get_mame_path()
+        self.mame_paths:list[str] = mame_paths
 
-        if self.mame_folder is not None:
+        if self.mame_paths is not None:
             self.fill_data_structures()
 
             # Widget customization
@@ -114,7 +111,7 @@ class MainWindow(QMainWindow):
             self.top_level_item_font.setPointSize(26)
             self.sub_item_font = QFont()
             self.sub_item_font.setPointSize(20)
-            self.tree_widget = TreeWidget(self.mame_folder, self.description_db)
+            self.tree_widget = TreeWidget()
             self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
             self.tree_widget.setHeaderLabels(['Games'])
             self.tree_widget.setColumnWidth(0, 1000)
@@ -123,8 +120,9 @@ class MainWindow(QMainWindow):
             self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
 
             # Fill TreeWidget
-            self.add_game_items()
-            self.add_save_state_items()
+            self.add_mame_path_items()
+            # self.add_game_items()
+            # self.add_save_state_items()
 
             # Signals
 
@@ -156,25 +154,26 @@ class MainWindow(QMainWindow):
         else:
             return True
 
-    def get_mame_path(self):
-        if os.path.isfile('logic/romlist.txt'):
-            with open('logic/romlist.txt', 'r') as romlist:
-                first_line = romlist.readline()
-                mame_folder = first_line.strip()
-                return mame_folder
-        else:
-            mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
-                                                                options=QFileDialog.Option.ShowDirsOnly)
-            res = self.valid_path(mame_folder)
-            if res is True:
-                create_rom_list(mame_folder)
-                change_mame_path(mame_folder)
-                return mame_folder
-            if res is False:
-                self.get_mame_path()
-
-            return res
-
+    # def get_mame_path(self):
+    #     if os.path.isfile('logic/romlist.txt'):
+    #         with open('logic/romlist.txt', 'r') as romlist:
+    #             first_line = romlist.readline()
+    #             mame_folder = first_line.strip()
+    #             return mame_folder
+    #     else:
+    #         mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
+    #                                                             options=QFileDialog.Option.ShowDirsOnly)
+    #         res = self.valid_path(mame_folder)
+    #         if res is True:
+    #             create_rom_list(mame_folder)
+    #             change_mame_path(mame_folder)
+    #             return mame_folder
+    #         if res is False:
+    #             self.get_mame_path()
+    #
+    #         return res
+    def new_fill_data_structures(self):
+        pass
     def fill_data_structures(self) -> None:
         """Reset and refill data structures used to derive TreeWidget items.
 
@@ -187,46 +186,62 @@ class MainWindow(QMainWindow):
         self.game_items = []
 
         #  Fill out data structures for later use.
-        roms_with_saves = get_roms_with_saves(self.mame_folder)
+        for path in mame_paths:
+            roms_with_saves = get_roms_with_saves(path)
 
-        for rom in roms_with_saves:
-            real_name = get_real_name(self.description_db, rom)
-            self.real_names.append(real_name)
+            for rom in roms_with_saves:
+                real_name = get_real_name(self.description_db, rom)
+                self.real_names.append((real_name, path))
 
-        self.saves = get_save_names(roms_with_saves, self.mame_folder)
+        self.all_save_states = get_all_roms_with_saves(mame_paths)
 
-    def add_save_state_items(self) -> None:
-        """Add a sub items to a top level items of the TreeWidget.
+    def add_mame_path_items(self):
+        for path in mame_paths:
+            path_item = QTreeWidgetItem(self.tree_widget, [path])
+            path_item.setFont(0, self.top_level_item_font)
+            for key in self.all_save_states[path]:
+                game_name = get_real_name(self.description_db, key)
+                game_item = QTreeWidgetItem(path_item, [game_name])
+                game_item.setFont(0, self.top_level_item_font)
+                for save_state in self.all_save_states[path][key]:
+                    save_state_item = QTreeWidgetItem(game_item, [save_state])
+                    save_state_item.setFont(0, self.sub_item_font)
 
-        Use pre-filled data structures to create a sub item referencing each save state's name as text, with the top
-        level tree item representing its corresponding rom as a parent item.
-        """
-        for game in self.game_items:
-            if game.text(0) in self.description_db:
-                rom_name = self.description_db[game.text(0)]
-                if rom_name in self.saves:
-                    for state in self.saves[rom_name]:
-                        item = QTreeWidgetItem(game, [state])
-                        item.setFirstColumnSpanned(True)
-                        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
-                        item.setFont(0, self.sub_item_font)
+    def add_game_items(self):
+        pass
 
-    def add_game_items(self) -> None:
-        """Create, and capture a reference to, top level items in the TreeWidget.
+    # def add_save_state_items(self) -> None:
+    #     """Add a sub items to a top level items of the TreeWidget.
+    #
+    #     Use pre-filled data structures to create a sub item referencing each save state's name as text, with the top
+    #     level tree item representing its corresponding rom as a parent item.
+    #     """
+    #     for game in self.game_items:
+    #         if game.text(0) in self.description_db:
+    #             rom_name = self.description_db[game.text(0)]
+    #             if rom_name in self.saves:
+    #                 for state in self.saves[rom_name]:
+    #                     item = QTreeWidgetItem(game, [state])
+    #                     item.setFirstColumnSpanned(True)
+    #                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
+    #                     item.setFont(0, self.sub_item_font)
+    #
+    # def add_game_items(self) -> None:
+    #     """Create, and capture a reference to, top level items in the TreeWidget.
+    #
+    #     Each top level item represents a rom. The text of each top level item is the long form name of a rom. The items
+    #     created are captured in a list as references for later use. Primarily the addition of sub items(save states) at
+    #     a later time.
+    #     """
+    #     for game in self.real_names:
+    #         game_item = QTreeWidgetItem(self.tree_widget, [game])
+    #         game_item.setFont(0, self.top_level_item_font)
+    #         self.game_items.append(game_item)
 
-        Each top level item represents a rom. The text of each top level item is the long form name of a rom. The items
-        created are captured in a list as references for later use. Primarily the addition of sub items(save states) at
-        a later time.
-        """
-        for game in self.real_names:
-            game_item = QTreeWidgetItem(self.tree_widget, [game])
-            game_item.setFont(0, self.top_level_item_font)
-            self.game_items.append(game_item)
-
-    def update_treewidget(self) -> None:
-        """Update the data structures the TreeWidget derives its items from."""
-        self.tree_widget.description_db = self.description_db
-        self.tree_widget.mame_folder = self.mame_folder
+    # def update_treewidget(self) -> None:
+    #     """Update the data structures the TreeWidget derives its items from."""
+    #     self.tree_widget.description_db = self.description_db
+    #     self.tree_widget.mame_folder = self.mame_folder
 
     # Slots
     def menu_button_clicked(self) -> None:
@@ -252,9 +267,9 @@ class MainWindow(QMainWindow):
                 self.setCentralWidget(self.tree_widget)
 
 
-            self.update_treewidget()
-            self.add_game_items()
-            self.add_save_state_items()
+            # self.update_treewidget()
+            # self.add_game_items()
+            # self.add_save_state_items()
 
             print('clicked', mame_path)
         if res is False:
