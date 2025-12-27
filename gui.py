@@ -7,15 +7,13 @@ TODO:
     * Decide on new features to add.
 """
 
-import os.path
-
-from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent, QObject
+from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
 from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, \
-    QStyledItemDelegate, QLineEdit, QTabWidget, QLayout, QHBoxLayout, QWidget
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QStyledItemDelegate, QLineEdit, \
+    QTabWidget, QHBoxLayout, QWidget
 
-from logic.main import change_mame_path, build_description_db, mame_paths, get_all_roms_with_saves
-from logic.main import get_roms_with_saves, get_save_names, get_real_name, create_rom_list
+from logic.main import build_description_db, mame_paths, get_all_roms_with_saves
+from logic.main import get_real_name
 
 
 class InputValidator(QStyledItemDelegate):
