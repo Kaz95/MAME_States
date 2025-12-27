@@ -16,30 +16,30 @@ mame_paths = ['C:\\Users\\kazac\\Downloads\\wolfmame-0273',
 def get_roms_from_paths(mame_paths: list[str]) -> set[str]:
     roms = set()
     for path in mame_paths:
-        with open('temp-romlist.txt', 'w+') as romlist:
-            subprocess.run([path + '\\mame.exe', '-ll'], stdout=romlist)
-            romlist.seek(0)
-            next(romlist)
-            for line in romlist:
+        with open('temp_rom_list.txt', 'w+') as rom_list:
+            subprocess.run([path + '\\mame.exe', '-ll'], stdout=rom_list)
+            rom_list.seek(0)
+            next(rom_list)
+            for line in rom_list:
                roms.add(line)
-        os.remove('temp-romlist.txt')
+        os.remove('temp_rom_list.txt')
     return roms
 
-def new_create_romlist(roms: set[str]) -> None:
-    with open('romlist.txt', 'w') as romlist:
+def new_create_rom_list(roms: set[str]) -> None:
+    with open('rom_list.txt', 'w') as rom_list:
         roms = list(roms)
         roms.sort()
-        romlist.writelines(roms)
+        rom_list.writelines(roms)
 
 
-def build_description_db(romlist: str) -> dict[str, str]:
+def build_description_db(rom_list: str) -> dict[str, str]:
     """Create and return a dictionary containing save file names, for roms that have them.
 
     All resulting strings are stripped of white space and double quotes.
     """
     rom_db = {}
-    with open(romlist, 'r') as romlist:
-        for line in romlist:
+    with open(rom_list, 'r') as rom_list:
+        for line in rom_list:
             description_start = line.index('"')
             description = line[description_start:]
             description = description.strip()
@@ -95,20 +95,20 @@ def rename(mame_folder: str, rom_folder: str, old_save_name: str, new_save_name:
 def change_mame_path(new_path: str) -> None:
     """Change the saved MAME path
 
-    Finds and replaces the first line, in the romlist.txt file, with a MAME path that will be used as the working
+    Finds and replaces the first line, in the rom_list.txt file, with a MAME path that will be used as the working
     directory for the MAMEStates application.
     """
-    with open('logic/romlist.txt', 'r') as romlist:
-        data = romlist.read().splitlines(True)
+    with open('logic/rom_list.txt', 'r') as rom_list:
+        data = rom_list.read().splitlines(True)
         data[0] = new_path + '\n'
-    with open('logic/romlist.txt', 'w') as romlist:
-        romlist.writelines(data)
+    with open('logic/rom_list.txt', 'w') as rom_list:
+        rom_list.writelines(data)
 
 
 # if __name__ == '__main__':
 #     roms = get_roms_from_paths(mame_paths)
-#     new_create_romlist(roms)
-#     description_db = build_description_db('romlist.txt')
+#     new_create_rom_list(roms)
+#     description_db = build_description_db('rom_list.txt')
 #     # all_states = get_all_roms_with_saves(mame_paths)
 #     # pprint.pprint(all_states)
 #     print(get_real_name(description_db, 'ddp2100k'))

@@ -159,7 +159,7 @@ class MainWindow(QMainWindow):
         """
         # reset data structs
 
-        self.description_db = build_description_db('logic/romlist.txt')
+        self.description_db = build_description_db('logic/rom_list.txt')
         self.all_save_states = get_all_roms_with_saves(mame_paths)
 
     def add_mame_path_items(self):
