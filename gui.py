@@ -38,23 +38,6 @@ class InputValidator(QStyledItemDelegate):
                 return True
         return super().eventFilter(watched, event)
 
-class TreeWidget(QTreeWidget):
-    """Subclasses and extends the QTreeWidget class of the PyQt6.QtWidgets Module
-
-    This class extends the keyPressEvent method for the purposes of capturing a custom key press
-    """
-
-    def __init__(self):
-        """Initialize the TreeWidget Subclass
-
-        The TreeWidget subclass inherits most of its behavior from its parent class QTreeWidget.
-        TreeWidget initializes with all the data needed by its single extended method
-        """
-        super().__init__()
-
-
-
-
 class MainWindow(QMainWindow):
     """Subclasses and extends the QQMainWindow class of the PyQt6.QtWidgets Module
 
@@ -128,7 +111,7 @@ class MainWindow(QMainWindow):
             self.high_score_page.setLayout(high_score_page_layout)
 
             # self.load_save_state_screen()
-            self.tree_widget = TreeWidget()
+            self.tree_widget = QTreeWidget()
             self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
             self.tree_widget.setHeaderLabels(['Games'])
             self.tree_widget.setColumnWidth(0, 1000)
