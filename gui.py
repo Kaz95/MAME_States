@@ -9,10 +9,10 @@ TODO:
 
 import os.path
 
-from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
+from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent, QObject
 from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QFileDialog, QMessageBox, \
-    QStyledItemDelegate, QLineEdit
+    QStyledItemDelegate, QLineEdit, QTabWidget, QLayout, QHBoxLayout, QWidget
 
 from logic.main import change_mame_path, build_description_db, mame_paths, get_all_roms_with_saves
 from logic.main import get_roms_with_saves, get_save_names, get_real_name, create_rom_list
@@ -111,16 +111,40 @@ class MainWindow(QMainWindow):
             self.top_level_item_font.setPointSize(26)
             self.sub_item_font = QFont()
             self.sub_item_font.setPointSize(20)
+
+            self.tabs = QTabWidget()
+            self.tabs.setTabPosition(QTabWidget.TabPosition.North)
+            self.save_state_page = QWidget()
+            self.high_score_page = QWidget()
+
+            # self.tabs.setTabPosition(QTabWidget.TabPosition.West)
+            self.tabs.setMovable(True)
+
+            self.save_state_page_layout = QHBoxLayout()
+            self.save_state_page_layout.setContentsMargins(0, 0, 0, 0)
+            self.save_state_page.setLayout(self.save_state_page_layout)
+
+            high_score_page_layout = QHBoxLayout()
+            self.high_score_page.setLayout(high_score_page_layout)
+
+            # self.load_save_state_screen()
             self.tree_widget = TreeWidget()
             self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
             self.tree_widget.setHeaderLabels(['Games'])
             self.tree_widget.setColumnWidth(0, 1000)
             self.tree_widget.setItemDelegate(InputValidator(self))
-            # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
-            self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
+
+            self.save_state_page_layout.addWidget(self.tree_widget)
+            self.tabs.addTab(self.save_state_page, 'Save States')
+
+            self.tabs.addTab(self.high_score_page, 'High Scores')
+
+            self.setCentralWidget(self.tabs)
+            # # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
+            # self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
 
             # Fill TreeWidget
-            self.add_mame_path_items()
+            # self.add_mame_path_items()
             # self.add_game_items()
             # self.add_save_state_items()
 
@@ -131,12 +155,29 @@ class MainWindow(QMainWindow):
         self.menu = self.menuBar()
         self.file_menu = self.menu.addMenu('&File')
 
-        self.button_action = QAction('Add MAME Path', self)
-        # self.button_action.triggered.connect(self.menu_button_clicked)
+        self.button_1_action = QAction('button 1', self)
+        self.button_1_action.triggered.connect(self.menu_button_1_clicked)
 
-        self.file_menu.addAction(self.button_action)
+        self.button_2_action = QAction('button 2', self)
+
+        self.button_2_action.triggered.connect(self.menu_button_2_clicked)
+
+        self.file_menu.addAction(self.button_1_action)
+        self.file_menu.addAction(self.button_2_action)
 
     # Methods
+
+    def load_save_state_screen(self):
+        self.tree_widget = TreeWidget()
+        self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
+        self.tree_widget.setHeaderLabels(['Games'])
+        self.tree_widget.setColumnWidth(0, 1000)
+        self.tree_widget.setItemDelegate(InputValidator(self))
+        # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
+        self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
+
+        self.add_mame_path_items()
+
     def sizeHint(self):
         return QSize(1920, 1080)
 
@@ -242,7 +283,9 @@ class MainWindow(QMainWindow):
 
     # TODO Will not serve any purpose until it's updated.
     # # Slots
-    # def menu_button_clicked(self) -> None:
+    def menu_button_1_clicked(self) -> None:
+        self.tree_widget.clear()
+        print('button 1 triggered')
     #     """Change active MAME directory and reload TreeWidget.
     #
     #     Open a full file dialog window and have user choose a MAME base directory. Only directories may be chosen. Then,
@@ -272,6 +315,9 @@ class MainWindow(QMainWindow):
     #         print('clicked', mame_path)
     #     if res is False:
     #         self.menu_button_clicked()
+    def menu_button_2_clicked(self):
+        self.load_save_state_screen()
+        print('button 2 triggered')
 
 
 if __name__ == '__main__':
