@@ -55,34 +55,12 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
-        self.mame_folder = None
-        """Path to base MAME folder."""
-
-        self.tree_widget = None
-
-        self.text_before_editing: str | None = None
-        """Text of a TreeWidget item, before a persistent editor was opened."""
-
-        self.prev: QTreeWidgetItem | None = None
-        """The previously selected TreeWidget item."""
-
         self.description_db: dict[str, str] = {}
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
-
-        self.real_names: list[str] = []
-        """Long-form rom names."""
-
-        # Need these references to assign sub items later.
-        self.game_items: list[QTreeWidgetItem] = []
-        """Top level TreeWidget items, representing games with save states."""
-
-        self.mame_path_items: list[QTreeWidgetItem] = []
 
         self.all_save_states: dict[str:dict[str:list[str]]] | None = None
         """Names of games that have a save folder, and their respective save states"""
 
-
-        # self.mame_folder = self.get_mame_path()
         self.mame_paths:list[str] = mame_paths
 
         if self.mame_paths is not None:
