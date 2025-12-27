@@ -31,12 +31,6 @@ def new_create_romlist(roms: set[str]) -> None:
         romlist.writelines(roms)
 
 
-def create_rom_list(mame_path: str) -> None:
-    """Create text file containing all roms derived from a given MAME file path."""
-    with open("./romlist.txt", "w") as romlist:
-        subprocess.run([mame_path + '\\mame.exe', "-ll"], stdout=romlist)
-
-
 def build_description_db(romlist: str) -> dict[str, str]:
     """Create and return a dictionary containing save file names, for roms that have them.
 
