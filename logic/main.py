@@ -19,6 +19,7 @@ def get_roms_from_paths(mame_paths: list[str]) -> set[str]:
         with open('temp-romlist.txt', 'w+') as romlist:
             subprocess.run([path + '\\mame.exe', '-ll'], stdout=romlist)
             romlist.seek(0)
+            next(romlist)
             for line in romlist:
                roms.add(line)
         os.remove('temp-romlist.txt')
@@ -38,7 +39,6 @@ def build_description_db(romlist: str) -> dict[str, str]:
     """
     rom_db = {}
     with open(romlist, 'r') as romlist:
-        next(romlist)
         for line in romlist:
             description_start = line.index('"')
             description = line[description_start:]
@@ -106,9 +106,9 @@ def change_mame_path(new_path: str) -> None:
 
 
 # if __name__ == '__main__':
-    # roms = get_roms_from_paths(mame_paths)
-    # new_create_romlist(roms)
-    # description_db = build_description_db('romlist.txt')
-    # all_states = get_all_roms_with_saves(mame_paths)
-    # pprint.pprint(all_states)
-    # print(get_real_name(description_db, 'ddp2100k'))
+#     roms = get_roms_from_paths(mame_paths)
+#     new_create_romlist(roms)
+#     description_db = build_description_db('romlist.txt')
+#     # all_states = get_all_roms_with_saves(mame_paths)
+#     # pprint.pprint(all_states)
+#     print(get_real_name(description_db, 'ddp2100k'))
