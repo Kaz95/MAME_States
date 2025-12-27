@@ -133,6 +133,8 @@ class MainWindow(QMainWindow):
             self.tree_widget.setHeaderLabels(['Games'])
             self.tree_widget.setColumnWidth(0, 1000)
             self.tree_widget.setItemDelegate(InputValidator(self))
+            self.tree_widget.setTabKeyNavigation(True)
+            self.add_mame_path_items()
 
             self.save_state_page_layout.addWidget(self.tree_widget)
             self.tabs.addTab(self.save_state_page, 'Save States')
@@ -167,16 +169,16 @@ class MainWindow(QMainWindow):
 
     # Methods
 
-    def load_save_state_screen(self):
-        self.tree_widget = TreeWidget()
-        self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
-        self.tree_widget.setHeaderLabels(['Games'])
-        self.tree_widget.setColumnWidth(0, 1000)
-        self.tree_widget.setItemDelegate(InputValidator(self))
-        # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
-        self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
-
-        self.add_mame_path_items()
+    # def load_save_state_screen(self):
+    #     self.tree_widget = TreeWidget()
+    #     self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
+    #     self.tree_widget.setHeaderLabels(['Games'])
+    #     self.tree_widget.setColumnWidth(0, 1000)
+    #     self.tree_widget.setItemDelegate(InputValidator(self))
+    #     # All widgets without parents are top level and invisible. Requires .show() or assigning parent.
+    #     self.setCentralWidget(self.tree_widget)  # Assigns MainWindow as parent, thus showing tree_widget.
+    #
+    #     self.add_mame_path_items()
 
     def sizeHint(self):
         return QSize(1920, 1080)
@@ -284,7 +286,7 @@ class MainWindow(QMainWindow):
     # TODO Will not serve any purpose until it's updated.
     # # Slots
     def menu_button_1_clicked(self) -> None:
-        self.tree_widget.clear()
+        self.tree_widget.hide()
         print('button 1 triggered')
     #     """Change active MAME directory and reload TreeWidget.
     #
@@ -316,7 +318,7 @@ class MainWindow(QMainWindow):
     #     if res is False:
     #         self.menu_button_clicked()
     def menu_button_2_clicked(self):
-        self.load_save_state_screen()
+        self.tree_widget.show()
         print('button 2 triggered')
 
 
