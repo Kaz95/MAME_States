@@ -109,15 +109,15 @@ class MainWindow(QMainWindow):
         self.test_button.clicked.connect(self.new_split)
 
 
-        self.test_game_info = {'ddp': {'hs': 900,
+        self.test_game_info = {'DonPachi': {'hs': 900,
                  'distance': 'Stage 6',
                  'splits': [(0, 1, 110), (1, 2, 200), (2, 3, 340), (3, 4, 420), (4, 5, 670), (5, 6, 900)]},
 
-         'toypop': {'hs': 2000,
+         'Galaga': {'hs': 2000,
                  'distance': 'Stage 3',
                  'splits': [(0, 1, 550), (1, 2, 1620), (2, 3, 2000)]},
 
-         'libble rabble': {'hs': 50069,
+         'Libble Rabble': {'hs': 50069,
                  'distance': 'Stage 5',
                  'splits': [(0, 1, 10000), (1, 2, 15069), (2, 3, 25069), (3, 4, 38069), (4, 5, 50069)]}}
 
