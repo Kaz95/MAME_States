@@ -86,7 +86,7 @@ class MainWindow(QMainWindow):
 
         self.tree_widget = QTreeWidget()
         self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
-        self.tree_widget.setHeaderLabels(['Games'])
+        self.tree_widget.setHeaderLabels(['MAME Folders'])
         self.tree_widget.setColumnWidth(0, 1000)
         self.tree_widget.setItemDelegate(InputValidator(self))
         self.tree_widget.setTabKeyNavigation(True)
@@ -122,7 +122,7 @@ class MainWindow(QMainWindow):
                  'splits': [(0, 1, 10000), (1, 2, 15069), (2, 3, 25069), (3, 4, 38069), (4, 5, 50069)]}}
 
         self.high_score_tree = QTreeWidget()
-        self.high_score_tree.setHeaderLabels(['games'])
+        self.high_score_tree.setHeaderLabels(['Games'])
         self.high_score_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
         for key in self.test_game_info:
