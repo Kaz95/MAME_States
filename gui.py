@@ -53,6 +53,8 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
+        self.distance_label = None
+        self.high_score_label = None
         self.description_db: dict[str, str] = {}
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
 
@@ -139,6 +141,7 @@ class MainWindow(QMainWindow):
         self.high_score_page_layout.addLayout(self.info_layout)
 
         self.high_score_page.setLayout(self.high_score_page_layout)
+        self.high_score_page.setFont(self.top_level_item_font)
 
         self.tabs.addTab(self.save_state_page, 'Save States')
 
@@ -180,11 +183,14 @@ class MainWindow(QMainWindow):
     def add_pb_panel(self):
         self.high_score_edit = QLineEdit()
         self.distance_edit = QLineEdit()
+        self.high_score_label = QLabel('High Score:')
+        self.distance_label = QLabel('Distance PB:')
 
-        self.personal_best_layout.addWidget(QLabel('High Score:'), 0, 0)
+
+        self.personal_best_layout.addWidget(self.high_score_label, 0, 0)
         self.personal_best_layout.addWidget(self.high_score_edit, 0, 1)
 
-        self.personal_best_layout.addWidget(QLabel('Distance PB:'), 1, 0)
+        self.personal_best_layout.addWidget(self.distance_label, 1, 0)
         self.personal_best_layout.addWidget(self.distance_edit, 1, 1)
 
     def update_pbs(self, high_score, distance):
