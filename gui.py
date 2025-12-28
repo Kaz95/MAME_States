@@ -3,6 +3,16 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
+    * Validate input fields
+    * Consider sizing policies and size hints
+    * Add Scrollable area to stage splits layout
+    * Make High Score page work off user inputted data including:
+        - Add games
+        - Remove split
+        - ect
+    * Try to implement the editor options available on treewidget persistent editors.
+    * Event filter for handling user input on high score page?
+    * Consider 'add new mame folder' functionality.
     * Comment/Code Review/Refactor
     * Decide on new features to add.
 """
