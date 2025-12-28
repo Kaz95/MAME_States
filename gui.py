@@ -10,7 +10,7 @@ TODO:
 from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
 from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QStyledItemDelegate, QLineEdit, \
-    QTabWidget, QHBoxLayout, QWidget
+    QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton
 
 from logic.main import build_description_db, mame_paths, get_all_roms_with_saves
 from logic.main import get_real_name
@@ -82,9 +82,6 @@ class MainWindow(QMainWindow):
         self.save_state_page_layout.setContentsMargins(0, 0, 0, 0)
         self.save_state_page.setLayout(self.save_state_page_layout)
 
-        high_score_page_layout = QHBoxLayout()
-        self.high_score_page.setLayout(high_score_page_layout)
-
         self.tree_widget = QTreeWidget()
         self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
         self.tree_widget.setHeaderLabels(['Games'])
@@ -94,6 +91,55 @@ class MainWindow(QMainWindow):
         self.add_mame_path_items()
 
         self.save_state_page_layout.addWidget(self.tree_widget)
+
+        # High Score Page
+        self.button_container = QHBoxLayout()
+        self.list_container = QHBoxLayout()
+        self.high_score_page_layout = QHBoxLayout()
+        self.info_layout = QVBoxLayout()
+        self.personal_best_layout = QGridLayout()
+        self.stage_splits_layout = QGridLayout()
+
+        self.high_score_edit: QLineEdit | None = None
+        self.distance_edit: QLineEdit | None = None
+
+        self.test_button = QPushButton('Add')
+        self.test_button.clicked.connect(self.new_split)
+
+
+        self.test_game_info = {'ddp': {'hs': 900,
+                 'distance': 'Stage 6',
+                 'splits': [(0, 1, 110), (1, 2, 200), (2, 3, 340), (3, 4, 420), (4, 5, 670), (5, 6, 900)]},
+
+         'toypop': {'hs': 2000,
+                 'distance': 'Stage 3',
+                 'splits': [(0, 1, 550), (1, 2, 1620), (2, 3, 2000)]},
+
+         'libble rabble': {'hs': 50069,
+                 'distance': 'Stage 5',
+                 'splits': [(0, 1, 10000), (1, 2, 15069), (2, 3, 25069), (3, 4, 38069), (4, 5, 50069)]}}
+
+        self.high_score_tree = QTreeWidget()
+        self.high_score_tree.setHeaderLabels(['games'])
+        self.high_score_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
+
+        for key in self.test_game_info:
+            QTreeWidgetItem(self.high_score_tree, [key])
+
+
+        self.add_pb_panel()
+        self.button_container.addWidget(self.test_button)
+
+        self.high_score_page_layout.addWidget(self.high_score_tree)
+        self.info_layout.addLayout(self.personal_best_layout)
+        self.info_layout.addStretch()
+        self.info_layout.addLayout(self.stage_splits_layout)
+        self.info_layout.addStretch()
+        self.info_layout.addLayout(self.button_container)
+        self.high_score_page_layout.addLayout(self.info_layout)
+
+        self.high_score_page.setLayout(self.high_score_page_layout)
+
         self.tabs.addTab(self.save_state_page, 'Save States')
 
         self.tabs.addTab(self.high_score_page, 'High Scores')
@@ -114,6 +160,65 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.button_2_action)
 
     # Methods
+    def high_score_tree_selection_changed(self):
+        self.clear_splits()
+        selected = self.high_score_tree.selectedItems()
+        if selected:
+            game_name = selected[0].text(0)
+            info = self.test_game_info[game_name]
+
+            hs = info['hs']
+            distance = info['distance']
+
+            splits = info['splits']
+
+            self.update_pbs(hs, distance)
+
+            for split in splits:
+                self.add_split(split)
+
+    def add_pb_panel(self):
+        self.high_score_edit = QLineEdit()
+        self.distance_edit = QLineEdit()
+
+        self.personal_best_layout.addWidget(QLabel('High Score:'), 0, 0)
+        self.personal_best_layout.addWidget(self.high_score_edit, 0, 1)
+
+        self.personal_best_layout.addWidget(QLabel('Distance PB:'), 1, 0)
+        self.personal_best_layout.addWidget(self.distance_edit, 1, 1)
+
+    def update_pbs(self, high_score, distance):
+        self.high_score_edit.setText(str(high_score))
+        self.distance_edit.setText(distance)
+
+
+    def add_split(self, splits):
+        item_index = splits[0]
+        stage = splits[1]
+        score = splits[2]
+
+        self.stage_splits_layout.addWidget(QLabel(f'Stage-{stage}:'), item_index, 0)
+        self.stage_splits_layout.addWidget(QLineEdit(str(score)), item_index, 1)
+
+    def clear_splits(self):
+        while self.stage_splits_layout.count():
+            item = self.stage_splits_layout.takeAt(0)
+            if item.widget() is not None:
+                item.widget().deleteLater()
+
+
+    def new_split(self):
+        selected = self.high_score_tree.selectedItems()
+        if selected:
+            game_item = selected[0]
+            game_name = game_item.text(0)
+            game_splits = self.test_game_info[game_name]['splits']
+            split_count = len(game_splits)
+            new_split = (split_count, split_count + 1, 696969)
+            game_splits.append(new_split)
+            self.add_split(new_split)
+
+
 
     def sizeHint(self):
         return QSize(1920, 1080)
