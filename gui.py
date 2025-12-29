@@ -283,10 +283,15 @@ class MainWindow(QMainWindow):
             game_splits.append(new_split)
             self.add_split(new_split)
 
+    # TODO add to db or else breaks on selection.
     def add_game(self):
         game_name, ok = QInputDialog.getText(self, 'New Game', 'Please enter new game name.')
         if game_name and ok:
             QTreeWidgetItem(self.high_score_game_tree, [game_name])
+
+        self.test_game_info[game_name] = {'hs': '',
+                                          'distance': '',
+                                          'splits': []}
 
     def sizeHint(self):
         return QSize(1920, 1080)
