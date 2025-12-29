@@ -25,6 +25,14 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 from logic.main import build_description_db, mame_paths, get_all_roms_with_saves
 from logic.main import get_real_name
 
+class StageSplitItem(QWidget):
+    def __init__(self):
+        super().__init__()
+
+        layout = QHBoxLayout()
+
+
+
 
 class InputValidator(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
@@ -208,10 +216,10 @@ class MainWindow(QMainWindow):
         self.distance_edit.setText(distance)
 
 
-    def add_split(self, splits):
-        item_index = splits[0]
-        stage = splits[1]
-        score = splits[2]
+    def add_split(self, split):
+        item_index = split[0]
+        stage = split[1]
+        score = split[2]
 
         self.stage_splits_layout.addWidget(QLabel(f'Stage-{stage}:'), item_index, 0)
         self.stage_splits_layout.addWidget(QLineEdit(str(score)), item_index, 1)
