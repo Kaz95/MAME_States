@@ -149,7 +149,9 @@ class MainWindow(QMainWindow):
 
         self.add_split_button = QPushButton('Add Split')
         self.add_split_button.clicked.connect(self.new_split)
+
         self.delete_split_button = QPushButton('Delete Split')
+        self.delete_split_button.clicked.connect(self.delete_split)
 
         self.add_game_button = QPushButton('Add Game')
         self.add_game_button.clicked.connect(self.add_game)
@@ -292,6 +294,17 @@ class MainWindow(QMainWindow):
         self.test_game_info[game_name] = {'hs': '',
                                           'distance': '',
                                           'splits': []}
+    def delete_split(self):
+        selected = self.high_score_game_tree.selectedItems()
+        if selected:
+            game_name = selected[0].text(0)
+            row = self.split_list.currentRow()
+            # self.split_list.removeItemWidget(split)
+            self.split_list.takeItem(row)
+            splits = self.test_game_info[game_name]['splits']
+            del splits[row]
+
+
 
     def sizeHint(self):
         return QSize(1920, 1080)
