@@ -20,7 +20,8 @@ TODO:
 from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
 from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QStyledItemDelegate, QLineEdit, \
-    QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, QSizePolicy
+    QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, \
+    QSizePolicy, QInputDialog
 
 from logic.main import build_description_db, mame_paths, get_all_roms_with_saves
 from logic.main import get_real_name
@@ -147,10 +148,11 @@ class MainWindow(QMainWindow):
         self.distance_edit: QLineEdit | None = None
 
         self.add_split_button = QPushButton('Add Split')
-        # self.test_button.clicked.connect(self.new_split)
+        self.add_split_button.clicked.connect(self.new_split)
         self.delete_split_button = QPushButton('Delete Split')
-        self.add_game_button = QPushButton('Add Game')
 
+        self.add_game_button = QPushButton('Add Game')
+        self.add_game_button.clicked.connect(self.add_game)
 
         self.test_game_info = {'DonPachi': {'hs': 900,
                  'distance': 'Stage 6',
@@ -164,15 +166,15 @@ class MainWindow(QMainWindow):
                  'distance': 'Stage 5',
                  'splits': [(0, 1, 10000), (1, 2, 15069), (2, 3, 25069), (3, 4, 38069), (4, 5, 50069)]}}
 
-        self.high_score_tree = QTreeWidget()
-        self.high_score_tree.setHeaderLabels(['Games'])
-        self.high_score_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
+        self.high_score_game_tree = QTreeWidget()
+        self.high_score_game_tree.setHeaderLabels(['Games'])
+        self.high_score_game_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
         for key in self.test_game_info:
-            QTreeWidgetItem(self.high_score_tree, [key])
+            QTreeWidgetItem(self.high_score_game_tree, [key])
 
 
-        self.game_list_container.addWidget(self.high_score_tree)
+        self.game_list_container.addWidget(self.high_score_game_tree)
         self.game_list_container.addWidget(self.add_game_button)
 
         self.add_pb_panel()
@@ -216,7 +218,7 @@ class MainWindow(QMainWindow):
     def high_score_tree_selection_changed(self):
         self.split_list.clear()
         # self.clear_splits()
-        selected = self.high_score_tree.selectedItems()
+        selected = self.high_score_game_tree.selectedItems()
         if selected:
             game_name = selected[0].text(0)
             info = self.test_game_info[game_name]
@@ -270,18 +272,21 @@ class MainWindow(QMainWindow):
     #             item.widget().deleteLater()
     #
     #
-    # def new_split(self):
-    #     selected = self.high_score_tree.selectedItems()
-    #     if selected:
-    #         game_item = selected[0]
-    #         game_name = game_item.text(0)
-    #         game_splits = self.test_game_info[game_name]['splits']
-    #         split_count = len(game_splits)
-    #         new_split = (split_count, split_count + 1, 696969)
-    #         game_splits.append(new_split)
-    #         self.add_split(new_split)
+    def new_split(self):
+        selected = self.high_score_game_tree.selectedItems()
+        if selected:
+            game_item = selected[0]
+            game_name = game_item.text(0)
+            game_splits = self.test_game_info[game_name]['splits']
+            split_count = len(game_splits)
+            new_split = (split_count, split_count + 1, 696969)
+            game_splits.append(new_split)
+            self.add_split(new_split)
 
-
+    def add_game(self):
+        game_name, ok = QInputDialog.getText(self, 'New Game', 'Please enter new game name.')
+        if game_name and ok:
+            QTreeWidgetItem(self.high_score_game_tree, [game_name])
 
     def sizeHint(self):
         return QSize(1920, 1080)
