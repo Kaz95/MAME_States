@@ -20,17 +20,26 @@ TODO:
 from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
 from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QStyledItemDelegate, QLineEdit, \
-    QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton
+    QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, QSizePolicy
 
 from logic.main import build_description_db, mame_paths, get_all_roms_with_saves
 from logic.main import get_real_name
 
 class StageSplitItem(QWidget):
-    def __init__(self):
+    def __init__(self, split):
         super().__init__()
 
-        layout = QHBoxLayout()
+        self.item_index = split[0]
+        stage = split[1]
+        score = split[2]
 
+        layout = QHBoxLayout()
+        self.label = QLabel(f'Stage-{stage}:')
+        self.input = QLineEdit(str(score))
+        layout.addWidget(self.label)
+        layout.addWidget(self.input)
+
+        self.setLayout(layout)
 
 
 
@@ -70,6 +79,10 @@ class MainWindow(QMainWindow):
         application.
         """
         super().__init__()
+        self.split_list = QListWidget()
+        split_list_ploicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # split_list_ploicy.setVerticalPolicy(QSizePolicy.Policy.MinimumExpanding)
+        self.split_list.setSizePolicy(split_list_ploicy)
 
         self.distance_label = None
         self.high_score_label = None
@@ -124,7 +137,7 @@ class MainWindow(QMainWindow):
         self.distance_edit: QLineEdit | None = None
 
         self.test_button = QPushButton('Add')
-        self.test_button.clicked.connect(self.new_split)
+        # self.test_button.clicked.connect(self.new_split)
 
 
         self.test_game_info = {'DonPachi': {'hs': 900,
@@ -153,9 +166,11 @@ class MainWindow(QMainWindow):
         self.high_score_page_layout.addWidget(self.high_score_tree)
         self.info_layout.addLayout(self.personal_best_layout)
         self.info_layout.addStretch()
-        self.info_layout.addLayout(self.stage_splits_layout)
+        # self.info_layout.addLayout(self.stage_splits_layout)
+        # TODO look into stretch factors
+        self.info_layout.addWidget(self.split_list, 1)
         self.info_layout.addStretch()
-        self.info_layout.addLayout(self.button_container)
+        # self.info_layout.addLayout(self.button_container)
         self.high_score_page_layout.addLayout(self.info_layout)
 
         self.high_score_page.setLayout(self.high_score_page_layout)
@@ -182,7 +197,8 @@ class MainWindow(QMainWindow):
 
     # Methods
     def high_score_tree_selection_changed(self):
-        self.clear_splits()
+        self.split_list.clear()
+        # self.clear_splits()
         selected = self.high_score_tree.selectedItems()
         if selected:
             game_name = selected[0].text(0)
@@ -217,30 +233,36 @@ class MainWindow(QMainWindow):
 
 
     def add_split(self, split):
-        item_index = split[0]
-        stage = split[1]
-        score = split[2]
+        split_item = StageSplitItem(split)
+        list_item = QListWidgetItem(self.split_list)
+        # list_item.setSizeHint(split_item.sizeHint())
 
-        self.stage_splits_layout.addWidget(QLabel(f'Stage-{stage}:'), item_index, 0)
-        self.stage_splits_layout.addWidget(QLineEdit(str(score)), item_index, 1)
+        self.split_list.setItemWidget(list_item, split_item)
 
-    def clear_splits(self):
-        while self.stage_splits_layout.count():
-            item = self.stage_splits_layout.takeAt(0)
-            if item.widget() is not None:
-                item.widget().deleteLater()
-
-
-    def new_split(self):
-        selected = self.high_score_tree.selectedItems()
-        if selected:
-            game_item = selected[0]
-            game_name = game_item.text(0)
-            game_splits = self.test_game_info[game_name]['splits']
-            split_count = len(game_splits)
-            new_split = (split_count, split_count + 1, 696969)
-            game_splits.append(new_split)
-            self.add_split(new_split)
+        # item_index = split[0]
+        # stage = split[1]
+        # score = split[2]
+    #
+    #     self.stage_splits_layout.addWidget(QLabel(f'Stage-{stage}:'), item_index, 0)
+    #     self.stage_splits_layout.addWidget(QLineEdit(str(score)), item_index, 1)
+    #
+    # def clear_splits(self):
+    #     while self.stage_splits_layout.count():
+    #         item = self.stage_splits_layout.takeAt(0)
+    #         if item.widget() is not None:
+    #             item.widget().deleteLater()
+    #
+    #
+    # def new_split(self):
+    #     selected = self.high_score_tree.selectedItems()
+    #     if selected:
+    #         game_item = selected[0]
+    #         game_name = game_item.text(0)
+    #         game_splits = self.test_game_info[game_name]['splits']
+    #         split_count = len(game_splits)
+    #         new_split = (split_count, split_count + 1, 696969)
+    #         game_splits.append(new_split)
+    #         self.add_split(new_split)
 
 
 
