@@ -298,11 +298,15 @@ class MainWindow(QMainWindow):
         selected = self.high_score_game_tree.selectedItems()
         if selected:
             game_name = selected[0].text(0)
+            print(game_name)
             row = self.split_list.currentRow()
-            # self.split_list.removeItemWidget(split)
-            self.split_list.takeItem(row)
-            splits = self.test_game_info[game_name]['splits']
-            del splits[row]
+            print(row)
+            if row != -1:
+                # self.split_list.removeItemWidget(split)
+                self.split_list.takeItem(row)
+                splits = self.test_game_info[game_name]['splits']
+                del splits[row]
+                print(splits)
 
 
 
