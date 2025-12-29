@@ -80,9 +80,9 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
         self.split_list = QListWidget()
-        split_list_ploicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
+        # split_list_ploicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         # split_list_ploicy.setVerticalPolicy(QSizePolicy.Policy.MinimumExpanding)
-        self.split_list.setSizePolicy(split_list_ploicy)
+        # self.split_list.setSizePolicy(split_list_ploicy)
 
         self.distance_label = None
         self.high_score_label = None
@@ -126,18 +126,30 @@ class MainWindow(QMainWindow):
         self.save_state_page_layout.addWidget(self.tree_widget)
 
         # High Score Page
-        self.button_container = QHBoxLayout()
-        self.list_container = QHBoxLayout()
+        # Parent layout
         self.high_score_page_layout = QHBoxLayout()
+        # Contains game list and buttons
+        self.game_list_container = QVBoxLayout()
+        # Contains PB and Stage splits
         self.info_layout = QVBoxLayout()
+        # Contains PB
         self.personal_best_layout = QGridLayout()
+        # Contains stage split list and buttons
         self.stage_splits_layout = QGridLayout()
+        # contains stage split buttons
+        self.splits_tree_button_container = QHBoxLayout()
+
+
+
+
 
         self.high_score_edit: QLineEdit | None = None
         self.distance_edit: QLineEdit | None = None
 
-        self.test_button = QPushButton('Add')
+        self.add_split_button = QPushButton('Add Split')
         # self.test_button.clicked.connect(self.new_split)
+        self.delete_split_button = QPushButton('Delete Split')
+        self.add_game_button = QPushButton('Add Game')
 
 
         self.test_game_info = {'DonPachi': {'hs': 900,
@@ -160,17 +172,22 @@ class MainWindow(QMainWindow):
             QTreeWidgetItem(self.high_score_tree, [key])
 
 
-        self.add_pb_panel()
-        self.button_container.addWidget(self.test_button)
+        self.game_list_container.addWidget(self.high_score_tree)
+        self.game_list_container.addWidget(self.add_game_button)
 
-        self.high_score_page_layout.addWidget(self.high_score_tree)
+        self.add_pb_panel()
+        self.splits_tree_button_container.addWidget(self.add_split_button)
+        self.splits_tree_button_container.addWidget(self.delete_split_button)
+
+        # self.high_score_page_layout.addWidget(self.high_score_tree)
+        self.high_score_page_layout.addLayout(self.game_list_container)
         self.info_layout.addLayout(self.personal_best_layout)
         self.info_layout.addStretch()
         # self.info_layout.addLayout(self.stage_splits_layout)
         # TODO look into stretch factors
         self.info_layout.addWidget(self.split_list, 1)
         self.info_layout.addStretch()
-        # self.info_layout.addLayout(self.button_container)
+        self.info_layout.addLayout(self.splits_tree_button_container)
         self.high_score_page_layout.addLayout(self.info_layout)
 
         self.high_score_page.setLayout(self.high_score_page_layout)
