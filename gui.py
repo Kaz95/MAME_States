@@ -24,7 +24,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QSizePolicy, QInputDialog
 
 from logic.main import build_description_db, mame_paths, get_all_roms_with_saves
-from logic.main import get_real_name
+from logic.main import get_real_name, rename
 
 class StageSplitItem(QWidget):
     def __init__(self, split):
@@ -80,6 +80,7 @@ class MainWindow(QMainWindow):
         application.
         """
         super().__init__()
+        self.text_before_editing = None
         self.split_list = QListWidget()
         # split_list_ploicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         # split_list_ploicy.setVerticalPolicy(QSizePolicy.Policy.MinimumExpanding)
@@ -122,9 +123,17 @@ class MainWindow(QMainWindow):
         self.tree_widget.setColumnWidth(0, 1000)
         self.tree_widget.setItemDelegate(InputValidator(self))
         self.tree_widget.setTabKeyNavigation(True)
+
+
+
         self.add_mame_path_items()
 
         self.save_state_page_layout.addWidget(self.tree_widget)
+
+        # TODO If these aren't connected after filling treewidget, everything's fucked. Look into it.
+        self.tree_widget.currentItemChanged.connect(self.save_state_tree_selection_changed)
+        self.tree_widget.itemChanged.connect(self.save_state_tree_item_changed)
+
 
         # High Score Page
         # Parent layout
@@ -308,6 +317,40 @@ class MainWindow(QMainWindow):
                 del splits[row]
                 print(splits)
 
+    def save_state_tree_selection_changed(self, cur: QTreeWidgetItem, prev: QTreeWidgetItem):
+        self.text_before_editing = cur.text(0)
+
+    # TODO re-enable file renaming after ensuring user input is properly sanitized.
+    def save_state_tree_item_changed(self, save_state_item: QTreeWidgetItem):
+        if save_state_item.childCount() == 0:
+            save_state_name = save_state_item.text(0)
+
+            game_item = save_state_item.parent()
+            game_name = game_item.text(0)
+
+            rom_name = self.description_db[game_name]
+
+            mame_path_item = game_item.parent()
+            mame_path = mame_path_item.text(0)
+
+            print(f'save state: {save_state_name}')
+            print(f'game name: {rom_name}')
+            print(f'mame path: {mame_path}')
+            # rename(mame_path, rom_name, self.text_before_editing, save_state_name)
+
+            print(f'An item was changed from {self.text_before_editing}, to {save_state_item.text(0)}')
+        # selected_items = self.tree_widget.selectedItems()
+        # if selected_items:
+        #     selected = selected_items[0]
+        #     if selected.childCount() == 0:
+        #         print(selected.text(0))
+        #         game_item = selected.parent()
+        #         mame_path_item = game_item.parent()
+        #
+        #         mame_path = mame_path_item.text(0)
+        #         game_name = game_item.text(0)
+        #         print(mame_path)
+        #         print(game_name)
 
 
     def sizeHint(self):
