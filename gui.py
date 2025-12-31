@@ -44,7 +44,7 @@ class StageSplitItem(QWidget):
 
 
 
-class InputValidator(QStyledItemDelegate):
+class SaveStateNameInputValidator(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         editor = super().createEditor(parent ,option ,index)
         if isinstance(editor, QLineEdit):
@@ -121,7 +121,7 @@ class MainWindow(QMainWindow):
         self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
         self.tree_widget.setHeaderLabels(['MAME Folders'])
         self.tree_widget.setColumnWidth(0, 1000)
-        self.tree_widget.setItemDelegate(InputValidator(self))
+        self.tree_widget.setItemDelegate(SaveStateNameInputValidator(self))
         self.tree_widget.setTabKeyNavigation(True)
 
 
