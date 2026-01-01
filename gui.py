@@ -18,7 +18,7 @@ TODO:
 """
 
 from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
-from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator
+from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator, QIntValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QStyledItemDelegate, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, \
     QSizePolicy, QInputDialog
@@ -37,6 +37,7 @@ class StageSplitItem(QWidget):
         layout = QHBoxLayout()
         self.label = QLabel(f'Stage-{stage}:')
         self.input = QLineEdit(str(score))
+        self.input.setValidator(QIntValidator())
         layout.addWidget(self.label)
         layout.addWidget(self.input)
 
