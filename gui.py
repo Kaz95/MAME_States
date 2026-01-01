@@ -17,6 +17,8 @@ TODO:
     * Decide on new features to add.
 """
 import json
+import pprint
+
 from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
 from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator, QIntValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QStyledItemDelegate, QLineEdit, \
@@ -27,9 +29,11 @@ from logic.main import build_description_db, mame_paths, get_all_roms_with_saves
 from logic.main import get_real_name, rename
 
 class StageSplitItem(QWidget):
-    def __init__(self, split):
+    def __init__(self, split, game_db, game_name):
         super().__init__()
-
+        self.game_db = game_db
+        self.game_name = game_name
+        print(game_name)
         self.item_index = split[0]
         stage = split[1]
         score = split[2]
@@ -37,13 +41,19 @@ class StageSplitItem(QWidget):
         layout = QHBoxLayout()
         self.label = QLabel(f'Stage-{stage}:')
         self.input = QLineEdit(str(score))
+
+        self.input.editingFinished.connect(self.update_db)
+
         self.input.setValidator(QIntValidator())
         layout.addWidget(self.label)
         layout.addWidget(self.input)
 
         self.setLayout(layout)
 
-
+    def update_db(self):
+        print(self.input.text())
+        self.game_db[self.game_name]['splits'][self.item_index][2] = int(self.input.text())
+        print(self.game_db[self.game_name]['splits'][self.item_index][2])
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
@@ -168,15 +178,15 @@ class MainWindow(QMainWindow):
 
         self.test_game_info = {'DonPachi': {'hs': 900,
                  'distance': 'Stage 6',
-                 'splits': [(0, 1, 110), (1, 2, 200), (2, 3, 340), (3, 4, 420), (4, 5, 670), (5, 6, 900)]},
+                 'splits': [[0, 1, 110], [1, 2, 200], [2, 3, 340], [3, 4, 420], [4, 5, 670], [5, 6, 900]]},
 
          'Galaga': {'hs': 2000,
                  'distance': 'Stage 3',
-                 'splits': [(0, 1, 550), (1, 2, 1620), (2, 3, 2000)]},
+                 'splits': [[0, 1, 550], [1, 2, 1620], [2, 3, 2000]]},
 
          'Libble Rabble': {'hs': 50069,
                  'distance': 'Stage 5',
-                 'splits': [(0, 1, 10000), (1, 2, 15069), (2, 3, 25069), (3, 4, 38069), (4, 5, 50069)]}}
+                 'splits': [[0, 1, 10000], [1, 2, 15069], [2, 3, 25069], [3, 4, 38069], [4, 5, 50069]]}}
 
         self.high_score_game_tree = QTreeWidget()
         self.high_score_game_tree.setHeaderLabels(['Games'])
@@ -243,7 +253,7 @@ class MainWindow(QMainWindow):
             self.update_pbs(hs, distance)
 
             for split in splits:
-                self.add_split(split)
+                self.add_split(split, game_name)
 
     def add_pb_panel(self):
         self.high_score_edit = QLineEdit()
@@ -266,8 +276,8 @@ class MainWindow(QMainWindow):
         self.distance_edit.setText(distance)
 
 
-    def add_split(self, split):
-        split_item = StageSplitItem(split)
+    def add_split(self, split, game_name):
+        split_item = StageSplitItem(split, self.test_game_info, game_name)
         list_item = QListWidgetItem(self.split_list)
         # list_item.setSizeHint(split_item.sizeHint())
 
@@ -296,7 +306,7 @@ class MainWindow(QMainWindow):
             split_count = len(game_splits)
             new_split = (split_count, split_count + 1, 696969)
             game_splits.append(new_split)
-            self.add_split(new_split)
+            self.add_split(new_split, game_name)
 
     # TODO add to db or else breaks on selection.
     def add_game(self):
