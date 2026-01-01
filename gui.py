@@ -16,7 +16,7 @@ TODO:
     * Comment/Code Review/Refactor
     * Decide on new features to add.
 """
-
+import json
 from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
 from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator, QIntValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QStyledItemDelegate, QLineEdit, \
@@ -248,6 +248,9 @@ class MainWindow(QMainWindow):
     def add_pb_panel(self):
         self.high_score_edit = QLineEdit()
         self.distance_edit = QLineEdit()
+
+        self.high_score_edit.setValidator(QIntValidator())
+
         self.high_score_label = QLabel('High Score:')
         self.distance_label = QLabel('Distance PB:')
 
@@ -415,8 +418,13 @@ class MainWindow(QMainWindow):
                     save_state_item.setFont(0, self.sub_item_font)
 
     # # Slots
+    def save_game_info(self):
+        with open('game_db.json', 'w') as game_db:
+            json.dump(self.test_game_info, game_db, indent=4)
+
     def menu_button_1_clicked(self) -> None:
         self.tree_widget.hide()
+
         print('button 1 triggered')
 
     def menu_button_2_clicked(self):
