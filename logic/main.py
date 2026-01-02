@@ -13,7 +13,7 @@ import subprocess
 import os
 import json
 
-mame_paths = ['C:\\Users\\kazac\\Downloads\\wolfmame-0273',
+local_mame_paths = ['C:\\Users\\kazac\\Downloads\\wolfmame-0273',
               'C:\\Users\\kazac\\Downloads\\groovymame_0273.221d_win-7-8-10',
               'C:\\Users\\kazac\\Downloads\\mame']
 

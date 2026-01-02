@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, \
     QSizePolicy, QInputDialog
 
-from logic.main import build_description_db, mame_paths, get_all_roms_with_saves, save_game_info
+from logic.main import build_description_db, local_mame_paths, get_all_roms_with_saves, save_game_info
 from logic.main import get_real_name, rename, get_roms_from_paths, new_create_rom_list, test_game_info
 
 
@@ -106,11 +106,11 @@ class MainWindow(QMainWindow):
         self.all_save_states: dict[str:dict[str:list[str]]] | None = None
         """Names of games that have a save folder, and their respective save states"""
 
-        self.mame_paths:list[str] = mame_paths
+        self.mame_paths:list[str] = local_mame_paths
 
         # Create romlist if it doesnt already exist.
         if not os.path.isfile('logic/rom_list.txt'):
-            roms = get_roms_from_paths(mame_paths)
+            roms = get_roms_from_paths(local_mame_paths)
             new_create_rom_list(roms)
 
         if not os.path.isfile('game_db.json'):
@@ -436,10 +436,10 @@ class MainWindow(QMainWindow):
         # reset data structs
 
         self.description_db = build_description_db('logic/rom_list.txt')
-        self.all_save_states = get_all_roms_with_saves(mame_paths)
+        self.all_save_states = get_all_roms_with_saves(local_mame_paths)
 
     def add_mame_path_items(self):
-        for path in mame_paths:
+        for path in local_mame_paths:
             path_item = QTreeWidgetItem(self.tree_widget, [path])
             path_item.setFont(0, self.top_level_item_font)
             for key in self.all_save_states[path]:
