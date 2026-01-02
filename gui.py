@@ -25,8 +25,10 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, \
     QSizePolicy, QInputDialog
 
-from logic.main import build_description_db, mame_paths, get_all_roms_with_saves
+from logic.main import build_description_db, mame_paths, get_all_roms_with_saves, save_game_info
 from logic.main import get_real_name, rename
+
+
 
 class StageSplitItem(QWidget):
     def __init__(self, split, game_db, game_name):
@@ -41,7 +43,7 @@ class StageSplitItem(QWidget):
         self.label = QLabel(f'Stage-{stage}:')
         self.input = QLineEdit(str(score))
 
-        self.input.editingFinished.connect(self.update_db)
+        self.input.editingFinished.connect(self.update_split_db)
 
         self.input.setValidator(QIntValidator())
         layout.addWidget(self.label)
@@ -49,9 +51,10 @@ class StageSplitItem(QWidget):
 
         self.setLayout(layout)
 
-    def update_db(self):
+    def update_split_db(self):
         print(self.input.text())
         self.game_db[self.game_name]['splits'][self.item_index][2] = int(self.input.text())
+        save_game_info(self.game_db)
         print(self.game_db[self.game_name]['splits'][self.item_index][2])
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
@@ -73,6 +76,7 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
                 watched.insert('-')
                 return True
         return super().eventFilter(watched, event)
+
 
 class MainWindow(QMainWindow):
     """Subclasses and extends the QQMainWindow class of the PyQt6.QtWidgets Module
@@ -175,17 +179,23 @@ class MainWindow(QMainWindow):
         self.add_game_button = QPushButton('Add Game')
         self.add_game_button.clicked.connect(self.add_game)
 
-        self.test_game_info = {'DonPachi': {'hs': 900,
-                 'distance': 'Stage 6',
-                 'splits': [[0, 1, 110], [1, 2, 200], [2, 3, 340], [3, 4, 420], [4, 5, 670], [5, 6, 900]]},
+        with open('game_db.json', 'r') as game_info:
+            game_dict = json.load(game_info)
+            self.test_game_info = game_dict
 
-         'Galaga': {'hs': 2000,
-                 'distance': 'Stage 3',
-                 'splits': [[0, 1, 550], [1, 2, 1620], [2, 3, 2000]]},
+        # pprint.pprint(self.test_game_info)
 
-         'Libble Rabble': {'hs': 50069,
-                 'distance': 'Stage 5',
-                 'splits': [[0, 1, 10000], [1, 2, 15069], [2, 3, 25069], [3, 4, 38069], [4, 5, 50069]]}}
+        # self.test_game_info = {'DonPachi': {'hs': 900,
+        #          'distance': 'Stage 6',
+        #          'splits': [[0, 1, 110], [1, 2, 200], [2, 3, 340], [3, 4, 420], [4, 5, 670], [5, 6, 900]]},
+        #
+        #  'Galaga': {'hs': 2000,
+        #          'distance': 'Stage 3',
+        #          'splits': [[0, 1, 550], [1, 2, 1620], [2, 3, 2000]]},
+        #
+        #  'Libble Rabble': {'hs': 50069,
+        #          'distance': 'Stage 5',
+        #          'splits': [[0, 1, 10000], [1, 2, 15069], [2, 3, 25069], [3, 4, 38069], [4, 5, 50069]]}}
 
         self.high_score_game_tree = QTreeWidget()
         self.high_score_game_tree.setHeaderLabels(['Games'])
@@ -256,6 +266,7 @@ class MainWindow(QMainWindow):
 
     def add_pb_panel(self):
         self.high_score_edit = QLineEdit()
+        # TODO persist this with an update_distance_pb() function
         self.distance_edit = QLineEdit()
 
         self.high_score_edit.setValidator(QIntValidator())
@@ -307,6 +318,7 @@ class MainWindow(QMainWindow):
             new_split = (split_count, split_count + 1, 696969)
             game_splits.append(new_split)
             self.add_split(new_split, game_name)
+            save_game_info(self.test_game_info)
 
     # TODO add to db or else breaks on selection.
     def add_game(self):
@@ -317,6 +329,9 @@ class MainWindow(QMainWindow):
         self.test_game_info[game_name] = {'hs': '',
                                           'distance': '',
                                           'splits': []}
+        save_game_info(self.test_game_info)
+
+
     def delete_split(self):
         selected = self.high_score_game_tree.selectedItems()
         if selected:
@@ -329,6 +344,7 @@ class MainWindow(QMainWindow):
                 self.split_list.takeItem(row)
                 splits = self.test_game_info[game_name]['splits']
                 del splits[row]
+                save_game_info(self.test_game_info)
                 print(splits)
 
     def save_state_tree_selection_changed(self, cur: QTreeWidgetItem, prev: QTreeWidgetItem):
@@ -435,11 +451,7 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.test_game_info[game_name]['hs'] = new_pb
-
-
-    def save_game_info(self):
-        with open('game_db.json', 'w') as game_db:
-            json.dump(self.test_game_info, game_db, indent=4)
+            save_game_info(self.test_game_info)
 
     def menu_button_1_clicked(self) -> None:
         self.tree_widget.hide()

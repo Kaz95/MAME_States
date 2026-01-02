@@ -8,10 +8,15 @@ TODO:
 import pprint
 import subprocess
 import os
+import json
 
 mame_paths = ['C:\\Users\\kazac\\Downloads\\wolfmame-0273',
               'C:\\Users\\kazac\\Downloads\\groovymame_0273.221d_win-7-8-10',
               'C:\\Users\\kazac\\Downloads\\mame']
+
+def save_game_info(game_info):
+    with open('game_db.json', 'w') as game_db:
+        json.dump(game_info, game_db, indent=4)
 
 def get_roms_from_paths(mame_paths: list[str]) -> set[str]:
     roms = set()
