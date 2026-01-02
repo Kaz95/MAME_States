@@ -17,6 +17,18 @@ mame_paths = ['C:\\Users\\kazac\\Downloads\\wolfmame-0273',
               'C:\\Users\\kazac\\Downloads\\groovymame_0273.221d_win-7-8-10',
               'C:\\Users\\kazac\\Downloads\\mame']
 
+test_game_info = {'DonPachi': {'hs': 900,
+                 'distance': 'Stage 6',
+                 'splits': [[0, 1, 110], [1, 2, 200], [2, 3, 340], [3, 4, 420], [4, 5, 670], [5, 6, 900]]},
+
+         'Galaga': {'hs': 2000,
+                 'distance': 'Stage 3',
+                 'splits': [[0, 1, 550], [1, 2, 1620], [2, 3, 2000]]},
+
+         'Libble Rabble': {'hs': 50069,
+                 'distance': 'Stage 5',
+                 'splits': [[0, 1, 10000], [1, 2, 15069], [2, 3, 25069], [3, 4, 38069], [4, 5, 50069]]}}
+
 def save_game_info(game_info):
     with open('game_db.json', 'w') as game_db:
         json.dump(game_info, game_db, indent=4)

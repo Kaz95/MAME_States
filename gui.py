@@ -21,7 +21,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QSizePolicy, QInputDialog
 
 from logic.main import build_description_db, mame_paths, get_all_roms_with_saves, save_game_info
-from logic.main import get_real_name, rename, get_roms_from_paths, new_create_rom_list, mame_paths
+from logic.main import get_real_name, rename, get_roms_from_paths, new_create_rom_list, mame_paths, test_game_info
 
 
 
@@ -110,6 +110,10 @@ class MainWindow(QMainWindow):
         if not os.path.isfile('logic/rom_list.txt'):
             roms = get_roms_from_paths(mame_paths)
             new_create_rom_list(roms)
+
+        if not os.path.isfile('game_db.json'):
+            with open('game_db.json', 'w') as game_db:
+                json.dump(test_game_info, game_db, indent=4)
 
         self.fill_data_structures()
 
