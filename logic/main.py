@@ -3,6 +3,8 @@
 This module encompasses the static functions used by the MAMEStates application.
 
 TODO:
+    * Add docstrings
+    * Refactor var names
     * Consider renaming functions to improve human readability.
 """
 import pprint
