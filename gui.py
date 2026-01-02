@@ -272,6 +272,8 @@ class MainWindow(QMainWindow):
         self.high_score_edit.setValidator(QIntValidator())
         self.high_score_edit.editingFinished.connect(self.update_high_score_pb)
 
+        self.distance_edit.editingFinished.connect(self.update_distance_pb)
+
         self.high_score_label = QLabel('High Score:')
         self.distance_label = QLabel('Distance PB:')
 
@@ -451,6 +453,15 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.test_game_info[game_name]['hs'] = new_pb
+            save_game_info(self.test_game_info)
+
+    def update_distance_pb(self):
+        new_pb = self.distance_edit.text()
+        selected = self.high_score_game_tree.selectedItems()
+        if selected:
+            game_item = selected[0]
+            game_name = game_item.text(0)
+            self.test_game_info[game_name]['distance'] = new_pb
             save_game_info(self.test_game_info)
 
     def menu_button_1_clicked(self) -> None:
