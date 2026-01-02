@@ -3,6 +3,7 @@
 This module encompasses the static functions used by the MAMEStates application.
 
 TODO:
+    * pass in filepaths as args to avoid absolute paths
     * Add docstrings
     * Refactor var names
     * Consider renaming functions to improve human readability.
@@ -33,7 +34,7 @@ def get_roms_from_paths(mame_paths: list[str]) -> set[str]:
     return roms
 
 def new_create_rom_list(roms: set[str]) -> None:
-    with open('rom_list.txt', 'w') as rom_list:
+    with open('logic/rom_list.txt', 'w') as rom_list:
         roms = list(roms)
         roms.sort()
         rom_list.writelines(roms)

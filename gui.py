@@ -11,6 +11,7 @@ TODO:
     * Decide on new features to add.
 """
 import json
+import os.path
 import pprint
 
 from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
@@ -20,7 +21,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QSizePolicy, QInputDialog
 
 from logic.main import build_description_db, mame_paths, get_all_roms_with_saves, save_game_info
-from logic.main import get_real_name, rename
+from logic.main import get_real_name, rename, get_roms_from_paths, new_create_rom_list, mame_paths
 
 
 
@@ -88,6 +89,7 @@ class MainWindow(QMainWindow):
         application.
         """
         super().__init__()
+
         self.text_before_editing = None
         self.split_list = QListWidget()
         # split_list_ploicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
@@ -104,6 +106,10 @@ class MainWindow(QMainWindow):
 
         self.mame_paths:list[str] = mame_paths
 
+        # Create romlist if it doesnt already exist.
+        if not os.path.isfile('logic/rom_list.txt'):
+            roms = get_roms_from_paths(mame_paths)
+            new_create_rom_list(roms)
 
         self.fill_data_structures()
 
