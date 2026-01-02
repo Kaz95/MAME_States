@@ -3,6 +3,7 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
+    * What happens if JSON file doesn't already exist on program load? Fix.
     * Validate input fields
     * Consider sizing policies and size hints
     * Add Scrollable area to stage splits layout
