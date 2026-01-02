@@ -36,6 +36,7 @@ class StageSplitItem(QWidget):
         layout = QHBoxLayout()
         self.label = QLabel(f'Stage-{stage}:')
         self.input = QLineEdit(str(score))
+        self.input.setReadOnly(True)
 
         self.input.editingFinished.connect(self.update_split_db)
 
@@ -91,6 +92,8 @@ class MainWindow(QMainWindow):
 
         self.text_before_editing = None
         self.split_list = QListWidget()
+        self.split_list.itemDoubleClicked.connect(self.split_double_clicked)
+        self.split_list.currentItemChanged.connect(self.split_current_item_changed)
         # split_list_ploicy = QSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         # split_list_ploicy.setVerticalPolicy(QSizePolicy.Policy.MinimumExpanding)
         # self.split_list.setSizePolicy(split_list_ploicy)
@@ -449,6 +452,19 @@ class MainWindow(QMainWindow):
                     save_state_item.setFont(0, self.sub_item_font)
 
     # # Slots
+    def split_double_clicked(self, item: QListWidgetItem):
+        widget_item = self.split_list.itemWidget(item)
+        widget_item.input.setReadOnly(False)
+        widget_item.input.setFocus()
+        print(widget_item.input)
+
+    def split_current_item_changed(self, cur: QListWidgetItem, prev: QListWidgetItem):
+        if prev:
+            widget_item = self.split_list.itemWidget(prev)
+            print(widget_item.input)
+            widget_item.input.setReadOnly(True)
+
+
     def update_high_score_pb(self):
         new_pb = int(self.high_score_edit.text())
         selected = self.high_score_game_tree.selectedItems()
