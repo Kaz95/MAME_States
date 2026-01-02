@@ -3,7 +3,6 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * What happens if JSON file doesn't already exist on program load? Fix.
     * Validate input fields
     * Consider sizing policies and size hints
     * Consider 'add new mame folder' functionality.
@@ -21,7 +20,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QSizePolicy, QInputDialog
 
 from logic.main import build_description_db, mame_paths, get_all_roms_with_saves, save_game_info
-from logic.main import get_real_name, rename, get_roms_from_paths, new_create_rom_list, mame_paths, test_game_info
+from logic.main import get_real_name, rename, get_roms_from_paths, new_create_rom_list, test_game_info
 
 
 
