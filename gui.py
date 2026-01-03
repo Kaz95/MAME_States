@@ -24,7 +24,16 @@ from logic.main import get_real_name, get_roms_from_paths, create_rom_list, test
 
 
 class StageSplitItem(QWidget):
+    """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Used as a customer item widget on a QListWidget instance."""
     def __init__(self, split, game_db, game_name):
+        """ Initialize the StageSplitItem subclass
+
+        The StageSplitItem subclass inherits most of its behavior from, and extends, its parent class QWidget.
+        The initialization process creates the widgets and layouts that will make up the custom item widget.
+        """
         super().__init__()
         self.game_db = game_db
         self.game_name = game_name
@@ -45,6 +54,7 @@ class StageSplitItem(QWidget):
         self.setLayout(layout)
 
     def update_split_db(self):
+        """Update the 'in-memory' copy of the database and save to JSON"""
         self.game_db[self.game_name]['splits'][self.item_index][2] = int(self.input.text())
         save_to_json(self.game_db)
 
