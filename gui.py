@@ -62,7 +62,7 @@ class StageSplitItem(QWidget):
 
     def update_split_db(self):
         """Update the 'in-memory' copy of the database and save to JSON"""
-        self.game_db[self.game_name]['splits'][self.item_index][2] = int(self.input.text())
+        self.game_db[self.game_name]['splits'][self.item_index][2] = int(self.editor.text())
         save_to_json(self.game_db)
 
 
@@ -417,13 +417,13 @@ class MainWindow(QMainWindow):
 
     def split_double_clicked(self, item: QListWidgetItem):
         widget_item = self.split_list.itemWidget(item)
-        widget_item.input.setReadOnly(False)
-        widget_item.input.setFocus()
+        widget_item.editor.setReadOnly(False)
+        widget_item.editor.setFocus()
 
     def split_current_item_changed(self, cur: QListWidgetItem, prev: QListWidgetItem):
         if prev:
             widget_item = self.split_list.itemWidget(prev)
-            widget_item.input.setReadOnly(True)
+            widget_item.editor.setReadOnly(True)
 
     def update_high_score_pb(self):
         new_pb = int(self.high_score_edit.text())
