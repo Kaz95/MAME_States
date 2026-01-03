@@ -28,29 +28,36 @@ class StageSplitItem(QWidget):
 
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used as a customer item widget on a QListWidget instance."""
-    def __init__(self, split, game_db, game_name):
+
+    def __init__(self, split: list[int], game_db: dict, game_name: str) -> None:
         """ Initialize the StageSplitItem subclass
 
         The StageSplitItem subclass inherits most of its behavior from, and extends, its parent class QWidget.
         The initialization process creates the widgets and layouts that will make up the custom item widget.
         """
         super().__init__()
+
         self.game_db = game_db
+        """In-memory representation of DB schema."""
+
         self.game_name = game_name
+        """The name of the game which the split belongs to."""
 
         self.item_index = split[0]
+        """The index of the split, used for maintaining correct order."""
+
         stage = split[1]
         score = split[2]
 
         self.label = QLabel(f'Stage-{stage}:')
-        self.input = QLineEdit(str(score))
-        self.input.setReadOnly(True)
-        self.input.editingFinished.connect(self.update_split_db)
-        self.input.setValidator(QIntValidator())
+        self.editor = QLineEdit(str(score))
+        self.editor.setReadOnly(True)
+        self.editor.editingFinished.connect(self.update_split_db)
+        self.editor.setValidator(QIntValidator())
 
         layout = QHBoxLayout()
         layout.addWidget(self.label)
-        layout.addWidget(self.input)
+        layout.addWidget(self.editor)
         self.setLayout(layout)
 
     def update_split_db(self):
@@ -58,9 +65,10 @@ class StageSplitItem(QWidget):
         self.game_db[self.game_name]['splits'][self.item_index][2] = int(self.input.text())
         save_to_json(self.game_db)
 
+
 class SaveStateNameInputValidator(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
-        editor = super().createEditor(parent ,option ,index)
+        editor = super().createEditor(parent, option, index)
         if isinstance(editor, QLineEdit):
             # TODO Get rid of match case, there is only one case now.
             match index.column():
@@ -80,6 +88,7 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
         return super().eventFilter(watched, event)
 
 
+# TODO Docstrings for instance variables.
 class MainWindow(QMainWindow):
     """Subclasses and extends the QQMainWindow class of the PyQt6.QtWidgets Module
 
@@ -105,7 +114,7 @@ class MainWindow(QMainWindow):
         self.all_save_states: dict[str:dict[str:list[str]]] | None = None
         """Names of games that have a save folder, and their respective save states"""
 
-        self.mame_paths:list[str] = local_mame_paths
+        self.mame_paths: list[str] = local_mame_paths
 
         # Create romlist if it doesnt already exist.
         if not os.path.isfile('logic/rom_list.txt'):
@@ -125,36 +134,53 @@ class MainWindow(QMainWindow):
         self.sub_item_font = QFont()
         self.sub_item_font.setPointSize(20)
 
+        # Add file menu
+        self.menu = self.menuBar()
+        self.file_menu = self.menu.addMenu('&File')
+
+        self.button_1_action = QAction('button 1', self)
+        self.button_1_action.triggered.connect(self.menu_button_1_clicked)
+
+        self.button_2_action = QAction('button 2', self)
+        self.button_2_action.triggered.connect(self.menu_button_2_clicked)
+
+        self.file_menu.addAction(self.button_1_action)
+        self.file_menu.addAction(self.button_2_action)
+
+        # Tabs container
         self.tabs = QTabWidget()
         self.tabs.setTabPosition(QTabWidget.TabPosition.North)
+        self.tabs.setMovable(True)
+
+        # Pages
         self.save_state_page = QWidget()
         self.high_score_page = QWidget()
 
-        self.tabs.setMovable(True)
 
-        self.save_state_page_layout = QHBoxLayout()
-        self.save_state_page_layout.setContentsMargins(0, 0, 0, 0)
-        self.save_state_page.setLayout(self.save_state_page_layout)
+        # Save State Page
 
+        # Widgets
+        # Create and fill Saves State Tree Widget
         self.tree_widget = QTreeWidget()
         self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
         self.tree_widget.setHeaderLabels(['MAME Folders'])
         self.tree_widget.setColumnWidth(0, 1000)
         self.tree_widget.setItemDelegate(SaveStateNameInputValidator(self))
         self.tree_widget.setTabKeyNavigation(True)
-
-
-
         self.add_mame_path_items()
 
+        # Layouts
+        self.save_state_page_layout = QHBoxLayout()
+        self.save_state_page_layout.setContentsMargins(0, 0, 0, 0)
+        self.save_state_page.setLayout(self.save_state_page_layout)
         self.save_state_page_layout.addWidget(self.tree_widget)
-
         # TODO If these aren't connected after filling treewidget, everything's fucked. Look into it.
         self.tree_widget.currentItemChanged.connect(self.save_state_tree_selection_changed)
         self.tree_widget.itemChanged.connect(self.save_state_tree_item_changed)
 
-
         # High Score Page
+        # Widgets
+        # Create and connect Widgets
         self.distance_label = QLabel('Distance PB:')
         self.high_score_label = QLabel('High Score:')
 
@@ -178,7 +204,15 @@ class MainWindow(QMainWindow):
         self.add_game_button = QPushButton('Add Game')
         self.add_game_button.clicked.connect(self.add_game)
 
+        # Load DB and Fill widgets
+        with open('game_db.json', 'r') as game_info:
+            game_dict = json.load(game_info)
+            self.test_game_info = game_dict
 
+        for key in self.test_game_info:
+            QTreeWidgetItem(self.high_score_game_tree, [key])
+
+        # Layouts
         # Parent layout
         self.high_score_page_layout = QHBoxLayout()
         # Contains game list and buttons
@@ -192,17 +226,7 @@ class MainWindow(QMainWindow):
         # contains stage split buttons
         self.splits_tree_button_container = QHBoxLayout()
 
-        # Fill widgets and layouts
-        with open('game_db.json', 'r') as game_info:
-            game_dict = json.load(game_info)
-            self.test_game_info = game_dict
-
-
-
-        for key in self.test_game_info:
-            QTreeWidgetItem(self.high_score_game_tree, [key])
-
-
+        # Add widgets to layout
         self.game_list_container.addWidget(self.high_score_game_tree)
         self.game_list_container.addWidget(self.add_game_button)
 
@@ -222,41 +246,19 @@ class MainWindow(QMainWindow):
         self.high_score_page.setLayout(self.high_score_page_layout)
         self.high_score_page.setFont(self.top_level_item_font)
 
+
+        # Add tabs to tab container
         self.tabs.addTab(self.save_state_page, 'Save States')
 
         self.tabs.addTab(self.high_score_page, 'High Scores')
 
         self.setCentralWidget(self.tabs)
 
-        # Add file menu
-        self.menu = self.menuBar()
-        self.file_menu = self.menu.addMenu('&File')
 
-        self.button_1_action = QAction('button 1', self)
-        self.button_1_action.triggered.connect(self.menu_button_1_clicked)
-
-        self.button_2_action = QAction('button 2', self)
-        self.button_2_action.triggered.connect(self.menu_button_2_clicked)
-
-        self.file_menu.addAction(self.button_1_action)
-        self.file_menu.addAction(self.button_2_action)
 
     # Methods
-    def high_score_tree_selection_changed(self):
-        self.split_list.clear()
-        selected = self.high_score_game_tree.selectedItems()
-        if selected:
-            game_name = selected[0].text(0)
-            info = self.test_game_info[game_name]
-
-            hs = info['hs']
-            distance = info['distance']
-            splits = info['splits']
-
-            self.update_pb_panel(hs, distance)
-
-            for split in splits:
-                self.add_split(split, game_name)
+    def sizeHint(self):
+        return QSize(1920, 1080)
 
     def add_pb_panel(self):
         self.high_score_edit.setValidator(QIntValidator())
@@ -274,72 +276,10 @@ class MainWindow(QMainWindow):
         self.high_score_edit.setText(str(high_score))
         self.distance_edit.setText(distance)
 
-
     def add_split(self, split, game_name):
         split_item = StageSplitItem(split, self.test_game_info, game_name)
         list_item = QListWidgetItem(self.split_list)
         self.split_list.setItemWidget(list_item, split_item)
-
-    # TODO Update to take in a real split eventually
-    def new_split(self):
-        selected = self.high_score_game_tree.selectedItems()
-        if selected:
-            game_item = selected[0]
-            game_name = game_item.text(0)
-            game_splits = self.test_game_info[game_name]['splits']
-            split_count = len(game_splits)
-            new_split = (split_count, split_count + 1, 696969)
-            game_splits.append(new_split)
-            self.add_split(new_split, game_name)
-            save_to_json(self.test_game_info)
-
-    def add_game(self):
-        game_name, ok = QInputDialog.getText(self, 'New Game', 'Please enter new game name.')
-        if game_name and ok:
-            QTreeWidgetItem(self.high_score_game_tree, [game_name])
-
-            self.test_game_info[game_name] = {'hs': '',
-                                              'distance': '',
-                                              'splits': []}
-            save_to_json(self.test_game_info)
-
-
-    def delete_split(self):
-        selected = self.high_score_game_tree.selectedItems()
-        if selected:
-            game_name = selected[0].text(0)
-            row = self.split_list.currentRow()
-            if row != -1:
-                self.split_list.takeItem(row)
-                splits = self.test_game_info[game_name]['splits']
-                del splits[row]
-                save_to_json(self.test_game_info)
-
-    def save_state_tree_selection_changed(self, current_item: QTreeWidgetItem):
-        self.text_before_editing = current_item.text(0)
-
-    # TODO re-enable file renaming after ensuring user input is properly sanitized.
-    def save_state_tree_item_changed(self, save_state_item: QTreeWidgetItem):
-        if save_state_item.childCount() == 0:
-            save_state_name = save_state_item.text(0)
-
-            game_item = save_state_item.parent()
-            game_name = game_item.text(0)
-
-            rom_name = self.description_db[game_name]
-
-            mame_path_item = game_item.parent()
-            mame_path = mame_path_item.text(0)
-
-            print(f'save state: {save_state_name}')
-            print(f'game name: {rom_name}')
-            print(f'mame path: {mame_path}')
-            # rename(mame_path, rom_name, self.text_before_editing, save_state_name)
-
-            print(f'An item was changed from {self.text_before_editing}, to {save_state_item.text(0)}')
-
-    def sizeHint(self):
-        return QSize(1920, 1080)
 
     # def valid_path(self, mame_folder):
     #     mame_exe = mame_folder + '\\mame.exe'
@@ -401,6 +341,80 @@ class MainWindow(QMainWindow):
                     save_state_item.setFont(0, self.sub_item_font)
 
     # # Slots
+    # TODO Update to take in a real split eventually
+    def new_split(self):
+        selected = self.high_score_game_tree.selectedItems()
+        if selected:
+            game_item = selected[0]
+            game_name = game_item.text(0)
+            game_splits = self.test_game_info[game_name]['splits']
+            split_count = len(game_splits)
+            new_split = (split_count, split_count + 1, 696969)
+            game_splits.append(new_split)
+            self.add_split(new_split, game_name)
+            save_to_json(self.test_game_info)
+
+    def add_game(self):
+        game_name, ok = QInputDialog.getText(self, 'New Game', 'Please enter new game name.')
+        if game_name and ok:
+            QTreeWidgetItem(self.high_score_game_tree, [game_name])
+
+            self.test_game_info[game_name] = {'hs': '',
+                                              'distance': '',
+                                              'splits': []}
+            save_to_json(self.test_game_info)
+
+    def delete_split(self):
+        selected = self.high_score_game_tree.selectedItems()
+        if selected:
+            game_name = selected[0].text(0)
+            row = self.split_list.currentRow()
+            if row != -1:
+                self.split_list.takeItem(row)
+                splits = self.test_game_info[game_name]['splits']
+                del splits[row]
+                save_to_json(self.test_game_info)
+
+    # TODO re-enable file renaming after ensuring user input is properly sanitized.
+    def save_state_tree_item_changed(self, save_state_item: QTreeWidgetItem):
+        if save_state_item.childCount() == 0:
+            save_state_name = save_state_item.text(0)
+
+            game_item = save_state_item.parent()
+            game_name = game_item.text(0)
+
+            rom_name = self.description_db[game_name]
+
+            mame_path_item = game_item.parent()
+            mame_path = mame_path_item.text(0)
+
+            print(f'save state: {save_state_name}')
+            print(f'game name: {rom_name}')
+            print(f'mame path: {mame_path}')
+            # rename(mame_path, rom_name, self.text_before_editing, save_state_name)
+
+            print(f'An item was changed from {self.text_before_editing}, to {save_state_item.text(0)}')
+
+
+    def save_state_tree_selection_changed(self, current_item: QTreeWidgetItem):
+        self.text_before_editing = current_item.text(0)
+
+    def high_score_tree_selection_changed(self):
+        self.split_list.clear()
+        selected = self.high_score_game_tree.selectedItems()
+        if selected:
+            game_name = selected[0].text(0)
+            info = self.test_game_info[game_name]
+
+            hs = info['hs']
+            distance = info['distance']
+            splits = info['splits']
+
+            self.update_pb_panel(hs, distance)
+
+            for split in splits:
+                self.add_split(split, game_name)
+
     def split_double_clicked(self, item: QListWidgetItem):
         widget_item = self.split_list.itemWidget(item)
         widget_item.input.setReadOnly(False)
@@ -410,7 +424,6 @@ class MainWindow(QMainWindow):
         if prev:
             widget_item = self.split_list.itemWidget(prev)
             widget_item.input.setReadOnly(True)
-
 
     def update_high_score_pb(self):
         new_pb = int(self.high_score_edit.text())
