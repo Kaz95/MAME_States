@@ -49,8 +49,8 @@ class StageSplitItem(QWidget):
         stage = split[1]
         score = split[2]
 
-        self.label = QLabel(f'Stage-{stage}:')
-        self.editor = QLineEdit(str(score))
+        self.label: QLabel = QLabel(f'Stage-{stage}:')
+        self.editor: QLineEdit = QLineEdit(str(score))
         self.editor.setReadOnly(True)
         self.editor.editingFinished.connect(self.update_split_db)
         self.editor.setValidator(QIntValidator())
@@ -106,7 +106,8 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
-        self.text_before_editing = None
+        self.text_before_editing: str | None = None
+        """Text of the previous selected save state item."""
 
         self.description_db: dict[str, str] = {}
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
@@ -115,6 +116,7 @@ class MainWindow(QMainWindow):
         """Names of games that have a save folder, and their respective save states"""
 
         self.mame_paths: list[str] = local_mame_paths
+        """List of all MAME directories that will be used by the application."""
 
         # Create romlist if it doesnt already exist.
         if not os.path.isfile('logic/rom_list.txt'):
@@ -129,9 +131,13 @@ class MainWindow(QMainWindow):
 
         # Widget customization
         self.setWindowTitle('MAME States')
-        self.top_level_item_font = QFont()
+
+        self.top_level_item_font: QFont = QFont()
+        """Large font"""
         self.top_level_item_font.setPointSize(26)
-        self.sub_item_font = QFont()
+
+        self.sub_item_font: QFont = QFont()
+        """Small font"""
         self.sub_item_font.setPointSize(20)
 
         # Add file menu
@@ -147,42 +153,44 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.button_1_action)
         self.file_menu.addAction(self.button_2_action)
 
-        # Tabs container
-        self.tabs = QTabWidget()
+        # Tabs
+        self.tabs: QTabWidget = QTabWidget()
+        """Tab container"""
         self.tabs.setTabPosition(QTabWidget.TabPosition.North)
         self.tabs.setMovable(True)
 
         # Pages
-        self.save_state_page = QWidget()
-        self.high_score_page = QWidget()
+        self.save_state_page: QWidget = QWidget()
+        self.high_score_page: QWidget = QWidget()
 
 
         # Save State Page
 
         # Widgets
         # Create and fill Saves State Tree Widget
-        self.tree_widget = QTreeWidget()
-        self.tree_widget.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
-        self.tree_widget.setHeaderLabels(['MAME Folders'])
-        self.tree_widget.setColumnWidth(0, 1000)
-        self.tree_widget.setItemDelegate(SaveStateNameInputValidator(self))
-        self.tree_widget.setTabKeyNavigation(True)
+        self.save_state_tree: QTreeWidget = QTreeWidget()
+        """Main widget of the save state tab"""
+        self.save_state_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
+        self.save_state_tree.setHeaderLabels(['MAME Folders'])
+        self.save_state_tree.setColumnWidth(0, 1000)
+        self.save_state_tree.setItemDelegate(SaveStateNameInputValidator(self))
+        self.save_state_tree.setTabKeyNavigation(True)
         self.add_mame_path_items()
 
         # Layouts
-        self.save_state_page_layout = QHBoxLayout()
+        self.save_state_page_layout: QHBoxLayout = QHBoxLayout()
         self.save_state_page_layout.setContentsMargins(0, 0, 0, 0)
         self.save_state_page.setLayout(self.save_state_page_layout)
-        self.save_state_page_layout.addWidget(self.tree_widget)
+        self.save_state_page_layout.addWidget(self.save_state_tree)
         # TODO If these aren't connected after filling treewidget, everything's fucked. Look into it.
-        self.tree_widget.currentItemChanged.connect(self.save_state_tree_selection_changed)
-        self.tree_widget.itemChanged.connect(self.save_state_tree_item_changed)
+        self.save_state_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
+        self.save_state_tree.itemChanged.connect(self.save_state_tree_item_changed)
 
         # High Score Page
         # Widgets
         # Create and connect Widgets
-        self.distance_label = QLabel('Distance PB:')
-        self.high_score_label = QLabel('High Score:')
+        self.distance_label: QLabel = QLabel('Distance PB:')
+        self.high_score_label: QLabel = QLabel('High Score:')
 
         self.split_list = QListWidget()
         self.split_list.itemDoubleClicked.connect(self.split_double_clicked)
@@ -195,13 +203,13 @@ class MainWindow(QMainWindow):
         self.high_score_edit: QLineEdit | None = QLineEdit()
         self.distance_edit: QLineEdit | None = QLineEdit()
 
-        self.add_split_button = QPushButton('Add Split')
+        self.add_split_button: QPushButton = QPushButton('Add Split')
         self.add_split_button.clicked.connect(self.new_split)
 
-        self.delete_split_button = QPushButton('Delete Split')
+        self.delete_split_button: QPushButton = QPushButton('Delete Split')
         self.delete_split_button.clicked.connect(self.delete_split)
 
-        self.add_game_button = QPushButton('Add Game')
+        self.add_game_button: QPushButton = QPushButton('Add Game')
         self.add_game_button.clicked.connect(self.add_game)
 
         # Load DB and Fill widgets
@@ -214,17 +222,17 @@ class MainWindow(QMainWindow):
 
         # Layouts
         # Parent layout
-        self.high_score_page_layout = QHBoxLayout()
+        self.high_score_page_layout: QHBoxLayout = QHBoxLayout()
         # Contains game list and buttons
-        self.game_list_container = QVBoxLayout()
+        self.game_list_container: QVBoxLayout = QVBoxLayout()
         # Contains PB and Stage splits
-        self.info_layout = QVBoxLayout()
+        self.info_layout: QVBoxLayout = QVBoxLayout()
         # Contains PB
-        self.personal_best_layout = QGridLayout()
+        self.personal_best_layout: QGridLayout = QGridLayout()
         # Contains stage split list and buttons
-        self.stage_splits_layout = QGridLayout()
+        self.stage_splits_layout: QGridLayout = QGridLayout()
         # contains stage split buttons
-        self.splits_tree_button_container = QHBoxLayout()
+        self.splits_tree_button_container: QHBoxLayout = QHBoxLayout()
 
         # Add widgets to layout
         self.game_list_container.addWidget(self.high_score_game_tree)
@@ -327,7 +335,7 @@ class MainWindow(QMainWindow):
 
     def add_mame_path_items(self):
         for path in local_mame_paths:
-            path_item = QTreeWidgetItem(self.tree_widget, [path])
+            path_item = QTreeWidgetItem(self.save_state_tree, [path])
             path_item.setFont(0, self.top_level_item_font)
 
             for key in self.all_save_states[path]:
@@ -444,10 +452,10 @@ class MainWindow(QMainWindow):
             save_to_json(self.test_game_info)
 
     def menu_button_1_clicked(self) -> None:
-        self.tree_widget.hide()
+        self.save_state_tree.hide()
 
     def menu_button_2_clicked(self) -> None:
-        self.tree_widget.show()
+        self.save_state_tree.show()
 
 
 if __name__ == '__main__':
