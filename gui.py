@@ -3,6 +3,7 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
+    * Add docstrings
     * Comment/Code Review/Refactor
     * Reactivate file renaming eventually.
     * Consider sizing policies and size hints
@@ -11,17 +12,15 @@ TODO:
 """
 import json
 import os.path
-import pprint
 
 from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
 from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator, QIntValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QStyledItemDelegate, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, \
-    QSizePolicy, QInputDialog
+    QInputDialog
 
 from logic.main import build_description_db, local_mame_paths, get_all_roms_with_saves, save_to_json
-from logic.main import get_real_name, rename_save_state_file, get_roms_from_paths, create_rom_list, test_pb_info
-
+from logic.main import get_real_name, get_roms_from_paths, create_rom_list, test_pb_info
 
 
 class StageSplitItem(QWidget):
