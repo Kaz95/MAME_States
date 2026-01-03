@@ -17,7 +17,7 @@ local_mame_paths = ['C:\\Users\\kazac\\Downloads\\wolfmame-0273',
               'C:\\Users\\kazac\\Downloads\\groovymame_0273.221d_win-7-8-10',
               'C:\\Users\\kazac\\Downloads\\mame']
 
-test_game_info = {'DonPachi': {'hs': 900,
+test_pb_info = {'DonPachi': {'hs': 900,
                  'distance': 'Stage 6',
                  'splits': [[0, 1, 110], [1, 2, 200], [2, 3, 340], [3, 4, 420], [4, 5, 670], [5, 6, 900]]},
 
@@ -29,9 +29,9 @@ test_game_info = {'DonPachi': {'hs': 900,
                  'distance': 'Stage 5',
                  'splits': [[0, 1, 10000], [1, 2, 15069], [2, 3, 25069], [3, 4, 38069], [4, 5, 50069]]}}
 
-def save_game_info(game_info):
-    with open('game_db.json', 'w') as game_db:
-        json.dump(game_info, game_db, indent=4)
+def save_to_json(pb_info):
+    with open('game_db.json', 'w') as json_db:
+        json.dump(pb_info, json_db, indent=4)
 
 def get_roms_from_paths(mame_paths: list[str]) -> set[str]:
     roms = set()
@@ -45,7 +45,7 @@ def get_roms_from_paths(mame_paths: list[str]) -> set[str]:
         os.remove('temp_rom_list.txt')
     return roms
 
-def new_create_rom_list(roms: set[str]) -> None:
+def create_rom_list(roms: set[str]) -> None:
     with open('logic/rom_list.txt', 'w') as rom_list:
         roms = list(roms)
         roms.sort()
@@ -91,6 +91,7 @@ def get_real_name(description_db: dict[str, str], rom_name: str) -> str:
             return real_name
 
 
+# TODO Refactor var names. They are trash.
 def get_save_names(games_with_saves: list[str], mame_folder: str) -> dict[str, list[str]]:
     """Return all save files, and their respective roms."""
     save_states = {}
@@ -106,23 +107,10 @@ def get_save_names(games_with_saves: list[str], mame_folder: str) -> dict[str, l
     return save_states
 
 
-def rename(mame_folder: str, rom_folder: str, old_save_name: str, new_save_name: str) -> None:
+def rename_save_state_file(mame_folder: str, rom_folder: str, old_save_name: str, new_save_name: str) -> None:
     """Rename a MAME save file"""
     os.rename(mame_folder + "\\sta\\" + rom_folder + "\\" + old_save_name + '.sta',
               mame_folder + "\\sta\\" + rom_folder + "\\" + new_save_name + '.sta')
-
-
-def change_mame_path(new_path: str) -> None:
-    """Change the saved MAME path
-
-    Finds and replaces the first line, in the rom_list.txt file, with a MAME path that will be used as the working
-    directory for the MAMEStates application.
-    """
-    with open('logic/rom_list.txt', 'r') as rom_list:
-        data = rom_list.read().splitlines(True)
-        data[0] = new_path + '\n'
-    with open('logic/rom_list.txt', 'w') as rom_list:
-        rom_list.writelines(data)
 
 
 # if __name__ == '__main__':

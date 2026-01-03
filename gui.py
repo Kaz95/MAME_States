@@ -19,8 +19,8 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, \
     QSizePolicy, QInputDialog
 
-from logic.main import build_description_db, local_mame_paths, get_all_roms_with_saves, save_game_info
-from logic.main import get_real_name, rename, get_roms_from_paths, new_create_rom_list, test_game_info
+from logic.main import build_description_db, local_mame_paths, get_all_roms_with_saves, save_to_json
+from logic.main import get_real_name, rename_save_state_file, get_roms_from_paths, create_rom_list, test_pb_info
 
 
 
@@ -49,7 +49,7 @@ class StageSplitItem(QWidget):
     def update_split_db(self):
         print(self.input.text())
         self.game_db[self.game_name]['splits'][self.item_index][2] = int(self.input.text())
-        save_game_info(self.game_db)
+        save_to_json(self.game_db)
         print(self.game_db[self.game_name]['splits'][self.item_index][2])
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
@@ -111,11 +111,11 @@ class MainWindow(QMainWindow):
         # Create romlist if it doesnt already exist.
         if not os.path.isfile('logic/rom_list.txt'):
             roms = get_roms_from_paths(local_mame_paths)
-            new_create_rom_list(roms)
+            create_rom_list(roms)
 
         if not os.path.isfile('game_db.json'):
             with open('game_db.json', 'w') as game_db:
-                json.dump(test_game_info, game_db, indent=4)
+                json.dump(test_pb_info, game_db, indent=4)
 
         self.fill_data_structures()
 
@@ -326,7 +326,7 @@ class MainWindow(QMainWindow):
             new_split = (split_count, split_count + 1, 696969)
             game_splits.append(new_split)
             self.add_split(new_split, game_name)
-            save_game_info(self.test_game_info)
+            save_to_json(self.test_game_info)
 
     # TODO add to db or else breaks on selection.
     def add_game(self):
@@ -334,10 +334,10 @@ class MainWindow(QMainWindow):
         if game_name and ok:
             QTreeWidgetItem(self.high_score_game_tree, [game_name])
 
-        self.test_game_info[game_name] = {'hs': '',
-                                          'distance': '',
-                                          'splits': []}
-        save_game_info(self.test_game_info)
+            self.test_game_info[game_name] = {'hs': '',
+                                              'distance': '',
+                                              'splits': []}
+            save_to_json(self.test_game_info)
 
 
     def delete_split(self):
@@ -352,7 +352,7 @@ class MainWindow(QMainWindow):
                 self.split_list.takeItem(row)
                 splits = self.test_game_info[game_name]['splits']
                 del splits[row]
-                save_game_info(self.test_game_info)
+                save_to_json(self.test_game_info)
                 print(splits)
 
     def save_state_tree_selection_changed(self, cur: QTreeWidgetItem, prev: QTreeWidgetItem):
@@ -472,7 +472,7 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.test_game_info[game_name]['hs'] = new_pb
-            save_game_info(self.test_game_info)
+            save_to_json(self.test_game_info)
 
     def update_distance_pb(self):
         new_pb = self.distance_edit.text()
@@ -481,7 +481,7 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.test_game_info[game_name]['distance'] = new_pb
-            save_game_info(self.test_game_info)
+            save_to_json(self.test_game_info)
 
     def menu_button_1_clicked(self) -> None:
         self.tree_widget.hide()
