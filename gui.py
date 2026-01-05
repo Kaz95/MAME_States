@@ -423,13 +423,13 @@ class MainWindow(QMainWindow):
             for split in splits:
                 self.add_split(split, game_name)
 
-    # TODO Should make a private method to handle this.
+    # TODO Keep looking for a better way to annotate
     def split_double_clicked(self, item: QListWidgetItem):
         widget_item = self.split_list.itemWidget(item)
         widget_item.editor.setReadOnly(False)
         widget_item.editor.setFocus()
 
-    # TODO Should make a private method to handle this.
+
     def split_current_item_changed(self, cur: QListWidgetItem, prev: QListWidgetItem):
         if prev:
             widget_item = self.split_list.itemWidget(prev)
