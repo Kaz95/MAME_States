@@ -3,11 +3,8 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Add docstrings
-    * Comment/Code Review/Refactor
     * Reactivate file renaming eventually.
     * Consider sizing policies and size hints
-    * Consider 'add new mame folder' functionality.
     * Decide on new features to add.
 """
 import json
