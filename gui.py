@@ -144,10 +144,10 @@ class MainWindow(QMainWindow):
         self.menu = self.menuBar()
         self.file_menu = self.menu.addMenu('&File')
 
-        self.button_1_action = QAction('button 1', self)
+        self.button_1_action: QAction = QAction('button 1', self)
         self.button_1_action.triggered.connect(self.menu_button_1_clicked)
 
-        self.button_2_action = QAction('button 2', self)
+        self.button_2_action: QAction = QAction('button 2', self)
         self.button_2_action.triggered.connect(self.menu_button_2_clicked)
 
         self.file_menu.addAction(self.button_1_action)
@@ -192,16 +192,16 @@ class MainWindow(QMainWindow):
         self.distance_label: QLabel = QLabel('Distance PB:')
         self.high_score_label: QLabel = QLabel('High Score:')
 
-        self.split_list = QListWidget()
+        self.split_list: QListWidget = QListWidget()
         self.split_list.itemDoubleClicked.connect(self.split_double_clicked)
         self.split_list.currentItemChanged.connect(self.split_current_item_changed)
 
-        self.high_score_game_tree = QTreeWidget()
+        self.high_score_game_tree: QTreeWidget = QTreeWidget()
         self.high_score_game_tree.setHeaderLabels(['Games'])
         self.high_score_game_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
-        self.high_score_edit: QLineEdit | None = QLineEdit()
-        self.distance_edit: QLineEdit | None = QLineEdit()
+        self.high_score_edit: QLineEdit = QLineEdit()
+        self.distance_edit: QLineEdit = QLineEdit()
 
         self.add_split_button: QPushButton = QPushButton('Add Split')
         self.add_split_button.clicked.connect(self.new_split)
@@ -257,7 +257,6 @@ class MainWindow(QMainWindow):
 
         # Add tabs to tab container
         self.tabs.addTab(self.save_state_page, 'Save States')
-
         self.tabs.addTab(self.high_score_page, 'High Scores')
 
         self.setCentralWidget(self.tabs)
@@ -408,6 +407,7 @@ class MainWindow(QMainWindow):
         self.text_before_editing = current_item.text(0)
 
     def high_score_tree_selection_changed(self):
+        """Clear and refill 'splits list' based on currently selected item."""
         self.split_list.clear()
         selected = self.high_score_game_tree.selectedItems()
         if selected:
@@ -423,17 +423,20 @@ class MainWindow(QMainWindow):
             for split in splits:
                 self.add_split(split, game_name)
 
+    # TODO Should make a private method to handle this.
     def split_double_clicked(self, item: QListWidgetItem):
         widget_item = self.split_list.itemWidget(item)
         widget_item.editor.setReadOnly(False)
         widget_item.editor.setFocus()
 
+    # TODO Should make a private method to handle this.
     def split_current_item_changed(self, cur: QListWidgetItem, prev: QListWidgetItem):
         if prev:
             widget_item = self.split_list.itemWidget(prev)
             widget_item.editor.setReadOnly(True)
 
     def update_high_score_pb(self):
+        """Updates in memory DB and saves to JSON"""
         new_pb = int(self.high_score_edit.text())
         selected = self.high_score_game_tree.selectedItems()
         if selected:
@@ -443,6 +446,7 @@ class MainWindow(QMainWindow):
             save_to_json(self.test_game_info)
 
     def update_distance_pb(self):
+        """Updates in memory DB and saves to JSON"""
         new_pb = self.distance_edit.text()
         selected = self.high_score_game_tree.selectedItems()
         if selected:
