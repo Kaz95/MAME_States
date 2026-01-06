@@ -46,20 +46,73 @@ class StageSplitItem(QWidget):
         stage = split[1]
         score = split[2]
 
-        self.label: QLabel = QLabel(f'Stage-{stage}:')
-        self.editor: QLineEdit = QLineEdit(str(score))
-        self.editor.setReadOnly(True)
-        self.editor.editingFinished.connect(self.update_split_db)
-        self.editor.setValidator(QIntValidator())
+        self.name_label: QLabel = QLabel(f'{stage}:')
+        self.score_label: QLabel = QLabel(str(score))
+
+        self.name_editor: QLineEdit = QLineEdit()
+        self.score_editor: QLineEdit = QLineEdit()
+
+        self.name_editor.hide()
+        self.score_editor.hide()
+
+        self.name_editor.editingFinished.connect(self.update_split_db)
+        self.score_editor.editingFinished.connect(self.update_split_db)
+
+        self.score_editor.setValidator(QIntValidator())
+        # self.label: QLabel = QLabel(f'Stage-{stage}:')
+        # self.editor: QLineEdit = QLineEdit(str(score))
+        # self.editor.setReadOnly(True)
+        # self.editor.editingFinished.connect(self.update_split_db)
+        # self.editor.setValidator(QIntValidator())
 
         layout = QHBoxLayout()
-        layout.addWidget(self.label)
-        layout.addWidget(self.editor)
+        layout.addWidget(self.name_label)
+        layout.addWidget(self.score_label)
+        layout.addWidget(self.name_editor)
+        layout.addWidget(self.score_editor)
+
+        # layout.addWidget(self.label)
+        # layout.addWidget(self.editor)
         self.setLayout(layout)
+
+    def toggle_editors(self):
+        self.name_label.hide()
+        self.score_label.hide()
+
+        name_text = self.name_label.text()
+        name_text = name_text.strip(':')
+        score_text = self.score_label.text()
+
+        self.name_editor.setText(name_text)
+        self.score_editor.setText(score_text)
+
+        self.name_editor.show()
+        self.score_editor.show()
+
+        self.name_editor.setFocus()
+
+    # TODO This is a bit of a slop job. Is there a better way to determine if editor text should be copied?
+    def toggle_labels(self):
+        self.name_editor.hide()
+        self.score_editor.hide()
+
+        name_text = self.name_editor.text()
+        if name_text:
+            self.name_label.setText(name_text + ':')
+
+        score_text = self.score_editor.text()
+        if score_text:
+            self.score_label.setText(score_text)
+
+        self.name_label.show()
+        self.score_label.show()
 
     def update_split_db(self):
         """Update the 'in-memory' copy of the database and save to JSON"""
-        self.game_db[self.game_name]['splits'][self.item_index][2] = int(self.editor.text())
+        # pass
+        self.game_db[self.game_name]['splits'][self.item_index][2] = int(self.score_editor.text())
+        self.game_db[self.game_name]['splits'][self.item_index][1] = self.name_editor.text()
+
         save_to_json(self.game_db)
 
 
@@ -422,15 +475,19 @@ class MainWindow(QMainWindow):
 
     # TODO Keep looking for a better way to annotate
     def split_double_clicked(self, item: QListWidgetItem):
+        # pass
         widget_item = self.split_list.itemWidget(item)
-        widget_item.editor.setReadOnly(False)
-        widget_item.editor.setFocus()
+        widget_item.toggle_editors()
+        # widget_item.editor.setReadOnly(False)
+        # widget_item.editor.setFocus()
 
 
     def split_current_item_changed(self, cur: QListWidgetItem, prev: QListWidgetItem):
+        # pass
         if prev:
             widget_item = self.split_list.itemWidget(prev)
-            widget_item.editor.setReadOnly(True)
+            widget_item.toggle_labels()
+        #     widget_item.editor.setReadOnly(True)
 
     def update_high_score_pb(self):
         """Updates in memory DB and saves to JSON"""
