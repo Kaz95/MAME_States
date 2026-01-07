@@ -59,7 +59,7 @@ def create_rom_list(roms: set[str]) -> None:
 
 
 def build_description_db(rom_list: str) -> dict[str, str]:
-    """Create and return a dictionary containing save file names, for roms that have them.
+    """Create and return a dictionary containing long form names as keys, and rom names as values.
 
     All resulting strings are stripped of white space and double quotes.
     """
