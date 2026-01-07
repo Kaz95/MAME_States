@@ -16,8 +16,8 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, \
     QInputDialog
 
-from logic.main import build_description_db, local_mame_paths, get_all_roms_with_saves, save_to_json
-from logic.main import get_real_name, get_roms_from_paths, create_rom_list, test_pb_info
+from logic.main import build_description_db, local_mame_paths, get_all_roms_with_saves, save_to_json, generate_rom_list
+from logic.main import get_real_name, test_pb_info
 
 
 class StageSplitItem(QWidget):
@@ -170,8 +170,8 @@ class MainWindow(QMainWindow):
 
         # Create romlist if it doesnt already exist.
         if not os.path.isfile('logic/rom_list.txt'):
-            roms = get_roms_from_paths(local_mame_paths)
-            create_rom_list(roms)
+            if local_mame_paths:
+                generate_rom_list(local_mame_paths[0])
 
         if not os.path.isfile('game_db.json'):
             with open('game_db.json', 'w') as game_db:

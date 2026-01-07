@@ -36,26 +36,9 @@ def save_to_json(pb_info):
         json.dump(pb_info, json_db, indent=4)
 
 
-def get_roms_from_paths(mame_paths: list[str]) -> set[str]:
-    """Create a unique set of roms available in the given MAME folders."""
-    roms = set()
-    for path in mame_paths:
-        with open('temp_rom_list.txt', 'w+') as rom_list:
-            subprocess.run([path + '\\mame.exe', '-ll'], stdout=rom_list)
-            rom_list.seek(0)
-            next(rom_list)
-            for line in rom_list:
-                roms.add(line)
-        os.remove('temp_rom_list.txt')
-    return roms
-
-
-def create_rom_list(roms: set[str]) -> None:
-    """Create list of roms in a text file."""
+def generate_rom_list(mame_path):
     with open('logic/rom_list.txt', 'w') as rom_list:
-        roms = list(roms)
-        roms.sort()
-        rom_list.writelines(roms)
+        subprocess.run([mame_path + '\\mame.exe', '-ll'], stdout=rom_list)
 
 
 def build_description_db(rom_list: str) -> dict[str, str]:
@@ -65,6 +48,7 @@ def build_description_db(rom_list: str) -> dict[str, str]:
     """
     rom_db = {}
     with open(rom_list, 'r') as rom_list:
+        next(rom_list)
         for line in rom_list:
             description_start = line.index('"')
             description = line[description_start:]
@@ -120,7 +104,9 @@ def rename_save_state_file(mame_folder: str, rom_folder: str, old_save_name: str
     os.rename(mame_folder + "\\sta\\" + rom_folder + "\\" + old_save_name + '.sta',
               mame_folder + "\\sta\\" + rom_folder + "\\" + new_save_name + '.sta')
 
-# if __name__ == '__main__':
+if __name__ == '__main__':
+    mame_path = r'C:\Users\kazac\Downloads\mame'
+    generate_rom_list(mame_path)
 #     roms = get_roms_from_paths(mame_paths)
 #     new_create_rom_list(roms)
 #     description_db = build_description_db('rom_list.txt')
