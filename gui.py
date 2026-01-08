@@ -92,6 +92,7 @@ class StageSplitItem(QWidget):
         self.name_editor.setFocus()
 
     # TODO This is a bit of a slop job. Is there a better way to determine if editor text should be copied?
+    #   The problem is sometimes name and editor text is none and will blank out other items.
     def toggle_labels(self):
         self.name_editor.hide()
         self.score_editor.hide()
