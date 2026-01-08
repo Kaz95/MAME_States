@@ -14,7 +14,7 @@ from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
 from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator, QIntValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QStyledItemDelegate, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, \
-    QInputDialog
+    QInputDialog, QFileDialog, QMessageBox
 
 from logic.main import build_description_db, local_mame_paths, get_all_roms_with_saves, save_to_json, generate_rom_list
 from logic.main import get_real_name, test_pb_info, json_db, rom_db
@@ -200,8 +200,12 @@ class MainWindow(QMainWindow):
         self.button_2_action: QAction = QAction('button 2', self)
         self.button_2_action.triggered.connect(self.menu_button_2_clicked)
 
+        self.button_3_action: QAction = QAction('Add MAME Path', self)
+        self.button_3_action.triggered.connect(self.add_path_button_clicked)
+
         self.file_menu.addAction(self.button_1_action)
         self.file_menu.addAction(self.button_2_action)
+        self.file_menu.addAction(self.button_3_action)
 
         # Tabs
         self.tabs: QTabWidget = QTabWidget()
@@ -338,38 +342,35 @@ class MainWindow(QMainWindow):
         list_item = QListWidgetItem(self.split_list)
         self.split_list.setItemWidget(list_item, split_item)
 
-    # def valid_path(self, mame_folder):
-    #     mame_exe = mame_folder + '\\mame.exe'
-    #     if not os.path.exists(mame_exe):
-    #         message_response = QMessageBox.critical(self,
-    #                                                 'Path Invalid',
-    #                                                 'Please choose a valid MAME folder.',
-    #                                                 QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Cancel)
-    #         if message_response == QMessageBox.StandardButton.Retry:
-    #             return False
-    #         if message_response == QMessageBox.StandardButton.Cancel:
-    #             return None
-    #     else:
-    #         return True
+    def valid_path(self, mame_folder: Path):
+        mame_exe = mame_folder / 'mame.exe'
+        if not mame_exe.is_file():
+            message_response = QMessageBox.critical(self,
+                                                    'Path Invalid',
+                                                    'Please choose a valid MAME folder.',
+                                                    QMessageBox.StandardButton.Retry | QMessageBox.StandardButton.Cancel)
+            if message_response == QMessageBox.StandardButton.Retry:
+                return False
+            if message_response == QMessageBox.StandardButton.Cancel:
+                return None
+        else:
+            return True
 
-    # def get_mame_path(self):
-    #     if os.path.isfile('logic/romlist.txt'):
-    #         with open('logic/romlist.txt', 'r') as romlist:
-    #             first_line = romlist.readline()
-    #             mame_folder = first_line.strip()
-    #             return mame_folder
-    #     else:
-    #         mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
-    #                                                             options=QFileDialog.Option.ShowDirsOnly)
-    #         res = self.valid_path(mame_folder)
-    #         if res is True:
-    #             create_rom_list(mame_folder)
-    #             change_mame_path(mame_folder)
-    #             return mame_folder
-    #         if res is False:
-    #             self.get_mame_path()
-    #
-    #         return res
+    def get_mame_path(self):
+
+
+        mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
+                                                            options=QFileDialog.Option.ShowDirsOnly)
+
+        mame_folder = Path(mame_folder)
+
+        res = self.valid_path(mame_folder)
+        if res is True:
+            return mame_folder
+        if res is False:
+            self.get_mame_path()
+
+        return res
 
     def fill_data_structures(self) -> None:
         """Reset and refill data structures used to derive TreeWidget items.
@@ -383,6 +384,8 @@ class MainWindow(QMainWindow):
         self.all_save_states = get_all_roms_with_saves(self.mame_paths)
 
     def add_mame_path_items(self):
+        self.save_state_tree.clear()
+
         for path in self.mame_paths:
             path_item = QTreeWidgetItem(self.save_state_tree, [str(path)])
             path_item.setFont(0, self.top_level_item_font)
@@ -396,6 +399,9 @@ class MainWindow(QMainWindow):
                     save_state_item = QTreeWidgetItem(game_item, [save_state])
                     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
                     save_state_item.setFont(0, self.sub_item_font)
+
+
+
 
     # # Slots
     # TODO Update to take in a real split eventually
@@ -436,7 +442,7 @@ class MainWindow(QMainWindow):
     def save_state_tree_item_changed(self, save_state_item: QTreeWidgetItem):
         if save_state_item.childCount() == 0:
             save_state_name = save_state_item.text(0)
-
+            print(save_state_name)
             game_item = save_state_item.parent()
             game_name = game_item.text(0)
 
@@ -514,6 +520,19 @@ class MainWindow(QMainWindow):
 
     def menu_button_2_clicked(self) -> None:
         self.save_state_tree.show()
+
+    # TODO Same problem here I have to disconnect and reconnect slot to avoid breaking shit. Look into it.
+    def add_path_button_clicked(self) -> None:
+        path = self.get_mame_path()
+        if path:
+            self.mame_paths.append(path)
+            self.all_save_states = get_all_roms_with_saves(self.mame_paths)
+            self.save_state_tree.itemChanged.disconnect(self.save_state_tree_item_changed)
+            self.add_mame_path_items()
+            self.save_state_tree.itemChanged.connect(self.save_state_tree_item_changed)
+            print(f'New MAME path: {path}')
+        else:
+            print('Cancel chosen')
 
 
 if __name__ == '__main__':

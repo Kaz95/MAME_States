@@ -16,8 +16,7 @@ json_db = Path('game_db.json')
 rom_db = Path('logic/rom_list.txt')
 
 local_mame_paths = [Path(r'C:\Users\kazac\Downloads\wolfmame-0273'),
-                    Path(r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10'),
-                    Path(r'C:\Users\kazac\Downloads\mame')]
+                    Path(r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10')]
 
 test_pb_info = {'DonPachi': {'hs': 900,
                              'distance': 'Stage 6',
