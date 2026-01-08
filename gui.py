@@ -17,7 +17,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QInputDialog
 
 from logic.main import build_description_db, local_mame_paths, get_all_roms_with_saves, save_to_json, generate_rom_list
-from logic.main import get_real_name, test_pb_info
+from logic.main import get_real_name, test_pb_info, json_db, rom_db
 
 
 class StageSplitItem(QWidget):
@@ -168,14 +168,14 @@ class MainWindow(QMainWindow):
         self.mame_paths: list[str] = local_mame_paths
         """List of all MAME directories that will be used by the application."""
 
-        # Create romlist if it doesnt already exist.
-        if not os.path.isfile('logic/rom_list.txt'):
+        # Create rom list if it doesn't already exist.
+        if not rom_db.is_file():
             if local_mame_paths:
                 generate_rom_list(local_mame_paths[0])
 
-        if not os.path.isfile('game_db.json'):
-            with open('game_db.json', 'w') as game_db:
-                json.dump(test_pb_info, game_db, indent=4)
+        if not json_db.is_file():
+            with open(json_db, 'w') as db:
+                json.dump(test_pb_info, db, indent=4)
 
         self.fill_data_structures()
 
@@ -263,7 +263,7 @@ class MainWindow(QMainWindow):
         self.add_game_button.clicked.connect(self.add_game)
 
         # Load DB and Fill widgets
-        with open('game_db.json', 'r') as game_info:
+        with open(json_db, 'r') as game_info:
             game_dict = json.load(game_info)
             self.test_game_info = game_dict
 
@@ -379,12 +379,12 @@ class MainWindow(QMainWindow):
         """
         # reset data structs
 
-        self.description_db = build_description_db('logic/rom_list.txt')
+        self.description_db = build_description_db(rom_db)
         self.all_save_states = get_all_roms_with_saves(local_mame_paths)
 
     def add_mame_path_items(self):
         for path in local_mame_paths:
-            path_item = QTreeWidgetItem(self.save_state_tree, [path])
+            path_item = QTreeWidgetItem(self.save_state_tree, [str(path)])
             path_item.setFont(0, self.top_level_item_font)
 
             for key in self.all_save_states[path]:
