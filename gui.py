@@ -8,7 +8,7 @@ TODO:
     * Decide on new features to add.
 """
 import json
-import os.path
+from pathlib import Path
 
 from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
 from PyQt6.QtGui import QAction, QFont, QRegularExpressionValidator, QIntValidator
@@ -165,13 +165,13 @@ class MainWindow(QMainWindow):
         self.all_save_states: dict[str:dict[str:list[str]]] | None = None
         """Names of games that have a save folder, and their respective save states"""
 
-        self.mame_paths: list[str] = local_mame_paths
+        self.mame_paths: list[Path] = local_mame_paths
         """List of all MAME directories that will be used by the application."""
 
         # Create rom list if it doesn't already exist.
         if not rom_db.is_file():
-            if local_mame_paths:
-                generate_rom_list(local_mame_paths[0])
+            if self.mame_paths:
+                generate_rom_list(self.mame_paths[0])
 
         if not json_db.is_file():
             with open(json_db, 'w') as db:
@@ -380,10 +380,10 @@ class MainWindow(QMainWindow):
         # reset data structs
 
         self.description_db = build_description_db(rom_db)
-        self.all_save_states = get_all_roms_with_saves(local_mame_paths)
+        self.all_save_states = get_all_roms_with_saves(self.mame_paths)
 
     def add_mame_path_items(self):
-        for path in local_mame_paths:
+        for path in self.mame_paths:
             path_item = QTreeWidgetItem(self.save_state_tree, [str(path)])
             path_item.setFont(0, self.top_level_item_font)
 
