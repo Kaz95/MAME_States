@@ -12,8 +12,12 @@ import os
 import json
 from pathlib import Path
 
-json_db = Path('game_db.json')
+paths_db = Path('paths.json')
+pb_db = Path('game_db.json')
 rom_db = Path('logic/rom_list.txt')
+
+raw_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
+         r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10']
 
 local_mame_paths = [Path(r'C:\Users\kazac\Downloads\wolfmame-0273'),
                     Path(r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10')]
@@ -30,12 +34,25 @@ test_pb_info = {'DonPachi': {'hs': 900,
                 'Libble Rabble': {'hs': 50069,
                                   'distance': 'Stage 5',
                                   'splits': [[0, 'Stage-1', 10000], [1, 'Stage-2', 15069], [2, 'Stage-3', 25069],
-                                             [3, 'Stage-4', 38069],[4, 'Stage-5', 50069]]}}
+                                             [3, 'Stage-4', 38069], [4, 'Stage-5', 50069]]}}
+
+def load_paths_from_json() -> list[Path]:
+    with open(paths_db, 'r') as db:
+        formatted_paths = []
+        raw_paths = json.load(db)
+        for path in raw_paths:
+            formatted_paths.append(Path(path))
+
+        return formatted_paths
+
+def save_paths_to_json(paths) -> None:
+    with open(paths_db, 'w') as db:
+        json.dump(paths, db, indent=4)
 
 
-def save_to_json(pb_info: dict[str, dict]) -> None:
+def save_pb_to_json(pb_info: dict[str, dict]) -> None:
     """Save the 'in-memory' copy of the personal best database to JSON."""
-    with open(json_db, 'w') as db:
+    with open(pb_db, 'w') as db:
         json.dump(pb_info, db, indent=4)
 
 
@@ -107,8 +124,12 @@ def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: st
     os.rename(mame_folder / "sta" / rom_folder / (old_save_name + '.sta'),
               mame_folder / "sta" / rom_folder / (new_save_name + '.sta'))
 
-# if __name__ == '__main__':
-#     mame_path = r'C:\Users\kazac\Downloads\mame'
+
+if __name__ == '__main__':
+    # save_paths_to_json(paths)
+    load_paths_from_json()
+#     mame_path = r'C:\Users\ka
+#     zac\Downloads\mame'
 #     generate_rom_list(mame_path)
 #     roms = get_roms_from_paths(mame_paths)
 #     new_create_rom_list(roms)

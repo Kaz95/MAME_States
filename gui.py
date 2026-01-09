@@ -16,8 +16,9 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, \
     QInputDialog, QFileDialog, QMessageBox
 
-from logic.main import build_description_db, local_mame_paths, get_all_roms_with_saves, save_to_json, generate_rom_list
-from logic.main import get_real_name, test_pb_info, json_db, rom_db
+from logic.main import build_description_db, local_mame_paths, paths_db, get_all_roms_with_saves, save_pb_to_json, \
+    generate_rom_list, save_paths_to_json, raw_paths
+from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
 
 
 class StageSplitItem(QWidget):
@@ -114,7 +115,7 @@ class StageSplitItem(QWidget):
         self.game_db[self.game_name]['splits'][self.item_index][2] = int(self.score_editor.text())
         self.game_db[self.game_name]['splits'][self.item_index][1] = self.name_editor.text()
 
-        save_to_json(self.game_db)
+        save_pb_to_json(self.game_db)
 
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
@@ -166,16 +167,21 @@ class MainWindow(QMainWindow):
         self.all_save_states: dict[str:dict[str:list[str]]] | None = None
         """Names of games that have a save folder, and their respective save states"""
 
-        self.mame_paths: list[Path] = local_mame_paths
+        # Build sample paths DB if it's not already there.
+        if not paths_db.is_file():
+            save_paths_to_json(raw_paths)
+
+        self.mame_paths: list[Path] = load_paths_from_json()
         """List of all MAME directories that will be used by the application."""
+
 
         # Create rom list if it doesn't already exist.
         if not rom_db.is_file():
             if self.mame_paths:
                 generate_rom_list(self.mame_paths[0])
 
-        if not json_db.is_file():
-            with open(json_db, 'w') as db:
+        if not pb_db.is_file():
+            with open(pb_db, 'w') as db:
                 json.dump(test_pb_info, db, indent=4)
 
         self.fill_data_structures()
@@ -268,7 +274,7 @@ class MainWindow(QMainWindow):
         self.add_game_button.clicked.connect(self.add_game)
 
         # Load DB and Fill widgets
-        with open(json_db, 'r') as game_info:
+        with open(pb_db, 'r') as game_info:
             game_dict = json.load(game_info)
             self.test_game_info = game_dict
 
@@ -416,7 +422,7 @@ class MainWindow(QMainWindow):
             new_split = (split_count, split_count + 1, 696969)
             game_splits.append(new_split)
             self.add_split(new_split, game_name)
-            save_to_json(self.test_game_info)
+            save_pb_to_json(self.test_game_info)
 
     def add_game(self):
         game_name, ok = QInputDialog.getText(self, 'New Game', 'Please enter new game name.')
@@ -426,7 +432,7 @@ class MainWindow(QMainWindow):
             self.test_game_info[game_name] = {'hs': '',
                                               'distance': '',
                                               'splits': []}
-            save_to_json(self.test_game_info)
+            save_pb_to_json(self.test_game_info)
 
     def delete_split(self):
         selected = self.high_score_game_tree.selectedItems()
@@ -437,7 +443,7 @@ class MainWindow(QMainWindow):
                 self.split_list.takeItem(row)
                 splits = self.test_game_info[game_name]['splits']
                 del splits[row]
-                save_to_json(self.test_game_info)
+                save_pb_to_json(self.test_game_info)
 
     # TODO re-enable file renaming after ensuring user input is properly sanitized.
     def save_state_tree_item_changed(self, save_state_item: QTreeWidgetItem):
@@ -504,7 +510,7 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.test_game_info[game_name]['hs'] = new_pb
-            save_to_json(self.test_game_info)
+            save_pb_to_json(self.test_game_info)
 
     def update_distance_pb(self):
         """Updates in memory DB and saves to JSON"""
@@ -514,7 +520,7 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.test_game_info[game_name]['distance'] = new_pb
-            save_to_json(self.test_game_info)
+            save_pb_to_json(self.test_game_info)
 
     def menu_button_1_clicked(self) -> None:
         self.save_state_tree.hide()
