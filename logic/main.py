@@ -45,7 +45,15 @@ def load_paths_from_json() -> list[Path]:
 
         return formatted_paths
 
-def save_paths_to_json(paths) -> None:
+def get_raw_paths(formatted_paths):
+    raw_paths = []
+    for path in formatted_paths:
+        path = str(path)
+        raw_paths.append(path)
+
+    return raw_paths
+
+def save_raw_paths_to_json(paths) -> None:
     with open(paths_db, 'w') as db:
         json.dump(paths, db, indent=4)
 
@@ -126,8 +134,10 @@ def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: st
 
 
 if __name__ == '__main__':
+    raw_paths = get_raw_paths(local_mame_paths)
+    save_raw_paths_to_json(raw_paths)
     # save_paths_to_json(paths)
-    load_paths_from_json()
+    # load_paths_from_json()
 #     mame_path = r'C:\Users\ka
 #     zac\Downloads\mame'
 #     generate_rom_list(mame_path)

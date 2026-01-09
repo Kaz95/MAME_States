@@ -17,7 +17,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QInputDialog, QFileDialog, QMessageBox
 
 from logic.main import build_description_db, local_mame_paths, paths_db, get_all_roms_with_saves, save_pb_to_json, \
-    generate_rom_list, save_paths_to_json, raw_paths
+    generate_rom_list, save_raw_paths_to_json, raw_paths, get_raw_paths
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
 
 
@@ -169,7 +169,7 @@ class MainWindow(QMainWindow):
 
         # Build sample paths DB if it's not already there.
         if not paths_db.is_file():
-            save_paths_to_json(raw_paths)
+            save_raw_paths_to_json(raw_paths)
 
         self.mame_paths: list[Path] = load_paths_from_json()
         """List of all MAME directories that will be used by the application."""
@@ -533,6 +533,8 @@ class MainWindow(QMainWindow):
         path = self.get_mame_path()
         if path:
             self.mame_paths.append(path)
+            raw_pathss = get_raw_paths(self.mame_paths)
+            save_raw_paths_to_json(raw_pathss)
             self.all_save_states = get_all_roms_with_saves(self.mame_paths)
             self.save_state_tree.itemChanged.disconnect(self.save_state_tree_item_changed)
             self.add_mame_path_items()
