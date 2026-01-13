@@ -59,6 +59,7 @@ class StageSplitItem(QWidget):
         self.name_editor.editingFinished.connect(self.update_split_db)
         self.score_editor.editingFinished.connect(self.update_split_db)
         self.name_editor.returnPressed.connect(self.toggle_labels)
+        self.score_editor.returnPressed.connect(self.toggle_labels)
 
         self.score_editor.setValidator(QIntValidator())
         # self.label: QLabel = QLabel(f'Stage-{stage}:')
