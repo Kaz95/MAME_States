@@ -20,6 +20,39 @@ from logic.main import build_description_db, local_mame_paths, paths_db, get_all
     generate_rom_list, save_raw_paths_to_json, raw_paths, get_raw_paths
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
 
+class ListWidget(QListWidget):
+    def __init__(self, game_db):
+        super().__init__()
+        self.game_db = game_db
+        self.last_row = None
+        self.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+        self.installEventFilter(self)
+        self.currentItemChanged.connect(self.selection_changed)
+
+
+    def eventFilter(self, sender, event):
+        if event.type() == QEvent.Type.ChildRemoved:
+            moved = self.selectedItems()
+            if moved:
+                moved = moved[0]
+                game_name = self.itemWidget(moved).game_name
+                self.update_db(game_name, self.last_row, self.row(moved))
+                print(self.itemWidget(moved).game_name)
+                print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
+
+                self.last_row = self.row(moved)
+        return super().eventFilter(sender, event)
+
+    def selection_changed(self, cur, prev):
+        if cur:
+            self.last_row = self.row(cur)
+
+    def update_db(self, game_name, old_index, new_index):
+        splits = self.game_db[game_name]['splits']
+        split = splits.pop(old_index)
+        splits.insert(new_index, split)
+        save_pb_to_json(self.game_db)
+
 
 class StageSplitItem(QWidget):
     """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
@@ -44,14 +77,17 @@ class StageSplitItem(QWidget):
         self.item_index = split[0]
         """The index of the split, used for maintaining correct order."""
 
-        stage = split[1]
-        score = split[2]
+        self.stage = split[1]
+        self.score = split[2]
 
-        self.name_label: QLabel = QLabel(f'{stage}:')
-        self.score_label: QLabel = QLabel(str(score))
+        self.name_label: QLabel = QLabel(f'{self.stage}')
+        self.score_label: QLabel = QLabel(str(self.score))
 
         self.name_editor: QLineEdit = QLineEdit()
         self.score_editor: QLineEdit = QLineEdit()
+
+        self.name_editor.setPlaceholderText('Stage-69')
+        self.score_editor.setPlaceholderText('696969')
 
         self.name_editor.hide()
         self.score_editor.hide()
@@ -139,6 +175,7 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
             if event.key() == Qt.Key.Key_Space:
                 watched.insert('-')
                 return True
+
         return super().eventFilter(watched, event)
 
 
@@ -255,7 +292,12 @@ class MainWindow(QMainWindow):
         self.distance_label: QLabel = QLabel('Distance PB:')
         self.high_score_label: QLabel = QLabel('High Score:')
 
-        self.split_list: QListWidget = QListWidget()
+
+        with open(pb_db, 'r') as game_info:
+            game_dict = json.load(game_info)
+            self.test_game_info = game_dict
+
+        self.split_list: QListWidget = ListWidget(self.test_game_info)
         self.split_list.itemDoubleClicked.connect(self.split_double_clicked)
         self.split_list.currentItemChanged.connect(self.split_current_item_changed)
 
@@ -276,9 +318,7 @@ class MainWindow(QMainWindow):
         self.add_game_button.clicked.connect(self.add_game)
 
         # Load DB and Fill widgets
-        with open(pb_db, 'r') as game_info:
-            game_dict = json.load(game_info)
-            self.test_game_info = game_dict
+
 
         for key in self.test_game_info:
             QTreeWidgetItem(self.high_score_game_tree, [key])
@@ -350,6 +390,7 @@ class MainWindow(QMainWindow):
         split_item = StageSplitItem(split, self.test_game_info, game_name)
         list_item = QListWidgetItem(self.split_list)
         self.split_list.setItemWidget(list_item, split_item)
+        return list_item
 
     def valid_path(self, mame_folder: Path):
         mame_exe = mame_folder / 'mame.exe'
@@ -421,9 +462,11 @@ class MainWindow(QMainWindow):
             game_name = game_item.text(0)
             game_splits = self.test_game_info[game_name]['splits']
             split_count = len(game_splits)
-            new_split = (split_count, split_count + 1, 696969)
+            new_split = [split_count, '', 0]
             game_splits.append(new_split)
-            self.add_split(new_split, game_name)
+            new_item = self.add_split(new_split, game_name)
+            self.split_list.setCurrentItem(new_item)
+            self.split_double_clicked(new_item)
             save_pb_to_json(self.test_game_info)
 
     def add_game(self):
