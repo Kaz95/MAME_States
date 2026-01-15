@@ -20,7 +20,7 @@ from logic.main import build_description_db, local_mame_paths, paths_db, get_all
     generate_rom_list, save_raw_paths_to_json, raw_paths, get_raw_paths
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
 
-class ListWidget(QListWidget):
+class StageSplitListWidget(QListWidget):
     def __init__(self, game_db):
         super().__init__()
         self.game_db = game_db
@@ -297,7 +297,7 @@ class MainWindow(QMainWindow):
             game_dict = json.load(game_info)
             self.test_game_info = game_dict
 
-        self.split_list: QListWidget = ListWidget(self.test_game_info)
+        self.split_list: QListWidget = StageSplitListWidget(self.test_game_info)
         self.split_list.itemDoubleClicked.connect(self.split_double_clicked)
         self.split_list.currentItemChanged.connect(self.split_current_item_changed)
 
