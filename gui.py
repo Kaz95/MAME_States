@@ -17,7 +17,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QInputDialog, QFileDialog, QMessageBox
 
 from logic.main import build_description_db, local_mame_paths, paths_db, get_all_roms_with_saves, save_pb_to_json, \
-    generate_rom_list, save_raw_paths_to_json, raw_paths, get_raw_paths
+    generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
 
 class ToggleableLabel(QLabel):
@@ -242,7 +242,7 @@ class MainWindow(QMainWindow):
 
         # Build sample paths DB if it's not already there.
         if not paths_db.is_file():
-            save_raw_paths_to_json(raw_paths)
+            save_raw_paths_to_json(raw_mame_paths)
 
         self.mame_paths: list[Path] = load_paths_from_json()
         """List of all MAME directories that will be used by the application."""

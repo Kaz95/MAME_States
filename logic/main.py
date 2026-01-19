@@ -16,7 +16,7 @@ paths_db = Path('paths.json')
 pb_db = Path('game_db.json')
 rom_db = Path('logic/rom_list.txt')
 
-raw_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
+raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
          r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10']
 
 local_mame_paths = [Path(r'C:\Users\kazac\Downloads\wolfmame-0273'),
@@ -134,8 +134,8 @@ def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: st
 
 
 if __name__ == '__main__':
-    raw_paths = get_raw_paths(local_mame_paths)
-    save_raw_paths_to_json(raw_paths)
+    raw_mame_paths = get_raw_paths(local_mame_paths)
+    save_raw_paths_to_json(raw_mame_paths)
     # save_paths_to_json(paths)
     # load_paths_from_json()
 #     mame_path = r'C:\Users\ka
