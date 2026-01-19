@@ -20,6 +20,40 @@ from logic.main import build_description_db, local_mame_paths, paths_db, get_all
     generate_rom_list, save_raw_paths_to_json, raw_paths, get_raw_paths
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
 
+class ToggleableLabel(QLabel):
+    def __init__(self, editor, parent=None):
+        super().__init__(parent)
+        self.setMouseTracking(True)
+        self.editor: QLineEdit = editor
+        self.editor.editingFinished.connect(self.toggle_labels)
+
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            print('double clicked')
+            self.toggle_editors()
+        super().mouseDoubleClickEvent(event)
+
+    def toggle_editors(self):
+        self.hide()
+        if self.text():
+            self.editor.setText(self.text())
+        else:
+            print('there was no text to copy from label')
+        self.editor.show()
+        self.editor.setFocus()
+
+
+
+    def toggle_labels(self):
+        self.editor.hide()
+        text = self.editor.text()
+        if text:
+            self.setText(text)
+
+        self.show()
+
+
+
 class StageSplitListWidget(QListWidget):
     def __init__(self, game_db):
         super().__init__()
@@ -292,6 +326,13 @@ class MainWindow(QMainWindow):
         self.distance_label: QLabel = QLabel('Distance PB:')
         self.high_score_label: QLabel = QLabel('High Score:')
 
+        self.high_score_edit: QLineEdit = QLineEdit()
+        self.distance_edit: QLineEdit = QLineEdit()
+
+        self.distance_value_label = ToggleableLabel(self.distance_edit)
+        self.high_score_value_label = ToggleableLabel(self.high_score_edit)
+
+
 
         with open(pb_db, 'r') as game_info:
             game_dict = json.load(game_info)
@@ -305,8 +346,7 @@ class MainWindow(QMainWindow):
         self.high_score_game_tree.setHeaderLabels(['Games'])
         self.high_score_game_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
-        self.high_score_edit: QLineEdit = QLineEdit()
-        self.distance_edit: QLineEdit = QLineEdit()
+
 
         self.add_split_button: QPushButton = QPushButton('Add Split')
         self.add_split_button.clicked.connect(self.new_split)
@@ -367,6 +407,35 @@ class MainWindow(QMainWindow):
 
 
     # Methods
+    def toggle_editors(self):
+        self.high_score_value_label.hide()
+        self.distance_value_label.hide()
+
+        self.high_score_edit.setText(self.high_score_value_label.text())
+        self.distance_edit.setText(self.distance_value_label.text())
+
+        self.high_score_edit.show()
+        self.distance_edit.show()
+
+
+    def toggle_labels(self):
+        self.high_score_edit.hide()
+        self.distance_edit.hide()
+
+        score_text = self.high_score_edit.text()
+        if score_text:
+            self.high_score_value_label.setText(score_text)
+
+        distance_text = self.distance_edit.text()
+        if distance_text:
+            self.distance_value_label.setText(distance_text)
+
+        self.high_score_value_label.show()
+        self.distance_value_label.show()
+
+
+
+
     def sizeHint(self):
         return QSize(1920, 1080)
 
@@ -378,13 +447,19 @@ class MainWindow(QMainWindow):
 
         self.personal_best_layout.addWidget(self.high_score_label, 0, 0)
         self.personal_best_layout.addWidget(self.high_score_edit, 0, 1)
+        self.personal_best_layout.addWidget(self.high_score_value_label, 0, 1)
 
         self.personal_best_layout.addWidget(self.distance_label, 1, 0)
         self.personal_best_layout.addWidget(self.distance_edit, 1, 1)
+        self.personal_best_layout.addWidget(self.distance_value_label, 1, 1)
 
     def update_pb_panel(self, high_score, distance):
         self.high_score_edit.setText(str(high_score))
         self.distance_edit.setText(distance)
+        self.high_score_value_label.setText(str(high_score))
+        self.distance_value_label.setText(distance)
+        self.high_score_edit.hide()
+        self.distance_edit.hide()
 
     def add_split(self, split, game_name):
         split_item = StageSplitItem(split, self.test_game_info, game_name)
@@ -526,7 +601,11 @@ class MainWindow(QMainWindow):
             distance = info['distance']
             splits = info['splits']
 
+            # TODO consider changing. Don't like needing to use a side effect of a function to handle this.
+            # self.toggle_editors()
             self.update_pb_panel(hs, distance)
+            # self.toggle_labels()
+
 
             for split in splits:
                 self.add_split(split, game_name)
@@ -569,8 +648,9 @@ class MainWindow(QMainWindow):
 
     def menu_button_1_clicked(self) -> None:
         self.save_state_tree.hide()
-
+        # self.toggle_editors()
     def menu_button_2_clicked(self) -> None:
+        # self.toggle_labels()
         self.save_state_tree.show()
 
     # TODO Same problem here I have to disconnect and reconnect slot to avoid breaking shit. Look into it.
@@ -578,8 +658,8 @@ class MainWindow(QMainWindow):
         path = self.get_mame_path()
         if path:
             self.mame_paths.append(path)
-            raw_pathss = get_raw_paths(self.mame_paths)
-            save_raw_paths_to_json(raw_pathss)
+            raw_paths = get_raw_paths(self.mame_paths)
+            save_raw_paths_to_json(raw_paths)
             self.all_save_states = get_all_roms_with_saves(self.mame_paths)
             self.save_state_tree.itemChanged.disconnect(self.save_state_tree_item_changed)
             self.add_mame_path_items()
