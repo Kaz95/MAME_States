@@ -8,6 +8,7 @@ TODO:
     * Decide on new features to add.
 """
 import json
+from os.path import split
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
@@ -71,6 +72,9 @@ class StageSplitListWidget(QListWidget):
                 moved = moved[0]
                 game_name = self.itemWidget(moved).game_name
                 self.update_db(game_name, self.last_row, self.row(moved))
+                splits = self.game_db[game_name]['splits']
+                print(splits)
+                self.add_diffs(splits)
                 print(self.itemWidget(moved).game_name)
                 print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
 
@@ -87,6 +91,19 @@ class StageSplitListWidget(QListWidget):
         splits.insert(new_index, split)
         save_pb_to_json(self.game_db)
 
+    def add_diffs(self, splits):
+        for index, split in enumerate(splits):
+            if index > 0:
+                diff = split[2] - splits[index - 1][2]
+                print(diff)
+                list_item = self.item(index)
+                widget_item = self.itemWidget(list_item)
+                widget_item.score_label.setText(str(split[2]) + f'({diff:+d})')
+            else:
+                list_item = self.item(index)
+                widget_item = self.itemWidget(list_item)
+                widget_item.score_label.setText(str(split[2]))
+
 
 class StageSplitItem(QWidget):
     """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
@@ -101,7 +118,7 @@ class StageSplitItem(QWidget):
         The initialization process creates the widgets and layouts that will make up the custom item widget.
         """
         super().__init__()
-
+        self.split = split
         self.game_db = game_db
         """In-memory representation of DB schema."""
 
@@ -114,14 +131,14 @@ class StageSplitItem(QWidget):
         self.stage = split[1]
         self.score = split[2]
 
-        if self.item_index > 0:
-            diff = self.score - self.game_db[self.game_name]['splits'][self.item_index - 1][2]
-            self.score_label: QLabel = QLabel(f'{self.score}(+{diff})')
-        else:
-            self.score_label: QLabel = QLabel(f'{self.score}')
+        # if self.item_index > 0:
+        #     diff = self.score - self.game_db[self.game_name]['splits'][self.item_index - 1][2]
+        #     self.score_label: QLabel = QLabel(f'{self.score}(+{diff})')
+        # else:
+        #     self.score_label: QLabel = QLabel(f'{self.score}')
 
         self.name_label: QLabel = QLabel(f'{self.stage}')
-        # self.score_label: QLabel = QLabel(f'{self.score}(+{diff})')
+        self.score_label: QLabel = QLabel(f'{self.score}')
 
         self.name_editor: QLineEdit = QLineEdit()
         self.score_editor: QLineEdit = QLineEdit()
@@ -132,8 +149,8 @@ class StageSplitItem(QWidget):
         self.name_editor.hide()
         self.score_editor.hide()
 
-        self.name_editor.editingFinished.connect(self.update_split_db)
-        self.score_editor.editingFinished.connect(self.update_split_db)
+        # self.name_editor.editingFinished.connect(self.update_split_db)
+        # self.score_editor.editingFinished.connect(self.update_split_db)
         self.name_editor.returnPressed.connect(self.toggle_labels)
         self.score_editor.returnPressed.connect(self.toggle_labels)
 
@@ -160,8 +177,13 @@ class StageSplitItem(QWidget):
 
         name_text = self.name_label.text()
         name_text = name_text.strip(':')
-        score_text = self.score_label.text()
 
+        score_text = self.score_label.text()
+        try:
+            end = score_text.index('(')
+            score_text = score_text[:end]
+        except ValueError:
+            print('no parenthesis found')
         self.name_editor.setText(name_text)
         self.score_editor.setText(score_text)
 
@@ -173,6 +195,12 @@ class StageSplitItem(QWidget):
     # TODO This is a bit of a slop job. Is there a better way to determine if editor text should be copied?
     #   The problem is sometimes name and editor text is none and will blank out other items.
     def toggle_labels(self):
+        self.update_split_db()
+
+        parent = self.parent().parent()
+
+
+
         self.name_editor.hide()
         self.score_editor.hide()
 
@@ -184,16 +212,31 @@ class StageSplitItem(QWidget):
         if score_text:
             self.score_label.setText(score_text)
 
+        self.add_diffs(self.game_db[self.game_name]['splits'], parent)
+
         self.name_label.show()
         self.score_label.show()
 
     def update_split_db(self):
         """Update the 'in-memory' copy of the database and save to JSON"""
         # pass
-        self.game_db[self.game_name]['splits'][self.item_index][2] = int(self.score_editor.text())
-        self.game_db[self.game_name]['splits'][self.item_index][1] = self.name_editor.text()
+        item_index = self.game_db[self.game_name]['splits'].index(self.split)
+        self.game_db[self.game_name]['splits'][item_index][2] = int(self.score_editor.text())
+        self.game_db[self.game_name]['splits'][item_index][1] = self.name_editor.text()
 
         save_pb_to_json(self.game_db)
+
+    def add_diffs(self, splits, parent):
+        for index, split in enumerate(splits):
+            if index > 0:
+                diff = split[2] - splits[index - 1][2]
+                list_item = parent.item(index)
+                widget_item = parent.itemWidget(list_item)
+                widget_item.score_label.setText(str(split[2]) + f'({diff:+d})')
+            else:
+                list_item = parent.item(index)
+                widget_item = parent.itemWidget(list_item)
+                widget_item.score_label.setText(str(split[2]))
 
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
@@ -615,6 +658,18 @@ class MainWindow(QMainWindow):
 
             for split in splits:
                 self.add_split(split, game_name)
+
+            self.add_diffs(splits)
+
+    def add_diffs(self, splits):
+        for index, split in enumerate(splits):
+            if index > 0:
+                diff = split[2] - splits[index - 1][2]
+                print(diff)
+                list_item = self.split_list.item(index)
+                widget_item = self.split_list.itemWidget(list_item)
+                widget_item.score_label.setText(widget_item.score_label.text() + f'(+{diff})')
+
 
     # TODO Keep looking for a better way to annotate
     def split_double_clicked(self, item: QListWidgetItem):
