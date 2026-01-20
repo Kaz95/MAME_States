@@ -114,8 +114,14 @@ class StageSplitItem(QWidget):
         self.stage = split[1]
         self.score = split[2]
 
+        if self.item_index > 0:
+            diff = self.score - self.game_db[self.game_name]['splits'][self.item_index - 1][2]
+            self.score_label: QLabel = QLabel(f'{self.score}(+{diff})')
+        else:
+            self.score_label: QLabel = QLabel(f'{self.score}')
+
         self.name_label: QLabel = QLabel(f'{self.stage}')
-        self.score_label: QLabel = QLabel(str(self.score))
+        # self.score_label: QLabel = QLabel(f'{self.score}(+{diff})')
 
         self.name_editor: QLineEdit = QLineEdit()
         self.score_editor: QLineEdit = QLineEdit()
