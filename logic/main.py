@@ -135,18 +135,3 @@ def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: st
     """Rename a MAME save file"""
     os.rename(mame_folder / "sta" / rom_folder / (old_save_name + '.sta'),
               mame_folder / "sta" / rom_folder / (new_save_name + '.sta'))
-
-# if __name__ == '__main__':
-#     raw_mame_paths = get_raw_paths(local_mame_paths)
-#     save_raw_paths_to_json(raw_mame_paths)
-# save_paths_to_json(paths)
-# load_paths_from_json()
-#     mame_path = r'C:\Users\ka
-#     zac\Downloads\mame'
-#     generate_rom_list(mame_path)
-#     roms = get_roms_from_paths(mame_paths)
-#     new_create_rom_list(roms)
-#     description_db = build_description_db('rom_list.txt')
-#     # all_states = get_all_roms_with_saves(mame_paths)
-#     # pprint.pprint(all_states)
-#     print(get_real_name(description_db, 'ddp2100k'))
