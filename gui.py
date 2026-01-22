@@ -8,7 +8,6 @@ TODO:
     * Decide on new features to add.
 """
 import json
-from os.path import split
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QSize, QRegularExpression, QEvent
@@ -17,7 +16,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, \
     QInputDialog, QFileDialog, QMessageBox
 
-from logic.main import build_description_db, local_mame_paths, paths_db, get_all_roms_with_saves, save_pb_to_json, \
+from logic.main import build_description_db, paths_db, get_all_roms_with_saves, save_pb_to_json, \
     generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
 

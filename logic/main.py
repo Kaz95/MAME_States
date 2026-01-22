@@ -19,8 +19,6 @@ rom_db = Path('logic/rom_list.txt')
 raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
          r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10']
 
-local_mame_paths = [Path(r'C:\Users\kazac\Downloads\wolfmame-0273'),
-                    Path(r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10')]
 
 test_pb_info = {'DonPachi': {'hs': 900,
                              'distance': 'Stage 6',
@@ -133,9 +131,9 @@ def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: st
               mame_folder / "sta" / rom_folder / (new_save_name + '.sta'))
 
 
-if __name__ == '__main__':
-    raw_mame_paths = get_raw_paths(local_mame_paths)
-    save_raw_paths_to_json(raw_mame_paths)
+# if __name__ == '__main__':
+#     raw_mame_paths = get_raw_paths(local_mame_paths)
+#     save_raw_paths_to_json(raw_mame_paths)
     # save_paths_to_json(paths)
     # load_paths_from_json()
 #     mame_path = r'C:\Users\ka
