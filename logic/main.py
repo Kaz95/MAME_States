@@ -35,6 +35,7 @@ test_pb_info = {'DonPachi': {'hs': 900,
 
 
 def load_paths_from_json() -> list[Path]:
+    """Load JSON file containing raw MAME paths and return them as a list of Path objects."""
     with open(paths_db, 'r') as db:
         formatted_paths = []
         raw_paths = json.load(db)
@@ -45,6 +46,7 @@ def load_paths_from_json() -> list[Path]:
 
 
 def get_raw_paths(formatted_paths: list[Path]) -> list[str]:
+    """Convert a list of Path objects into their string representations. Return them as a new list."""
     raw_paths = []
     for path in formatted_paths:
         path = str(path)
@@ -54,6 +56,7 @@ def get_raw_paths(formatted_paths: list[Path]) -> list[str]:
 
 
 def save_raw_paths_to_json(paths: list[str]) -> None:
+    """Save raw MAME paths to JSON."""
     with open(paths_db, 'w') as db:
         json.dump(paths, db, indent=4)
 
@@ -65,6 +68,7 @@ def save_pb_to_json(pb_info: dict[str, dict]) -> None:
 
 
 def generate_rom_list(mame_path: Path) -> None:
+    """Generate a full list of rom names and save to a text file: 'romlist.txt'."""
     with open(rom_db, 'w') as rom_list:
         subprocess.run([mame_path / 'mame.exe', '-ll'], stdout=rom_list)
 
