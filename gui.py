@@ -29,7 +29,6 @@ class ToggleableLabel(QLabel):
 
     def mouseDoubleClickEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
-            print('double clicked')
             self.toggle_editors()
         super().mouseDoubleClickEvent(event)
 
@@ -37,8 +36,6 @@ class ToggleableLabel(QLabel):
         self.hide()
         if self.text():
             self.editor.setText(self.text())
-        else:
-            print('there was no text to copy from label')
         self.editor.show()
         self.editor.setFocus()
 
@@ -75,7 +72,7 @@ class StageSplitListWidget(QListWidget):
                 print(splits)
                 self.add_diffs(splits)
                 print(self.itemWidget(moved).game_name)
-                print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
+                # print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
 
                 self.last_row = self.row(moved)
         return super().eventFilter(sender, event)
@@ -629,12 +626,12 @@ class MainWindow(QMainWindow):
             mame_path_item = game_item.parent()
             mame_path = mame_path_item.text(0)
 
-            print(f'save state: {save_state_name}')
-            print(f'game name: {rom_name}')
-            print(f'mame path: {mame_path}')
+            # print(f'save state: {save_state_name}')
+            # print(f'game name: {rom_name}')
+            # print(f'mame path: {mame_path}')
             # rename(mame_path, rom_name, self.text_before_editing, save_state_name)
 
-            print(f'An item was changed from {self.text_before_editing}, to {save_state_item.text(0)}')
+            # print(f'An item was changed from {self.text_before_editing}, to {save_state_item.text(0)}')
 
 
     def save_state_tree_selection_changed(self, current_item: QTreeWidgetItem):
@@ -727,7 +724,7 @@ class MainWindow(QMainWindow):
             self.save_state_tree.itemChanged.disconnect(self.save_state_tree_item_changed)
             self.add_mame_path_items()
             self.save_state_tree.itemChanged.connect(self.save_state_tree_item_changed)
-            print(f'New MAME path: {path}')
+            # print(f'New MAME path: {path}')
         else:
             print('Cancel chosen')
 
