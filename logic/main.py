@@ -17,8 +17,7 @@ pb_db = Path('game_db.json')
 rom_db = Path('logic/rom_list.txt')
 
 raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
-         r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10']
-
+                  r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10']
 
 test_pb_info = {'DonPachi': {'hs': 900,
                              'distance': 'Stage 6',
@@ -34,6 +33,7 @@ test_pb_info = {'DonPachi': {'hs': 900,
                                   'splits': [[0, 'Stage-1', 10000], [1, 'Stage-2', 15069], [2, 'Stage-3', 25069],
                                              [3, 'Stage-4', 38069], [4, 'Stage-5', 50069]]}}
 
+
 def load_paths_from_json() -> list[Path]:
     with open(paths_db, 'r') as db:
         formatted_paths = []
@@ -43,7 +43,8 @@ def load_paths_from_json() -> list[Path]:
 
         return formatted_paths
 
-def get_raw_paths(formatted_paths):
+
+def get_raw_paths(formatted_paths: list[Path]) -> list[str]:
     raw_paths = []
     for path in formatted_paths:
         path = str(path)
@@ -51,7 +52,8 @@ def get_raw_paths(formatted_paths):
 
     return raw_paths
 
-def save_raw_paths_to_json(paths) -> None:
+
+def save_raw_paths_to_json(paths: list[str]) -> None:
     with open(paths_db, 'w') as db:
         json.dump(paths, db, indent=4)
 
@@ -130,12 +132,11 @@ def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: st
     os.rename(mame_folder / "sta" / rom_folder / (old_save_name + '.sta'),
               mame_folder / "sta" / rom_folder / (new_save_name + '.sta'))
 
-
 # if __name__ == '__main__':
 #     raw_mame_paths = get_raw_paths(local_mame_paths)
 #     save_raw_paths_to_json(raw_mame_paths)
-    # save_paths_to_json(paths)
-    # load_paths_from_json()
+# save_paths_to_json(paths)
+# load_paths_from_json()
 #     mame_path = r'C:\Users\ka
 #     zac\Downloads\mame'
 #     generate_rom_list(mame_path)
