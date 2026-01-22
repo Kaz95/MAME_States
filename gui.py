@@ -725,8 +725,8 @@ class MainWindow(QMainWindow):
             self.add_mame_path_items()
             self.save_state_tree.itemChanged.connect(self.save_state_tree_item_changed)
             # print(f'New MAME path: {path}')
-        else:
-            print('Cancel chosen')
+        # else:
+        #     print('Cancel chosen')
 
 
 if __name__ == '__main__':
