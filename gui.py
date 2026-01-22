@@ -127,12 +127,6 @@ class StageSplitItem(QWidget):
         self.stage = split[1]
         self.score = split[2]
 
-        # if self.item_index > 0:
-        #     diff = self.score - self.game_db[self.game_name]['splits'][self.item_index - 1][2]
-        #     self.score_label: QLabel = QLabel(f'{self.score}(+{diff})')
-        # else:
-        #     self.score_label: QLabel = QLabel(f'{self.score}')
-
         self.name_label: QLabel = QLabel(f'{self.stage}')
         self.score_label: QLabel = QLabel(f'{self.score}')
 
@@ -147,18 +141,13 @@ class StageSplitItem(QWidget):
 
         self.name_editor.editingFinished.connect(self.update_split_db)
         self.score_editor.editingFinished.connect(self.update_split_db)
+
         self.name_editor.returnPressed.connect(self.update_split_db)
         self.score_editor.returnPressed.connect(self.update_split_db)
         self.name_editor.returnPressed.connect(self.toggle_labels)
         self.score_editor.returnPressed.connect(self.toggle_labels)
 
-
         self.score_editor.setValidator(QIntValidator())
-        # self.label: QLabel = QLabel(f'Stage-{stage}:')
-        # self.editor: QLineEdit = QLineEdit(str(score))
-        # self.editor.setReadOnly(True)
-        # self.editor.editingFinished.connect(self.update_split_db)
-        # self.editor.setValidator(QIntValidator())
 
         layout = QHBoxLayout()
         layout.addWidget(self.name_label)
@@ -166,8 +155,6 @@ class StageSplitItem(QWidget):
         layout.addWidget(self.name_editor)
         layout.addWidget(self.score_editor)
 
-        # layout.addWidget(self.label)
-        # layout.addWidget(self.editor)
         self.setLayout(layout)
 
     def toggle_editors(self):
@@ -194,11 +181,7 @@ class StageSplitItem(QWidget):
     # TODO This is a bit of a slop job. Is there a better way to determine if editor text should be copied?
     #   The problem is sometimes name and editor text is none and will blank out other items.
     def toggle_labels(self):
-        # self.update_split_db()
-
         parent = self.parent().parent()
-
-
 
         self.name_editor.hide()
         self.score_editor.hide()
@@ -406,8 +389,6 @@ class MainWindow(QMainWindow):
         self.add_game_button.clicked.connect(self.add_game)
 
         # Load DB and Fill widgets
-
-
         for key in self.test_game_info:
             QTreeWidgetItem(self.high_score_game_tree, [key])
 
@@ -577,7 +558,6 @@ class MainWindow(QMainWindow):
 
 
     # # Slots
-    # TODO Update to take in a real split eventually
     def new_split(self):
         selected = self.high_score_game_tree.selectedItems()
         if selected:
@@ -649,11 +629,7 @@ class MainWindow(QMainWindow):
             distance = info['distance']
             splits = info['splits']
 
-            # TODO consider changing. Don't like needing to use a side effect of a function to handle this.
-            # self.toggle_editors()
             self.update_pb_panel(hs, distance)
-            # self.toggle_labels()
-
 
             for split in splits:
                 self.add_split(split, game_name)
@@ -672,19 +648,13 @@ class MainWindow(QMainWindow):
 
     # TODO Keep looking for a better way to annotate
     def split_double_clicked(self, item: QListWidgetItem):
-        # pass
         widget_item = self.split_list.itemWidget(item)
         widget_item.toggle_editors()
-        # widget_item.editor.setReadOnly(False)
-        # widget_item.editor.setFocus()
-
 
     def split_current_item_changed(self, cur: QListWidgetItem, prev: QListWidgetItem):
-        # pass
         if prev:
             widget_item = self.split_list.itemWidget(prev)
             widget_item.toggle_labels()
-        #     widget_item.editor.setReadOnly(True)
 
     def update_high_score_pb(self):
         """Updates in memory DB and saves to JSON"""
@@ -708,9 +678,8 @@ class MainWindow(QMainWindow):
 
     def menu_button_1_clicked(self) -> None:
         self.save_state_tree.hide()
-        # self.toggle_editors()
+
     def menu_button_2_clicked(self) -> None:
-        # self.toggle_labels()
         self.save_state_tree.show()
 
     # TODO Same problem here I have to disconnect and reconnect slot to avoid breaking shit. Look into it.
