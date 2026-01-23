@@ -135,3 +135,9 @@ def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: st
     """Rename a MAME save file"""
     os.rename(mame_folder / "sta" / rom_folder / (old_save_name + '.sta'),
               mame_folder / "sta" / rom_folder / (new_save_name + '.sta'))
+
+
+def load_game_info():
+    with open(pb_db, 'r') as game_info:
+        game_dict = json.load(game_info)
+        return game_dict
