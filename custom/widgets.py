@@ -2,7 +2,8 @@ from PyQt6.QtCore import Qt, QEvent, QRegularExpression
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate
 
-from logic.main import save_pb_to_json
+from logic.main import save_pb_to_json, pb_db
+
 
 # TODO Add/Update Typehints & Docstrings.
 
@@ -140,7 +141,7 @@ class StageSplitItem(QWidget):
         self.game_db[self.game_name]['splits'][item_index][2] = int(self.score_editor.text())
         self.game_db[self.game_name]['splits'][item_index][1] = self.name_editor.text()
 
-        save_pb_to_json(self.game_db)
+        save_pb_to_json(self.game_db, pb_db)
 
 
 class StageSplitListWidget(QListWidget):
@@ -177,7 +178,7 @@ class StageSplitListWidget(QListWidget):
         splits = self.game_db[game_name]['splits']
         split = splits.pop(old_index)
         splits.insert(new_index, split)
-        save_pb_to_json(self.game_db)
+        save_pb_to_json(self.game_db, pb_db)
 
     def add_diffs(self, splits):
         for index, split in enumerate(splits):

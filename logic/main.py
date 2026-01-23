@@ -35,9 +35,9 @@ test_pb_info = {'DonPachi': {'hs': 900,
                                              [3, 'Stage-4', 38069], [4, 'Stage-5', 50069]]}}
 
 
-def load_paths_from_json() -> list[Path]:
+def load_paths_from_json(paths_database) -> list[Path]:
     """Load JSON file containing raw MAME paths and return them as a list of Path objects."""
-    with open(paths_db, 'r') as db:
+    with open(paths_database, 'r') as db:
         formatted_paths = []
         raw_paths = json.load(db)
         for path in raw_paths:
@@ -56,21 +56,21 @@ def get_raw_paths(formatted_paths: list[Path]) -> list[str]:
     return raw_paths
 
 
-def save_raw_paths_to_json(paths: list[str]) -> None:
+def save_raw_paths_to_json(paths: list[str], paths_database) -> None:
     """Save raw MAME paths to JSON."""
-    with open(paths_db, 'w') as db:
+    with open(paths_database, 'w') as db:
         json.dump(paths, db, indent=4)
 
 
-def save_pb_to_json(pb_info: dict[str, dict]) -> None:
+def save_pb_to_json(pb_info: dict[str, dict], pb_database) -> None:
     """Save the 'in-memory' copy of the personal best database to JSON."""
-    with open(pb_db, 'w') as db:
+    with open(pb_database, 'w') as db:
         json.dump(pb_info, db, indent=4)
 
 
-def generate_rom_list(mame_path: Path) -> None:
+def generate_rom_list(mame_path: Path, rom_database) -> None:
     """Generate a full list of rom names and save to a text file: 'romlist.txt'."""
-    with open(rom_db, 'w') as rom_list:
+    with open(rom_database, 'w') as rom_list:
         subprocess.run([mame_path / 'mame.exe', '-ll'], stdout=rom_list)
 
 
@@ -138,7 +138,7 @@ def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: st
               mame_folder / "sta" / rom_folder / (new_save_name + '.sta'))
 
 
-def load_game_info():
-    with open(pb_db, 'r') as game_info:
+def load_game_info(pb_database):
+    with open(pb_database, 'r') as game_info:
         game_dict = json.load(game_info)
         return game_dict
