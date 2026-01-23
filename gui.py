@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator
 from logic.main import build_description_db, paths_db, get_all_roms_with_saves, save_pb_to_json, \
-    generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths
+    generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths, load_game_info
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
 
 
@@ -56,7 +56,6 @@ class MainWindow(QMainWindow):
         self.mame_paths: list[Path] = load_paths_from_json()
         """List of all MAME directories that will be used by the application."""
 
-
         # Create rom list if it doesn't already exist.
         if not rom_db.is_file():
             if self.mame_paths:
@@ -65,6 +64,8 @@ class MainWindow(QMainWindow):
         if not pb_db.is_file():
             with open(pb_db, 'w') as db:
                 json.dump(test_pb_info, db, indent=4)
+
+        self.test_game_info = load_game_info()
 
         self.fill_data_structures()
 
@@ -79,22 +80,17 @@ class MainWindow(QMainWindow):
         """Small font"""
         self.sub_item_font.setPointSize(20)
 
-        # Add file menu
+        # --------- #
+        # File Menu #
+        # --------- #
         self.menu = self.menuBar()
         self.file_menu = self.menu.addMenu('&File')
 
         self.button_1_action: QAction = QAction('button 1', self)
-        self.button_1_action.triggered.connect(self.menu_button_1_clicked)
-
         self.button_2_action: QAction = QAction('button 2', self)
-        self.button_2_action.triggered.connect(self.menu_button_2_clicked)
-
         self.button_3_action: QAction = QAction('Add MAME Path', self)
-        self.button_3_action.triggered.connect(self.add_path_button_clicked)
 
-        self.file_menu.addAction(self.button_1_action)
-        self.file_menu.addAction(self.button_2_action)
-        self.file_menu.addAction(self.button_3_action)
+        self.setup_file_menu()
 
         # Tabs
         self.tabs: QTabWidget = QTabWidget()
@@ -106,11 +102,11 @@ class MainWindow(QMainWindow):
         self.save_state_page: QWidget = QWidget()
         self.high_score_page: QWidget = QWidget()
 
-
-        # Save State Page
+        # ------------------ #
+        #   Save State Page  #
+        # ------------------ #
 
         # Widgets
-        # Create and fill Saves State Tree Widget
         self.save_state_tree: QTreeWidget = QTreeWidget()
         """Main widget of the save state tab"""
         self.save_state_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
@@ -125,13 +121,17 @@ class MainWindow(QMainWindow):
         self.save_state_page_layout.setContentsMargins(0, 0, 0, 0)
         self.save_state_page.setLayout(self.save_state_page_layout)
         self.save_state_page_layout.addWidget(self.save_state_tree)
+
+        # Signals and Slots
         # TODO If these aren't connected after filling treewidget, everything's fucked. Look into it.
         self.save_state_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
         self.save_state_tree.itemChanged.connect(self.save_state_tree_item_changed)
 
-        # High Score Page
+        # ------------------#
+        #   Highscore Page  #
+        # ------------------#
+
         # Widgets
-        # Create and connect Widgets
         self.distance_label: QLabel = QLabel('Distance PB:')
         self.high_score_label: QLabel = QLabel('High Score:')
 
@@ -141,32 +141,14 @@ class MainWindow(QMainWindow):
         self.distance_value_label = ToggleableLabel(self.distance_edit)
         self.high_score_value_label = ToggleableLabel(self.high_score_edit)
 
-
-
-        with open(pb_db, 'r') as game_info:
-            game_dict = json.load(game_info)
-            self.test_game_info = game_dict
-
-        self.split_list: QListWidget = StageSplitListWidget(self.test_game_info)
-        self.split_list.itemDoubleClicked.connect(self.split_double_clicked)
-        self.split_list.currentItemChanged.connect(self.split_current_item_changed)
-
         self.high_score_game_tree: QTreeWidget = QTreeWidget()
-        self.high_score_game_tree.setHeaderLabels(['Games'])
-        self.high_score_game_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
-
-
-
-        self.add_split_button: QPushButton = QPushButton('Add Split')
-        self.add_split_button.clicked.connect(self.new_split)
-
-        self.delete_split_button: QPushButton = QPushButton('Delete Split')
-        self.delete_split_button.clicked.connect(self.delete_split)
-
         self.add_game_button: QPushButton = QPushButton('Add Game')
-        self.add_game_button.clicked.connect(self.add_game)
 
-        # Load DB and Fill widgets
+        self.split_list: StageSplitListWidget = StageSplitListWidget(self.test_game_info)
+        self.add_split_button: QPushButton = QPushButton('Add Split')
+        self.delete_split_button: QPushButton = QPushButton('Delete Split')
+
+        # Fill widgets
         for key in self.test_game_info:
             QTreeWidgetItem(self.high_score_game_tree, [key])
 
@@ -184,66 +166,53 @@ class MainWindow(QMainWindow):
         # contains stage split buttons
         self.splits_tree_button_container: QHBoxLayout = QHBoxLayout()
 
-        # Add widgets to layout
-        self.game_list_container.addWidget(self.high_score_game_tree)
-        self.game_list_container.addWidget(self.add_game_button)
+        # Add widgets to layout. Setup signals and slots.
+        self.setup_highscore_panel()
+        self.setup_pb_panel()
+        self.setup_split_panel()
 
-        self.add_pb_panel()
-        self.splits_tree_button_container.addWidget(self.add_split_button)
-        self.splits_tree_button_container.addWidget(self.delete_split_button)
-
-        self.high_score_page_layout.addLayout(self.game_list_container)
+        # TODO look into stretch factors
         self.info_layout.addLayout(self.personal_best_layout)
         self.info_layout.addStretch()
-        # TODO look into stretch factors
+
         self.info_layout.addWidget(self.split_list, 1)
         self.info_layout.addStretch()
-        self.info_layout.addLayout(self.splits_tree_button_container)
-        self.high_score_page_layout.addLayout(self.info_layout)
 
+        self.info_layout.addLayout(self.splits_tree_button_container)
+
+        self.high_score_page_layout.addLayout(self.game_list_container)
+        self.high_score_page_layout.addLayout(self.info_layout)
         self.high_score_page.setLayout(self.high_score_page_layout)
         self.high_score_page.setFont(self.top_level_item_font)
-
 
         # Add tabs to tab container
         self.tabs.addTab(self.save_state_page, 'Save States')
         self.tabs.addTab(self.high_score_page, 'High Scores')
-
         self.setCentralWidget(self.tabs)
-
-
 
     # Methods
     def sizeHint(self):
         return QSize(1920, 1080)
 
-    def toggle_editors(self):
-        self.high_score_value_label.hide()
-        self.distance_value_label.hide()
+    def setup_file_menu(self):
+        self.button_1_action.triggered.connect(self.menu_button_1_clicked)
+        self.button_2_action.triggered.connect(self.menu_button_2_clicked)
+        self.button_3_action.triggered.connect(self.add_path_button_clicked)
 
-        self.high_score_edit.setText(self.high_score_value_label.text())
-        self.distance_edit.setText(self.distance_value_label.text())
+        self.file_menu.addAction(self.button_1_action)
+        self.file_menu.addAction(self.button_2_action)
+        self.file_menu.addAction(self.button_3_action)
 
-        self.high_score_edit.show()
-        self.distance_edit.show()
+    def setup_highscore_panel(self):
+        self.high_score_game_tree.setHeaderLabels(['Games'])
+        self.high_score_game_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
+        self.add_game_button.clicked.connect(self.add_game)
 
-    def toggle_labels(self):
-        self.high_score_edit.hide()
-        self.distance_edit.hide()
+        self.game_list_container.addWidget(self.high_score_game_tree)
+        self.game_list_container.addWidget(self.add_game_button)
 
-        score_text = self.high_score_edit.text()
-        if score_text:
-            self.high_score_value_label.setText(score_text)
-
-        distance_text = self.distance_edit.text()
-        if distance_text:
-            self.distance_value_label.setText(distance_text)
-
-        self.high_score_value_label.show()
-        self.distance_value_label.show()
-
-    def add_pb_panel(self):
+    def setup_pb_panel(self):
         self.high_score_edit.setValidator(QIntValidator())
         self.high_score_edit.editingFinished.connect(self.update_high_score_pb)
 
@@ -257,6 +226,16 @@ class MainWindow(QMainWindow):
         self.personal_best_layout.addWidget(self.distance_edit, 1, 1)
         self.personal_best_layout.addWidget(self.distance_value_label, 1, 1)
 
+    def setup_split_panel(self):
+        self.splits_tree_button_container.addWidget(self.add_split_button)
+        self.splits_tree_button_container.addWidget(self.delete_split_button)
+
+        self.split_list.itemDoubleClicked.connect(self.split_double_clicked)
+        self.split_list.currentItemChanged.connect(self.split_current_item_changed)
+
+        self.add_split_button.clicked.connect(self.new_split)
+        self.delete_split_button.clicked.connect(self.delete_split)
+
     def update_pb_panel(self, high_score, distance):
         self.high_score_edit.setText(str(high_score))
         self.distance_edit.setText(distance)
@@ -265,8 +244,10 @@ class MainWindow(QMainWindow):
         self.high_score_edit.hide()
         self.distance_edit.hide()
 
+
+
     def add_split(self, split, game_name):
-        split_item = StageSplitItem(split, self.test_game_info, game_name)
+        split_item = StageSplitItem(split, self.test_game_info, game_name, self.split_list)
         list_item = QListWidgetItem(self.split_list)
         self.split_list.setItemWidget(list_item, split_item)
         return list_item
@@ -295,10 +276,8 @@ class MainWindow(QMainWindow):
             return True
 
     def get_mame_path(self):
-
-
         mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
-                                                            options=QFileDialog.Option.ShowDirsOnly)
+                                                       options=QFileDialog.Option.ShowDirsOnly)
 
         mame_folder = Path(mame_folder)
 
@@ -316,8 +295,6 @@ class MainWindow(QMainWindow):
         Reset the data structures used to fill the tree widget. Then, fill them again. Used for both initial filling of
         TreeWidget, and the reloading of the TreeWidget when a new MAME path is chosen.
         """
-        # reset data structs
-
         self.description_db = build_description_db(rom_db)
         self.all_save_states = get_all_roms_with_saves(self.mame_paths)
 
@@ -337,9 +314,6 @@ class MainWindow(QMainWindow):
                     save_state_item = QTreeWidgetItem(game_item, [save_state])
                     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
                     save_state_item.setFont(0, self.sub_item_font)
-
-
-
 
     # # Slots
     def new_split(self):
@@ -397,7 +371,6 @@ class MainWindow(QMainWindow):
 
             # print(f'An item was changed from {self.text_before_editing}, to {save_state_item.text(0)}')
 
-
     def save_state_tree_selection_changed(self, current_item: QTreeWidgetItem):
         self.text_before_editing = current_item.text(0)
 
@@ -420,7 +393,6 @@ class MainWindow(QMainWindow):
 
             self.add_diffs(splits)
 
-    # TODO Keep looking for a better way to annotate
     def split_double_clicked(self, item: QListWidgetItem):
         widget_item = self.split_list.itemWidget(item)
         widget_item.toggle_editors()
