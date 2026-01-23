@@ -32,52 +32,6 @@ class ToggleableLabel(QLabel):
 
         self.show()
 
-class StageSplitListWidget(QListWidget):
-    def __init__(self, game_db):
-        super().__init__()
-        self.game_db = game_db
-        self.last_row = None
-        self.setDragDropMode(QListWidget.DragDropMode.InternalMove)
-        self.installEventFilter(self)
-        self.currentItemChanged.connect(self.selection_changed)
-
-
-    def eventFilter(self, sender, event):
-        if event.type() == QEvent.Type.ChildRemoved:
-            moved = self.selectedItems()
-            if moved:
-                moved = moved[0]
-                game_name = self.itemWidget(moved).game_name
-                self.update_db(game_name, self.last_row, self.row(moved))
-                splits = self.game_db[game_name]['splits']
-                self.add_diffs(splits)
-                # print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
-
-                self.last_row = self.row(moved)
-        return super().eventFilter(sender, event)
-
-    def selection_changed(self, cur, prev):
-        if cur:
-            self.last_row = self.row(cur)
-
-    def update_db(self, game_name, old_index, new_index):
-        splits = self.game_db[game_name]['splits']
-        split = splits.pop(old_index)
-        splits.insert(new_index, split)
-        save_pb_to_json(self.game_db)
-
-    def add_diffs(self, splits):
-        for index, split in enumerate(splits):
-            if index > 0:
-                diff = split[2] - splits[index - 1][2]
-                print(diff)
-                list_item = self.item(index)
-                widget_item = self.itemWidget(list_item)
-                widget_item.score_label.setText(str(split[2]) + f'({diff:+d})')
-            else:
-                list_item = self.item(index)
-                widget_item = self.itemWidget(list_item)
-                widget_item.score_label.setText(str(split[2]))
 
 class StageSplitItem(QWidget):
     """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
@@ -85,7 +39,7 @@ class StageSplitItem(QWidget):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used as a customer item widget on a QListWidget instance."""
 
-    def __init__(self, split: list[int], game_db: dict, game_name: str) -> None:
+    def __init__(self, split: list[int], game_db: dict, game_name: str, parent_list: 'StageSplitListWidget') -> None:
         """ Initialize the StageSplitItem subclass
 
         The StageSplitItem subclass inherits most of its behavior from, and extends, its parent class QWidget.
@@ -93,6 +47,8 @@ class StageSplitItem(QWidget):
         """
         super().__init__()
         self.split = split
+        self.parent_list = parent_list
+
         self.game_db = game_db
         """In-memory representation of DB schema."""
 
@@ -159,8 +115,6 @@ class StageSplitItem(QWidget):
     # TODO This is a bit of a slop job. Is there a better way to determine if editor text should be copied?
     #   The problem is sometimes name and editor text is none and will blank out other items.
     def toggle_labels(self):
-        parent = self.parent().parent()
-
         self.name_editor.hide()
         self.score_editor.hide()
 
@@ -172,7 +126,7 @@ class StageSplitItem(QWidget):
         if score_text:
             self.score_label.setText(score_text)
 
-        self.add_diffs(self.game_db[self.game_name]['splits'], parent)
+        self.parent_list.add_diffs(self.game_db[self.game_name]['splits'])
 
         self.name_label.show()
         self.score_label.show()
@@ -186,17 +140,56 @@ class StageSplitItem(QWidget):
 
         save_pb_to_json(self.game_db)
 
-    def add_diffs(self, splits, parent):
+
+class StageSplitListWidget(QListWidget):
+    def __init__(self, game_db):
+        super().__init__()
+        self.game_db = game_db
+        self.last_row = None
+        self.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+        self.installEventFilter(self)
+        self.currentItemChanged.connect(self.selection_changed)
+
+    def itemWidget(self, item) -> QWidget | StageSplitItem | None:
+        return super().itemWidget(item)
+
+    def eventFilter(self, sender, event):
+        if event.type() == QEvent.Type.ChildRemoved:
+            moved = self.selectedItems()
+            if moved:
+                moved = moved[0]
+                game_name = self.itemWidget(moved).game_name
+                self.update_db(game_name, self.last_row, self.row(moved))
+                splits = self.game_db[game_name]['splits']
+                self.add_diffs(splits)
+                # print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
+
+                self.last_row = self.row(moved)
+        return super().eventFilter(sender, event)
+
+    def selection_changed(self, cur, prev):
+        if cur:
+            self.last_row = self.row(cur)
+
+    def update_db(self, game_name, old_index, new_index):
+        splits = self.game_db[game_name]['splits']
+        split = splits.pop(old_index)
+        splits.insert(new_index, split)
+        save_pb_to_json(self.game_db)
+
+    def add_diffs(self, splits):
         for index, split in enumerate(splits):
             if index > 0:
                 diff = split[2] - splits[index - 1][2]
-                list_item = parent.item(index)
-                widget_item = parent.itemWidget(list_item)
+                print(diff)
+                list_item = self.item(index)
+                widget_item = self.itemWidget(list_item)
                 widget_item.score_label.setText(str(split[2]) + f'({diff:+d})')
             else:
-                list_item = parent.item(index)
-                widget_item = parent.itemWidget(list_item)
+                list_item = self.item(index)
+                widget_item = self.itemWidget(list_item)
                 widget_item.score_label.setText(str(split[2]))
+
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
