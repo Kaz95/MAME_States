@@ -3,6 +3,7 @@
 This module encompasses the static functions used by the MAMEStates application.
 
 TODO:
+    * Add/Update Typehints & Docstrings.
     * pass in filepaths as args to avoid absolute paths
     * Consider renaming functions to improve human readability.
 """

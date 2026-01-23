@@ -4,6 +4,8 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget
 
 from logic.main import save_pb_to_json
 
+# TODO Add/Update Typehints & Docstrings.
+
 
 class ToggleableLabel(QLabel):
     def __init__(self, editor, parent=None):
