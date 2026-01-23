@@ -214,6 +214,9 @@ class MainWindow(QMainWindow):
 
 
     # Methods
+    def sizeHint(self):
+        return QSize(1920, 1080)
+
     def toggle_editors(self):
         self.high_score_value_label.hide()
         self.distance_value_label.hide()
@@ -239,12 +242,6 @@ class MainWindow(QMainWindow):
 
         self.high_score_value_label.show()
         self.distance_value_label.show()
-
-
-
-
-    def sizeHint(self):
-        return QSize(1920, 1080)
 
     def add_pb_panel(self):
         self.high_score_edit.setValidator(QIntValidator())
@@ -273,6 +270,15 @@ class MainWindow(QMainWindow):
         list_item = QListWidgetItem(self.split_list)
         self.split_list.setItemWidget(list_item, split_item)
         return list_item
+
+    def add_diffs(self, splits):
+        for index, split in enumerate(splits):
+            if index > 0:
+                diff = split[2] - splits[index - 1][2]
+                print(diff)
+                list_item = self.split_list.item(index)
+                widget_item = self.split_list.itemWidget(list_item)
+                widget_item.score_label.setText(widget_item.score_label.text() + f'(+{diff})')
 
     def valid_path(self, mame_folder: Path):
         mame_exe = mame_folder / 'mame.exe'
@@ -413,16 +419,6 @@ class MainWindow(QMainWindow):
                 self.add_split(split, game_name)
 
             self.add_diffs(splits)
-
-    def add_diffs(self, splits):
-        for index, split in enumerate(splits):
-            if index > 0:
-                diff = split[2] - splits[index - 1][2]
-                print(diff)
-                list_item = self.split_list.item(index)
-                widget_item = self.split_list.itemWidget(list_item)
-                widget_item.score_label.setText(widget_item.score_label.text() + f'(+{diff})')
-
 
     # TODO Keep looking for a better way to annotate
     def split_double_clicked(self, item: QListWidgetItem):
