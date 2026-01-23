@@ -20,6 +20,8 @@ rom_db = Path('logic/rom_list.txt')
 raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
                   r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10']
 
+PersonalBestDataBase = dict[str, dict[str, any]]
+
 test_pb_info = {'DonPachi': {'hs': 900,
                              'distance': 'Stage 6',
                              'splits': [[0, 'Stage-1', 110], [1, 'Stage-2', 200], [2, 'Stage-3', 340],
@@ -138,7 +140,8 @@ def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: st
               mame_folder / "sta" / rom_folder / (new_save_name + '.sta'))
 
 
-def load_game_info(pb_database):
+def load_game_info(pb_database: Path) -> PersonalBestDataBase:
+    """Load JSON file containing personal best information. Return the loaded information."""
     with open(pb_database, 'r') as game_info:
         game_dict = json.load(game_info)
         return game_dict

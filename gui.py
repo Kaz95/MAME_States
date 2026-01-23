@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator
 from logic.main import build_description_db, paths_db, get_all_roms_with_saves, save_pb_to_json, \
-    generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths, load_game_info
+    generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths, load_game_info, PersonalBestDataBase
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
 
 
@@ -66,7 +66,7 @@ class MainWindow(QMainWindow):
             with open(pb_db, 'w') as db:
                 json.dump(test_pb_info, db, indent=4)
 
-        self.test_game_info = load_game_info(pb_db)
+        self.test_game_info: PersonalBestDataBase = load_game_info(pb_db)
 
         self.fill_data_structures()
 
