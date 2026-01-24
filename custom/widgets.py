@@ -60,7 +60,10 @@ class StageSplitItem(QWidget):
         """
         super().__init__()
         self.split = split
-        self.parent_list = parent_list
+        """The data that comprises a split. \n[index, stage, score]"""
+
+        self.parent_list: StageSplitListWidget = parent_list
+        """The list widget that contains this item."""
 
         self.game_db = game_db
         """In-memory representation of DB schema."""
@@ -68,14 +71,14 @@ class StageSplitItem(QWidget):
         self.game_name = game_name
         """The name of the game which the split belongs to."""
 
-        self.item_index = split[0]
-        """The index of the split, used for maintaining correct order."""
-
         self.stage = split[1]
         self.score = split[2]
 
         self.name_label: QLabel = QLabel(f'{self.stage}')
+        """Name of the stage, area, or boss that the split represents."""
+
         self.score_label: QLabel = QLabel(f'{self.score}')
+        """The Score of this particular split."""
 
         self.name_editor: QLineEdit = QLineEdit()
         self.score_editor: QLineEdit = QLineEdit()
@@ -105,6 +108,7 @@ class StageSplitItem(QWidget):
         self.setLayout(layout)
 
     def toggle_editors(self):
+        """Show editors, hide labels. Text is persisted."""
         self.name_label.hide()
         self.score_label.hide()
 
@@ -128,6 +132,7 @@ class StageSplitItem(QWidget):
     # TODO This is a bit of a slop job. Is there a better way to determine if editor text should be copied?
     #   The problem is sometimes name and editor text is none and will blank out other items.
     def toggle_labels(self):
+        """Show labels, hide editors. Text is persisted."""
         self.name_editor.hide()
         self.score_editor.hide()
 
@@ -146,8 +151,8 @@ class StageSplitItem(QWidget):
 
     def _update_split_db(self):
         """Update the 'in-memory' copy of the database and save to JSON"""
-        # pass
         item_index = self.game_db[self.game_name]['splits'].index(self.split)
+
         self.game_db[self.game_name]['splits'][item_index][2] = int(self.score_editor.text())
         self.game_db[self.game_name]['splits'][item_index][1] = self.name_editor.text()
 
