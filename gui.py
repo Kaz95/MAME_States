@@ -202,7 +202,9 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(self.high_score_page, 'High Scores')
         self.setCentralWidget(self.tabs)
 
-    # Methods
+    # ------- #
+    # Methods #
+    # ------- #
     def sizeHint(self):
         """Default window size."""
         return QSize(1920, 1080)
@@ -274,6 +276,7 @@ class MainWindow(QMainWindow):
         return list_item
 
     def valid_path(self, mame_folder: Path):
+        """Validate the given MAME path."""
         mame_exe = mame_folder / 'mame.exe'
         if not mame_exe.is_file():
             message_response = QMessageBox.critical(self,
@@ -288,6 +291,7 @@ class MainWindow(QMainWindow):
             return True
 
     def get_mame_path(self):
+        """Prompt user for a MAME directory using a file dialog."""
         mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
                                                        options=QFileDialog.Option.ShowDirsOnly)
 
@@ -302,15 +306,12 @@ class MainWindow(QMainWindow):
         return res
 
     def fill_data_structures(self) -> None:
-        """Reset and refill data structures used to derive TreeWidget items.
-
-        Reset the data structures used to fill the tree widget. Then, fill them again. Used for both initial filling of
-        TreeWidget, and the reloading of the TreeWidget when a new MAME path is chosen.
-        """
+        """Fill data structures used to derive Save State Tree Widget items."""
         self.description_db = build_description_db(rom_db)
         self.all_save_states = get_all_roms_with_saves(self.mame_paths)
 
     def add_mame_path_items(self):
+        """Clear, and then fill the Save State Tree Widget."""
         self.save_state_tree.clear()
 
         for path in self.mame_paths:
@@ -327,8 +328,11 @@ class MainWindow(QMainWindow):
                     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
                     save_state_item.setFont(0, self.sub_item_font)
 
-    # # Slots
+    # ----- #
+    # Slots #
+    # ----- #
     def new_split(self):
+        """Create a new, blank split item. Add it to the list widget, in memory db representation, and save to JSON."""
         selected = self.high_score_game_tree.selectedItems()
         if selected:
             game_item = selected[0]
@@ -343,6 +347,7 @@ class MainWindow(QMainWindow):
             save_pb_to_json(self.test_game_info, pb_db)
 
     def add_game(self):
+        """Add a game to PB game tree. User is prompted to enter the games name. Save new game to JSON"""
         game_name, ok = QInputDialog.getText(self, 'New Game', 'Please enter new game name.')
         if game_name and ok:
             QTreeWidgetItem(self.high_score_game_tree, [game_name])
@@ -353,6 +358,7 @@ class MainWindow(QMainWindow):
             save_pb_to_json(self.test_game_info, pb_db)
 
     def delete_split(self):
+        """Delete a split in the split list. Also deleted from in-memory db and saved to JSON."""
         selected = self.high_score_game_tree.selectedItems()
         if selected:
             game_name = selected[0].text(0)
@@ -365,6 +371,7 @@ class MainWindow(QMainWindow):
 
     # TODO re-enable file renaming after ensuring user input is properly sanitized.
     def save_state_tree_item_changed(self, save_state_item: QTreeWidgetItem):
+        """Does not currently have any effect."""
         if save_state_item.childCount() == 0:
             save_state_name = save_state_item.text(0)
             print(save_state_name)
@@ -384,10 +391,11 @@ class MainWindow(QMainWindow):
             # print(f'An item was changed from {self.text_before_editing}, to {save_state_item.text(0)}')
 
     def save_state_tree_selection_changed(self, current_item: QTreeWidgetItem):
+        """Used internally for renaming."""
         self.text_before_editing = current_item.text(0)
 
     def high_score_tree_selection_changed(self):
-        """Clear and refill 'splits list' based on currently selected item."""
+        """Clear and refill 'splits list' based on currently selected item. Split diffs are calculated and displayed."""
         self.split_list.clear()
         selected = self.high_score_game_tree.selectedItems()
         if selected:
@@ -406,16 +414,18 @@ class MainWindow(QMainWindow):
             self.split_list.add_diffs(splits)
 
     def split_double_clicked(self, item: QListWidgetItem):
+        """Show split item editors. Hide labels."""
         widget_item = self.split_list.itemWidget(item)
         widget_item.toggle_editors()
 
     def split_current_item_changed(self, cur: QListWidgetItem, prev: QListWidgetItem):
+        """Hide split item labels. Hide editors."""
         if prev:
             widget_item = self.split_list.itemWidget(prev)
             widget_item.toggle_labels()
 
     def update_high_score_pb(self):
-        """Updates in memory DB and saves to JSON"""
+        """Update in memory DB and saves to JSON"""
         new_pb = int(self.high_score_edit.text())
         selected = self.high_score_game_tree.selectedItems()
         if selected:
@@ -425,7 +435,7 @@ class MainWindow(QMainWindow):
             save_pb_to_json(self.test_game_info, pb_db)
 
     def update_distance_pb(self):
-        """Updates in memory DB and saves to JSON"""
+        """Update in memory DB and saves to JSON"""
         new_pb = self.distance_edit.text()
         selected = self.high_score_game_tree.selectedItems()
         if selected:
@@ -435,13 +445,16 @@ class MainWindow(QMainWindow):
             save_pb_to_json(self.test_game_info, pb_db)
 
     def menu_button_1_clicked(self) -> None:
+        """Temporary"""
         self.save_state_tree.hide()
 
     def menu_button_2_clicked(self) -> None:
+        """Temporary"""
         self.save_state_tree.show()
 
     # TODO Same problem here I have to disconnect and reconnect slot to avoid breaking shit. Look into it.
     def add_path_button_clicked(self) -> None:
+        """Prompt user for new MAME path, then clear and refill save state tree."""
         path = self.get_mame_path()
         if path:
             self.mame_paths.append(path)
