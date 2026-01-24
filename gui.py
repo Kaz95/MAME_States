@@ -3,7 +3,6 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Add/Update Typehints & Docstrings.
     * Reactivate file renaming eventually.
     * Consider sizing policies and size hints
     * Decide on new features to add.
@@ -23,7 +22,6 @@ from logic.main import build_description_db, paths_db, get_all_roms_with_saves, 
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
 
 
-# TODO Docstrings for instance variables.
 class MainWindow(QMainWindow):
     """Subclasses and extends the QQMainWindow class of the PyQt6.QtWidgets Module
 
