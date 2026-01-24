@@ -9,10 +9,18 @@ from logic.main import save_pb_to_json, pb_db
 
 
 class ToggleableLabel(QLabel):
+    """Subclass and extend the QLabel class of the PyQt6.QyWidgets module
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    A normal QLabel instance is tied to a QlineEdit instance on initialization.
+    Double-clicking the label toggles the editor. Pressing enter or changing focus will toggle back to the label.
+    The current text is persisted when toggled.
+    """
     def __init__(self, editor, parent=None):
         super().__init__(parent)
         self.setMouseTracking(True)
         self.editor: QLineEdit = editor
+        """The editor associated with this label"""
         self.editor.editingFinished.connect(self.toggle_labels)
 
     def mouseDoubleClickEvent(self, event):
@@ -21,6 +29,7 @@ class ToggleableLabel(QLabel):
         super().mouseDoubleClickEvent(event)
 
     def toggle_editors(self):
+        """Show associated editor, hide label."""
         self.hide()
         if self.text():
             self.editor.setText(self.text())
@@ -28,6 +37,7 @@ class ToggleableLabel(QLabel):
         self.editor.setFocus()
 
     def toggle_labels(self):
+        """Show associated label, hide editor."""
         self.editor.hide()
         text = self.editor.text()
         if text:
@@ -76,11 +86,11 @@ class StageSplitItem(QWidget):
         self.name_editor.hide()
         self.score_editor.hide()
 
-        self.name_editor.editingFinished.connect(self.update_split_db)
-        self.score_editor.editingFinished.connect(self.update_split_db)
+        self.name_editor.editingFinished.connect(self._update_split_db)
+        self.score_editor.editingFinished.connect(self._update_split_db)
 
-        self.name_editor.returnPressed.connect(self.update_split_db)
-        self.score_editor.returnPressed.connect(self.update_split_db)
+        self.name_editor.returnPressed.connect(self._update_split_db)
+        self.score_editor.returnPressed.connect(self._update_split_db)
         self.name_editor.returnPressed.connect(self.toggle_labels)
         self.score_editor.returnPressed.connect(self.toggle_labels)
 
@@ -134,7 +144,7 @@ class StageSplitItem(QWidget):
         self.name_label.show()
         self.score_label.show()
 
-    def update_split_db(self):
+    def _update_split_db(self):
         """Update the 'in-memory' copy of the database and save to JSON"""
         # pass
         item_index = self.game_db[self.game_name]['splits'].index(self.split)
