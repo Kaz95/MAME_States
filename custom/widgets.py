@@ -1,8 +1,8 @@
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator
-from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate
+from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QListWidgetItem
 
-from logic.main import save_pb_to_json, pb_db
+from logic.main import save_pb_to_json, pb_db, PersonalBestDataBase
 
 
 # TODO Add/Update Typehints & Docstrings.
@@ -16,7 +16,7 @@ class ToggleableLabel(QLabel):
     Double-clicking the label toggles the editor. Pressing enter or changing focus will toggle back to the label.
     The current text is persisted when toggled.
     """
-    def __init__(self, editor, parent=None):
+    def __init__(self, editor: QLineEdit, parent=None):
         super().__init__(parent)
         self.setMouseTracking(True)
         self.editor: QLineEdit = editor
@@ -52,7 +52,7 @@ class StageSplitItem(QWidget):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used as a customer item widget on a QListWidget instance."""
 
-    def __init__(self, split: list[int], game_db: dict, game_name: str, parent_list: 'StageSplitListWidget') -> None:
+    def __init__(self, split: list[str | int], game_db: dict, game_name: str, parent_list: 'StageSplitListWidget') -> None:
         """ Initialize the StageSplitItem subclass
 
         The StageSplitItem subclass inherits most of its behavior from, and extends, its parent class QWidget.
@@ -65,14 +65,14 @@ class StageSplitItem(QWidget):
         self.parent_list: StageSplitListWidget = parent_list
         """The list widget that contains this item."""
 
-        self.game_db = game_db
+        self.game_db: PersonalBestDataBase = game_db
         """In-memory representation of DB schema."""
 
-        self.game_name = game_name
+        self.game_name: str = game_name
         """The name of the game which the split belongs to."""
 
-        self.stage = split[1]
-        self.score = split[2]
+        self.stage: str = split[1]
+        self.score: int = split[2]
 
         self.name_label: QLabel = QLabel(f'{self.stage}')
         """Name of the stage, area, or boss that the split represents."""
@@ -160,10 +160,25 @@ class StageSplitItem(QWidget):
 
 
 class StageSplitListWidget(QListWidget):
-    def __init__(self, game_db):
+    """Subclass and extend the QListWidget class of the PyQt6.QtWidgets module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Internal movement is active. The order of splits is preserved.
+    The difference between splits is calculated and displayed.
+    """
+    def __init__(self, game_db: PersonalBestDataBase):
+        """ The StageSplitListWidget subclass inherits most of its behavior from, and extends,
+        its parent class QListWidget.
+
+        The initialization process customizes the widget.
+        """
         super().__init__()
-        self.game_db = game_db
-        self.last_row = None
+        self.game_db: PersonalBestDataBase = game_db
+        """In-memory representation of DB schema."""
+
+        self.last_row: int | None = None
+        """The previously selected row. Used internally to track split movement."""
+
         self.setDragDropMode(QListWidget.DragDropMode.InternalMove)
         self.installEventFilter(self)
         self.currentItemChanged.connect(self.selection_changed)
@@ -172,6 +187,10 @@ class StageSplitListWidget(QListWidget):
         return super().itemWidget(item)
 
     def eventFilter(self, sender, event):
+        """Event filter that listens for an item being moved in the list.
+
+        When an item is moved, the new order is preserved and the split differences are recalculated.
+        """
         if event.type() == QEvent.Type.ChildRemoved:
             moved = self.selectedItems()
             if moved:
@@ -186,20 +205,22 @@ class StageSplitListWidget(QListWidget):
         return super().eventFilter(sender, event)
 
     def selection_changed(self, cur, prev):
+        """Used internally to preserve split order."""
         if cur:
             self.last_row = self.row(cur)
 
-    def update_db(self, game_name, old_index, new_index):
+    def update_db(self, game_name: str, old_index: int, new_index: int):
+        """Mirror internal list changes to the in-memory representation. Save to JSON."""
         splits = self.game_db[game_name]['splits']
         split = splits.pop(old_index)
         splits.insert(new_index, split)
         save_pb_to_json(self.game_db, pb_db)
 
-    def add_diffs(self, splits):
+    def add_diffs(self, splits: list):
+        """Calculate and display the difference between a splits score, and the previous splits score."""
         for index, split in enumerate(splits):
             if index > 0:
                 diff = split[2] - splits[index - 1][2]
-                print(diff)
                 list_item = self.item(index)
                 widget_item = self.itemWidget(list_item)
                 widget_item.score_label.setText(str(split[2]) + f'({diff:+d})')
@@ -210,7 +231,14 @@ class StageSplitListWidget(QListWidget):
 
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
+    """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    When a QLineEdit is created, a custom validator is automatically set. The validator disallows forbidden file names.
+    The event filter is also extended to replace all instances of the 'space' key with a hyphen.
+    """
     def createEditor(self, parent, option, index):
+        """Automatically apply a custom validator on the created editor, if it is a QLineEdit."""
         editor = super().createEditor(parent, option, index)
         if isinstance(editor, QLineEdit):
             # TODO Get rid of match case, there is only one case now.
@@ -224,6 +252,7 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
         return editor
 
     def eventFilter(self, watched, event):
+        """Extend the eventFilter to replace 'space' key presses with hyphens."""
         if event.type() == QEvent.Type.KeyPress:
             if event.key() == Qt.Key.Key_Space:
                 watched.insert('-')
