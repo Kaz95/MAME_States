@@ -14,7 +14,7 @@ from pathlib import Path
 from PyQt6.QtCore import Qt, QSize
 from PyQt6.QtGui import QAction, QFont, QIntValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
-    QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidget, QListWidgetItem, \
+    QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
     QInputDialog, QFileDialog, QMessageBox
 
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator
@@ -50,6 +50,10 @@ class MainWindow(QMainWindow):
         self.all_save_states: dict[str:dict[str:list[str]]] | None = None
         """Names of games that have a save folder, and their respective save states"""
 
+        # --------- #
+        # Load Data #
+        # --------- #
+
         # Build sample paths DB if it's not already there.
         if not paths_db.is_file():
             save_raw_paths_to_json(raw_mame_paths, paths_db)
@@ -62,15 +66,19 @@ class MainWindow(QMainWindow):
             if self.mame_paths:
                 generate_rom_list(self.mame_paths[0], rom_db)
 
+        # Create Personal Best database if it doesn't already exist.
         if not pb_db.is_file():
             with open(pb_db, 'w') as db:
                 json.dump(test_pb_info, db, indent=4)
 
         self.test_game_info: PersonalBestDataBase = load_game_info(pb_db)
+        """Personal best information."""
 
         self.fill_data_structures()
 
-        # Widget customization
+        # -------------------- #
+        # Widget customization #
+        # -------------------- #
         self.setWindowTitle('MAME States')
 
         self.top_level_item_font: QFont = QFont()
@@ -93,13 +101,17 @@ class MainWindow(QMainWindow):
 
         self.setup_file_menu()
 
-        # Tabs
+        # ----------------- #
+        # Tab Customization #
+        # ----------------- #
         self.tabs: QTabWidget = QTabWidget()
         """Tab container"""
         self.tabs.setTabPosition(QTabWidget.TabPosition.North)
         self.tabs.setMovable(True)
 
-        # Pages
+        # ----- #
+        # Pages #
+        # ----- #
         self.save_state_page: QWidget = QWidget()
         self.high_score_page: QWidget = QWidget()
 
@@ -149,23 +161,22 @@ class MainWindow(QMainWindow):
         self.add_split_button: QPushButton = QPushButton('Add Split')
         self.delete_split_button: QPushButton = QPushButton('Delete Split')
 
-        # Fill widgets
-        for key in self.test_game_info:
-            QTreeWidgetItem(self.high_score_game_tree, [key])
-
         # Layouts
-        # Parent layout
+
         self.high_score_page_layout: QHBoxLayout = QHBoxLayout()
-        # Contains game list and buttons
+        """Top level page layout."""
+
         self.game_list_container: QVBoxLayout = QVBoxLayout()
-        # Contains PB and Stage splits
+        """Contains list of games with personal best information and related buttons."""
+
         self.info_layout: QVBoxLayout = QVBoxLayout()
-        # Contains PB
+        """Contains PB info, stage splits, and related buttons."""
+
         self.personal_best_layout: QGridLayout = QGridLayout()
-        # Contains stage split list and buttons
-        self.stage_splits_layout: QGridLayout = QGridLayout()
-        # contains stage split buttons
+        """Contains PB info."""
+
         self.splits_tree_button_container: QHBoxLayout = QHBoxLayout()
+        """Contains buttons related to stage splits."""
 
         # Add widgets to layout. Setup signals and slots.
         self.setup_highscore_panel()
@@ -186,16 +197,18 @@ class MainWindow(QMainWindow):
         self.high_score_page.setLayout(self.high_score_page_layout)
         self.high_score_page.setFont(self.top_level_item_font)
 
-        # Add tabs to tab container
+        # Finalize tab setup.
         self.tabs.addTab(self.save_state_page, 'Save States')
         self.tabs.addTab(self.high_score_page, 'High Scores')
         self.setCentralWidget(self.tabs)
 
     # Methods
     def sizeHint(self):
+        """Default window size."""
         return QSize(1920, 1080)
 
     def setup_file_menu(self):
+        """File Menu widget customization."""
         self.button_1_action.triggered.connect(self.menu_button_1_clicked)
         self.button_2_action.triggered.connect(self.menu_button_2_clicked)
         self.button_3_action.triggered.connect(self.add_path_button_clicked)
@@ -205,6 +218,11 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.button_3_action)
 
     def setup_highscore_panel(self):
+        """High Score Panel widget customization"""
+        # Fill Game List
+        for key in self.test_game_info:
+            QTreeWidgetItem(self.high_score_game_tree, [key])
+
         self.high_score_game_tree.setHeaderLabels(['Games'])
         self.high_score_game_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
@@ -214,6 +232,7 @@ class MainWindow(QMainWindow):
         self.game_list_container.addWidget(self.add_game_button)
 
     def setup_pb_panel(self):
+        """Personal Best Panel widget customization."""
         self.high_score_edit.setValidator(QIntValidator())
         self.high_score_edit.editingFinished.connect(self.update_high_score_pb)
 
@@ -228,6 +247,7 @@ class MainWindow(QMainWindow):
         self.personal_best_layout.addWidget(self.distance_value_label, 1, 1)
 
     def setup_split_panel(self):
+        """Split Panel widget customization."""
         self.splits_tree_button_container.addWidget(self.add_split_button)
         self.splits_tree_button_container.addWidget(self.delete_split_button)
 
@@ -238,6 +258,7 @@ class MainWindow(QMainWindow):
         self.delete_split_button.clicked.connect(self.delete_split)
 
     def update_pb_panel(self, high_score, distance):
+        """Sets the text of the labels and editors associated with the Personal Best Panel."""
         self.high_score_edit.setText(str(high_score))
         self.distance_edit.setText(distance)
         self.high_score_value_label.setText(str(high_score))
@@ -245,9 +266,8 @@ class MainWindow(QMainWindow):
         self.high_score_edit.hide()
         self.distance_edit.hide()
 
-
-
     def add_split(self, split, game_name):
+        """Create a new custom widget item and assign it to a list widget item."""
         split_item = StageSplitItem(split, self.test_game_info, game_name, self.split_list)
         list_item = QListWidgetItem(self.split_list)
         self.split_list.setItemWidget(list_item, split_item)
@@ -392,7 +412,8 @@ class MainWindow(QMainWindow):
             for split in splits:
                 self.add_split(split, game_name)
 
-            self.add_diffs(splits)
+            self.split_list.add_diffs(splits)
+            # self.add_diffs(splits)
 
     def split_double_clicked(self, item: QListWidgetItem):
         widget_item = self.split_list.itemWidget(item)
