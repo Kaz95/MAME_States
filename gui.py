@@ -273,15 +273,6 @@ class MainWindow(QMainWindow):
         self.split_list.setItemWidget(list_item, split_item)
         return list_item
 
-    def add_diffs(self, splits):
-        for index, split in enumerate(splits):
-            if index > 0:
-                diff = split[2] - splits[index - 1][2]
-                print(diff)
-                list_item = self.split_list.item(index)
-                widget_item = self.split_list.itemWidget(list_item)
-                widget_item.score_label.setText(widget_item.score_label.text() + f'(+{diff})')
-
     def valid_path(self, mame_folder: Path):
         mame_exe = mame_folder / 'mame.exe'
         if not mame_exe.is_file():
@@ -413,7 +404,6 @@ class MainWindow(QMainWindow):
                 self.add_split(split, game_name)
 
             self.split_list.add_diffs(splits)
-            # self.add_diffs(splits)
 
     def split_double_clicked(self, item: QListWidgetItem):
         widget_item = self.split_list.itemWidget(item)
