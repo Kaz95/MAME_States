@@ -336,8 +336,8 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             game_splits = self.test_game_info[game_name]['splits']
-            split_count = len(game_splits)
-            new_split = [split_count, '', 0]
+            # split_count = len(game_splits)
+            new_split = ['', 0]
             game_splits.append(new_split)
             new_item = self.add_split(new_split, game_name)
             self.split_list.setCurrentItem(new_item)

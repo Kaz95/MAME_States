@@ -71,8 +71,8 @@ class StageSplitItem(QWidget):
         self.game_name: str = game_name
         """The name of the game which the split belongs to."""
 
-        self.stage: str = split[1]
-        self.score: int = split[2]
+        self.stage: str = split[0]
+        self.score: int = split[1]
 
         self.name_label: QLabel = QLabel(f'{self.stage}')
         """Name of the stage, area, or boss that the split represents."""
@@ -153,8 +153,8 @@ class StageSplitItem(QWidget):
         """Update the 'in-memory' copy of the database and save to JSON"""
         item_index = self.game_db[self.game_name]['splits'].index(self.split)
 
-        self.game_db[self.game_name]['splits'][item_index][2] = int(self.score_editor.text())
-        self.game_db[self.game_name]['splits'][item_index][1] = self.name_editor.text()
+        self.game_db[self.game_name]['splits'][item_index][1] = int(self.score_editor.text())
+        self.game_db[self.game_name]['splits'][item_index][0] = self.name_editor.text()
 
         save_pb_to_json(self.game_db, pb_db)
 
@@ -220,14 +220,14 @@ class StageSplitListWidget(QListWidget):
         """Calculate and display the difference between a splits score, and the previous splits score."""
         for index, split in enumerate(splits):
             if index > 0:
-                diff = split[2] - splits[index - 1][2]
+                diff = split[1] - splits[index - 1][1]
                 list_item = self.item(index)
                 widget_item = self.itemWidget(list_item)
-                widget_item.score_label.setText(str(split[2]) + f'({diff:+d})')
+                widget_item.score_label.setText(str(split[1]) + f'({diff:+d})')
             else:
                 list_item = self.item(index)
                 widget_item = self.itemWidget(list_item)
-                widget_item.score_label.setText(str(split[2]))
+                widget_item.score_label.setText(str(split[1]))
 
 
 class SaveStateNameInputValidator(QStyledItemDelegate):

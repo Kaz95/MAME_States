@@ -25,17 +25,17 @@ PersonalBestDataBase = dict[str, dict[str, any]]
 
 test_pb_info = {'DonPachi': {'hs': 900,
                              'distance': 'Stage 6',
-                             'splits': [[0, 'Stage-1', 110], [1, 'Stage-2', 200], [2, 'Stage-3', 340],
-                                        [3, 'Stage-4', 420], [4, 'Stage-5', 670], [5, 'Stage-6', 900]]},
+                             'splits': [['Stage-1', 110], ['Stage-2', 200], ['Stage-3', 340],
+                                        ['Stage-4', 420], ['Stage-5', 670], ['Stage-6', 900]]},
 
                 'Galaga': {'hs': 2000,
                            'distance': 'Stage 3',
-                           'splits': [[0, 'Stage-1', 550], [1, 'Stage-2', 1620], [2, 'Stage-3', 2000]]},
+                           'splits': [['Stage-1', 550], ['Stage-2', 1620], ['Stage-3', 2000]]},
 
                 'Libble Rabble': {'hs': 50069,
                                   'distance': 'Stage 5',
-                                  'splits': [[0, 'Stage-1', 10000], [1, 'Stage-2', 15069], [2, 'Stage-3', 25069],
-                                             [3, 'Stage-4', 38069], [4, 'Stage-5', 50069]]}}
+                                  'splits': [['Stage-1', 10000], ['Stage-2', 15069], ['Stage-3', 25069],
+                                             ['Stage-4', 38069], ['Stage-5', 50069]]}}
 
 
 def load_paths_from_json(paths_database) -> list[Path]:
