@@ -4,10 +4,6 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget
 
 from logic.main import save_pb_to_json, pb_db, PersonalBestDataBase
 
-
-# TODO Add/Update Typehints & Docstrings.
-
-
 class ToggleableLabel(QLabel):
     """Subclass and extend the QLabel class of the PyQt6.QyWidgets module
 

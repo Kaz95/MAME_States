@@ -3,9 +3,6 @@
 This module encompasses the static functions used by the MAMEStates application.
 
 TODO:
-    * Remove index from stage splits, update downstream accordingly.
-    * Add/Update Typehints & Docstrings.
-    * pass in filepaths as args to avoid absolute paths
     * Consider renaming functions to improve human readability.
 """
 import pprint
