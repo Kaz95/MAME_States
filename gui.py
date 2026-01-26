@@ -417,7 +417,7 @@ class MainWindow(QMainWindow):
         widget_item.toggle_editors()
 
     def split_current_item_changed(self, cur: QListWidgetItem, prev: QListWidgetItem):
-        """Hide split item labels. Hide editors."""
+        """Show split item labels. Hide editors."""
         if prev:
             widget_item = self.split_list.itemWidget(prev)
             widget_item.toggle_labels()
