@@ -350,7 +350,7 @@ class MainWindow(QMainWindow):
         if game_name and ok:
             QTreeWidgetItem(self.high_score_game_tree, [game_name])
 
-            self.test_game_info[game_name] = {'hs': '',
+            self.test_game_info[game_name] = {'hs': 0,
                                               'distance': '',
                                               'splits': []}
             save_pb_to_json(self.test_game_info, pb_db)

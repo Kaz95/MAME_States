@@ -19,6 +19,7 @@ class ToggleableLabel(QLabel):
         """The editor associated with this label"""
         self.editor.editingFinished.connect(self.toggle_labels)
 
+
     def mouseDoubleClickEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
             self.toggle_editors()
@@ -27,7 +28,6 @@ class ToggleableLabel(QLabel):
     def toggle_editors(self):
         """Show associated editor, hide label."""
         self.hide()
-        # if self.text():
         self.editor.setText(self.text())
         self.editor.show()
         self.editor.setFocus()
@@ -36,7 +36,6 @@ class ToggleableLabel(QLabel):
         """Show associated label, hide editor."""
         self.editor.hide()
         text = self.editor.text()
-        # if text:
         self.setText(text)
 
         self.show()
