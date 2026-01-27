@@ -10,11 +10,11 @@ TODO:
 import json
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtCore import Qt, QSize, QStringListModel, QSortFilterProxyModel, QTimer
 from PyQt6.QtGui import QAction, QFont, QIntValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
-    QInputDialog, QFileDialog, QMessageBox
+    QInputDialog, QFileDialog, QMessageBox, QListView
 
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator
 from logic.main import build_description_db, paths_db, get_all_roms_with_saves, save_pb_to_json, \
@@ -112,6 +112,7 @@ class MainWindow(QMainWindow):
         # ----- #
         self.save_state_page: QWidget = QWidget()
         self.high_score_page: QWidget = QWidget()
+        self.rom_search_page: QWidget = QWidget()
 
         # ------------------ #
         #   Save State Page  #
@@ -195,14 +196,58 @@ class MainWindow(QMainWindow):
         self.high_score_page.setLayout(self.high_score_page_layout)
         self.high_score_page.setFont(self.top_level_item_font)
 
+
+        # --------------- #
+        # Rom Search Page #
+        # --------------- #
+
+        # Widgets
+        self.rom_search_bar: QLineEdit = QLineEdit()
+        self.rom_search_bar.setPlaceholderText('Search items...')
+        self.rom_search_bar.textChanged.connect(self.on_text_changed)
+
+        self.debounce_timer = QTimer()
+        self.debounce_timer.setSingleShot(True)
+        self.debounce_timer.timeout.connect(self.update_filter)
+
+
+        self.source_model = QStringListModel(self.description_db.keys())
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.source_model)
+        self.proxy_model.setFilterKeyColumn(0)
+
+
+
+        self.rom_search_list: QListView = QListView()
+        self.rom_search_list.setModel(self.proxy_model)
+
+
+
+        # Layouts
+        self.rom_search_page_layout = QVBoxLayout()
+        self.rom_search_page_layout.addWidget(self.rom_search_bar)
+        self.rom_search_page_layout.addWidget(self.rom_search_list)
+        self.rom_search_page.setLayout(self.rom_search_page_layout)
+
         # Finalize tab setup.
         self.tabs.addTab(self.save_state_page, 'Save States')
         self.tabs.addTab(self.high_score_page, 'High Scores')
+        self.tabs.addTab(self.rom_search_page, 'Rom Search')
         self.setCentralWidget(self.tabs)
 
     # ------- #
     # Methods #
     # ------- #
+    def on_text_changed(self, text):
+        self.debounce_timer.start(300)
+
+    def update_filter(self):
+        search_text = self.rom_search_bar.text()
+        # Set the filter using a regular expression
+        # Qt.CaseInsensitive ensures the search is case-insensitive
+        self.proxy_model.setFilterFixedString(search_text)
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+
     def sizeHint(self):
         """Default window size."""
         return QSize(1920, 1080)
