@@ -9,6 +9,7 @@ TODO:
 """
 import json
 from pathlib import Path
+from time import gmtime
 
 from PyQt6.QtCore import Qt, QSize, QStringListModel, QSortFilterProxyModel, QTimer
 from PyQt6.QtGui import QAction, QFont, QIntValidator
@@ -155,6 +156,7 @@ class MainWindow(QMainWindow):
 
         self.high_score_game_tree: QTreeWidget = QTreeWidget()
         self.add_game_button: QPushButton = QPushButton('Add Game')
+        self.delete_game_button: QPushButton = QPushButton('Delete Game')
 
         self.split_list: StageSplitListWidget = StageSplitListWidget(self.test_game_info)
         self.add_split_button: QPushButton = QPushButton('Add Split')
@@ -164,6 +166,8 @@ class MainWindow(QMainWindow):
 
         self.high_score_page_layout: QHBoxLayout = QHBoxLayout()
         """Top level page layout."""
+
+        self.game_list_button_container: QHBoxLayout = QHBoxLayout()
 
         self.game_list_container: QVBoxLayout = QVBoxLayout()
         """Contains list of games with personal best information and related buttons."""
@@ -272,9 +276,15 @@ class MainWindow(QMainWindow):
         self.high_score_game_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
         self.add_game_button.clicked.connect(self.add_game)
+        self.delete_game_button.clicked.connect(self.delete_game)
+
+        self.game_list_button_container.addWidget(self.add_game_button)
+        self.game_list_button_container.addWidget(self.delete_game_button)
 
         self.game_list_container.addWidget(self.high_score_game_tree)
-        self.game_list_container.addWidget(self.add_game_button)
+        self.game_list_container.addLayout(self.game_list_button_container)
+        # self.game_list_container.addWidget(self.add_game_button)
+        # self.game_list_container.addWidget(self.delete_game_button)
 
     def setup_pb_panel(self):
         """Personal Best Panel widget customization."""
@@ -399,6 +409,29 @@ class MainWindow(QMainWindow):
                                               'distance': '',
                                               'splits': []}
             save_pb_to_json(self.test_game_info, pb_db)
+
+    def delete_game(self):
+        selected = self.high_score_game_tree.selectedItems()
+        if selected:
+            game_item = selected[0]
+            previous_item = self.high_score_game_tree.itemAbove(game_item)
+            next_item = self.high_score_game_tree.itemBelow(game_item)
+
+            if previous_item:
+                self.high_score_game_tree.setCurrentItem(previous_item)
+            elif next_item:
+                self.high_score_game_tree.setCurrentItem(next_item)
+            else:
+                self.high_score_game_tree.clearSelection()
+
+            game_name = game_item.text(0)
+            del self.test_game_info[game_name]
+            save_pb_to_json(self.test_game_info, pb_db)
+
+
+            game_item_index = self.high_score_game_tree.indexFromItem(game_item)
+            game_row = game_item_index.row()
+            self.high_score_game_tree.takeTopLevelItem(game_row)
 
     def delete_split(self):
         """Delete a split in the split list. Also deleted from in-memory db and saved to JSON."""
