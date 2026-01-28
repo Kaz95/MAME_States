@@ -298,6 +298,9 @@ class MainWindow(QMainWindow):
 
         self.game_list_container.addWidget(self.high_score_game_tree)
         self.game_list_container.addLayout(self.game_list_button_container)
+
+        first_item = self.high_score_game_tree.topLevelItem(0)
+        self.high_score_game_tree.setCurrentItem(first_item)
         # self.game_list_container.addWidget(self.add_game_button)
         # self.game_list_container.addWidget(self.delete_game_button)
 
