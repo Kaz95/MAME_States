@@ -214,23 +214,30 @@ class MainWindow(QMainWindow):
         self.debounce_timer.setSingleShot(True)
         self.debounce_timer.timeout.connect(self.update_filter)
 
+        self.rom_search_tree: QTreeWidget = QTreeWidget()
+        self.rom_search_tree.setHeaderLabels(['Games'])
+        for game_name in self.description_db.keys():
+            item = QTreeWidgetItem(self.rom_search_tree, [game_name])
+            item.setToolTip(0, self.description_db[game_name])
 
-        self.source_model = QStringListModel(self.description_db.keys())
-        self.proxy_model = QSortFilterProxyModel()
-        self.proxy_model.setSourceModel(self.source_model)
-        self.proxy_model.setFilterKeyColumn(0)
 
-
-
-        self.rom_search_list: QListView = QListView()
-        self.rom_search_list.setModel(self.proxy_model)
+        # self.source_model = QStringListModel(self.description_db.keys())
+        # self.proxy_model = QSortFilterProxyModel()
+        # self.proxy_model.setSourceModel(self.source_model)
+        # self.proxy_model.setFilterKeyColumn(0)
+        #
+        #
+        #
+        # self.rom_search_list: QListView = QListView()
+        # self.rom_search_list.setModel(self.proxy_model)
 
 
 
         # Layouts
         self.rom_search_page_layout = QVBoxLayout()
         self.rom_search_page_layout.addWidget(self.rom_search_bar)
-        self.rom_search_page_layout.addWidget(self.rom_search_list)
+        self.rom_search_page_layout.addWidget(self.rom_search_tree)
+        # self.rom_search_page_layout.addWidget(self.rom_search_list)
         self.rom_search_page.setLayout(self.rom_search_page_layout)
 
         # Finalize tab setup.
@@ -245,12 +252,20 @@ class MainWindow(QMainWindow):
     def on_text_changed(self, text):
         self.debounce_timer.start(300)
 
+    # def update_filter(self):
+    #     search_text = self.rom_search_bar.text()
+    #     # Set the filter using a regular expression
+    #     # Qt.CaseInsensitive ensures the search is case-insensitive
+    #     self.proxy_model.setFilterFixedString(search_text)
+    #     self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+
     def update_filter(self):
-        search_text = self.rom_search_bar.text()
-        # Set the filter using a regular expression
-        # Qt.CaseInsensitive ensures the search is case-insensitive
-        self.proxy_model.setFilterFixedString(search_text)
-        self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
+        search_text = self.rom_search_bar.text().lower()
+        self.rom_search_tree.clear()
+
+        for game_name in self.description_db.keys():
+            if search_text in game_name.lower():
+                QTreeWidgetItem(self.rom_search_tree, [game_name])
 
     def sizeHint(self):
         """Default window size."""
