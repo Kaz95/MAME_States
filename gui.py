@@ -241,6 +241,7 @@ class MainWindow(QMainWindow):
         self.rom_search_page_layout.addWidget(self.rom_search_tree)
         # self.rom_search_page_layout.addWidget(self.rom_search_list)
         self.rom_search_page.setLayout(self.rom_search_page_layout)
+        self.rom_search_page.setFont(self.top_level_item_font)
 
         # Finalize tab setup.
         self.tabs.addTab(self.save_state_page, 'Save States')
@@ -307,7 +308,10 @@ class MainWindow(QMainWindow):
 
         for game_name in self.description_db.keys():
             if search_text in game_name.lower():
-                QTreeWidgetItem(self.rom_search_tree, [game_name])
+                # QTreeWidgetItem(self.rom_search_tree, [game_name])
+                item = QTreeWidgetItem(self.rom_search_tree, [game_name])
+                item.setToolTip(0, self.description_db[game_name])
+
 
     def sizeHint(self):
         """Default window size."""
