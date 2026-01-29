@@ -156,7 +156,7 @@ class MainWindow(QMainWindow):
         self.high_score_value_label = ToggleableLabel(self.high_score_edit)
 
         self.high_score_game_tree: QTreeWidget = QTreeWidget()
-        self.notes_window = NotesWindow()
+        self.notes_window = NotesWindow(self)
         self.add_game_button: QPushButton = QPushButton('Add Game')
         self.delete_game_button: QPushButton = QPushButton('Delete Game')
 
@@ -325,6 +325,7 @@ class MainWindow(QMainWindow):
 
     def setup_highscore_panel(self):
         """High Score Panel widget customization"""
+        self.notes_window.hide()
         # Fill Game List
         for key in self.test_game_info:
             QTreeWidgetItem(self.high_score_game_tree, [key])

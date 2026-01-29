@@ -7,8 +7,9 @@ from logic.main import save_pb_to_json, pb_db, PersonalBestDataBase
 from pathlib import Path
 
 class NotesWindow(QWidget):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlags(Qt.WindowType.Window)
         self.setWindowTitle("New Text Edit Window")
         self.resize(400, 300)
         self.text_edit = QTextEdit()
