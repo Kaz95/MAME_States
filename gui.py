@@ -252,9 +252,24 @@ class MainWindow(QMainWindow):
     # Methods #
     # ------- #
     def handle_action1(self):
+        game_name = self.high_score_game_tree.selectedItems()[0].text(0)
         if self.notes_window.isHidden():
             self.notes_window.show()
-        self.notes_window.text_edit.setText(f'{self.high_score_game_tree.selectedItems()[0].text(0)} - Notes')
+        # self.notes_window.text_edit.setText(f'{game_name} - Notes')
+        note_path = Path('notes') / game_name
+
+        if not note_path.is_file():
+            note_path.touch()
+        else:
+            with open(note_path, 'r') as notes:
+                text = notes.read()
+                self.notes_window.text_edit.setText(text)
+        self.notes_window.current_game = game_name
+        self.notes_window.setWindowTitle(f'{game_name} - Notes')
+        self.notes_window.raise_()
+        self.notes_window.setFocus()
+
+
 
     def handle_action2(self):
         pass

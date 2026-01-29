@@ -1,9 +1,10 @@
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression
-from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator
+from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QListWidgetItem, \
     QTextEdit, QLayout, QVBoxLayout
 
 from logic.main import save_pb_to_json, pb_db, PersonalBestDataBase
+from pathlib import Path
 
 class NotesWindow(QWidget):
     def __init__(self):
@@ -14,6 +15,11 @@ class NotesWindow(QWidget):
         layout = QVBoxLayout()
         layout.addWidget(self.text_edit)
         self.setLayout(layout)
+        self.current_game = None
+
+    def closeEvent(self, event: QCloseEvent):
+        with open(Path('./notes') / self.current_game, 'w') as notes:
+            notes.write(self.text_edit.toPlainText())
 
 class ToggleableLabel(QLabel):
     """Subclass and extend the QLabel class of the PyQt6.QyWidgets module
