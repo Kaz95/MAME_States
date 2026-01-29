@@ -1,8 +1,19 @@
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator
-from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QListWidgetItem
+from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QListWidgetItem, \
+    QTextEdit, QLayout, QVBoxLayout
 
 from logic.main import save_pb_to_json, pb_db, PersonalBestDataBase
+
+class NotesWindow(QWidget):
+    def __init__(self):
+        super().__init__()
+        self.setWindowTitle("New Text Edit Window")
+        self.resize(400, 300)
+        self.text_edit = QTextEdit()
+        layout = QVBoxLayout()
+        layout.addWidget(self.text_edit)
+        self.setLayout(layout)
 
 class ToggleableLabel(QLabel):
     """Subclass and extend the QLabel class of the PyQt6.QyWidgets module

@@ -17,7 +17,8 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
     QInputDialog, QFileDialog, QMessageBox, QListView, QMenu
 
-from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator
+from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
+    NotesWindow
 from logic.main import build_description_db, paths_db, get_all_roms_with_saves, save_pb_to_json, \
     generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths, load_game_info, PersonalBestDataBase
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
@@ -155,6 +156,7 @@ class MainWindow(QMainWindow):
         self.high_score_value_label = ToggleableLabel(self.high_score_edit)
 
         self.high_score_game_tree: QTreeWidget = QTreeWidget()
+        self.notes_window = NotesWindow()
         self.add_game_button: QPushButton = QPushButton('Add Game')
         self.delete_game_button: QPushButton = QPushButton('Delete Game')
 
@@ -250,7 +252,9 @@ class MainWindow(QMainWindow):
     # Methods #
     # ------- #
     def handle_action1(self):
-        pass
+        if self.notes_window.isHidden():
+            self.notes_window.show()
+        self.notes_window.text_edit.setText(f'{self.high_score_game_tree.selectedItems()[0].text(0)} - Notes')
 
     def handle_action2(self):
         pass
