@@ -11,11 +11,11 @@ import json
 from pathlib import Path
 from time import gmtime
 
-from PyQt6.QtCore import Qt, QSize, QStringListModel, QSortFilterProxyModel, QTimer
+from PyQt6.QtCore import Qt, QSize, QStringListModel, QSortFilterProxyModel, QTimer, QPoint
 from PyQt6.QtGui import QAction, QFont, QIntValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
-    QInputDialog, QFileDialog, QMessageBox, QListView
+    QInputDialog, QFileDialog, QMessageBox, QListView, QMenu
 
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator
 from logic.main import build_description_db, paths_db, get_all_roms_with_saves, save_pb_to_json, \
@@ -249,6 +249,29 @@ class MainWindow(QMainWindow):
     # ------- #
     # Methods #
     # ------- #
+    def handle_action1(self):
+        pass
+
+    def handle_action2(self):
+        pass
+
+    def show_high_score_tree_context(self, position: QPoint):
+        item = self.high_score_game_tree.itemAt(position)
+        if not item:
+            return
+
+        menu = QMenu()
+        test_action1 = QAction('Action 1')
+        test_action2 = QAction('Action 2')
+
+        test_action1.triggered.connect(self.handle_action1)
+        test_action2.triggered.connect(self.handle_action2)
+
+        menu.addAction(test_action1)
+        menu.addAction(test_action2)
+
+        menu.exec(self.high_score_game_tree.viewport().mapToGlobal(position))
+
     def on_text_changed(self, text):
         self.debounce_timer.start(300)
 
@@ -288,6 +311,8 @@ class MainWindow(QMainWindow):
             QTreeWidgetItem(self.high_score_game_tree, [key])
 
         self.high_score_game_tree.setHeaderLabels(['Games'])
+        self.high_score_game_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.high_score_game_tree.customContextMenuRequested.connect(self.show_high_score_tree_context)
         self.high_score_game_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
         self.add_game_button.clicked.connect(self.add_game)
