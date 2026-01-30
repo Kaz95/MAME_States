@@ -286,6 +286,9 @@ class MainWindow(QMainWindow):
         if not item:
             return
 
+        item_name = item.text(0)
+        rom_name = self.description_db[item_name]
+
         menu = QMenu()
         test_action1 = QAction('Action 1')
         test_action2 = QAction('Action 2')
@@ -297,8 +300,17 @@ class MainWindow(QMainWindow):
         menu.addAction(test_action2)
 
         sub_menu = QMenu('Open with...')
+        for path in self.mame_paths:
+            action = QAction(str(path), self)
+            action.triggered.connect(lambda: self.run_roms(rom_name))
+            sub_menu.addAction(action)
 
+        menu.addMenu(sub_menu)
         menu.exec(self.high_score_game_tree.viewport().mapToGlobal(position))
+
+    def run_roms(self, rom_name):
+        action = self.sender()
+        print(f'Running {rom_name}, from {action.text()}')
 
     def on_text_changed(self, text):
         self.debounce_timer.start(300)
