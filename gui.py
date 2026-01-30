@@ -274,9 +274,11 @@ class MainWindow(QMainWindow):
 
 
     def handle_action2(self):
+        rom_description = self.high_score_game_tree.selectedItems()[0].text(0)
+        rom_name = self.description_db[rom_description]
         path = Path(r"C:\Users\kazac\Downloads\wolfmame-0273") / 'mame.exe'
         print(path)
-        subprocess.Popen([path, 'nitd'], cwd=r"C:\Users\kazac\Downloads\wolfmame-0273")
+        subprocess.Popen([path, f'{rom_name}'], cwd=r"C:\Users\kazac\Downloads\wolfmame-0273")
 
     def show_high_score_tree_context(self, position: QPoint):
         item = self.high_score_game_tree.itemAt(position)
