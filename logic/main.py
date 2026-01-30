@@ -143,3 +143,7 @@ def load_game_info(pb_database: Path) -> PersonalBestDataBase:
     with open(pb_database, 'r') as game_info:
         game_dict = json.load(game_info)
         return game_dict
+
+if __name__ == '__main__':
+    mame_path = Path("C:\\Users\\kazac\\Downloads\\mame")
+    subprocess.run([mame_path / 'mame.exe', 'ddp2100k'])

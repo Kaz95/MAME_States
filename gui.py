@@ -8,6 +8,7 @@ TODO:
     * Decide on new features to add.
 """
 import json
+import subprocess
 from pathlib import Path
 from time import gmtime
 
@@ -273,7 +274,9 @@ class MainWindow(QMainWindow):
 
 
     def handle_action2(self):
-        pass
+        path = Path(r"C:\Users\kazac\Downloads\wolfmame-0273") / 'mame.exe'
+        print(path)
+        subprocess.Popen([path, 'nitd'], cwd=r"C:\Users\kazac\Downloads\wolfmame-0273")
 
     def show_high_score_tree_context(self, position: QPoint):
         item = self.high_score_game_tree.itemAt(position)
