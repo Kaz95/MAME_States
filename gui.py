@@ -306,13 +306,14 @@ class MainWindow(QMainWindow):
 
         process = subprocess.Popen([mame_exe, rom_name], cwd=rf'{mame_path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
         out, err = process.communicate()
-        print(out, err)
         return_code = process.returncode
         # return_code = process.wait()
         if return_code == 2:
             QMessageBox.critical(self, 'Rom Not Found',
-                                 f'The rom: \'{rom_name}\', has failed to launch. Most likely because it does not exist.')
-        print(f'Return code is: {return_code}')
+                                 f'{err}')
+        else:
+            QMessageBox.information(self, 'Rom Closed', f'{out}')
+        print(f'Return code is: {return_code} and {out}')
 
         print(f'Running {rom_name}, from {action.text()}')
 
