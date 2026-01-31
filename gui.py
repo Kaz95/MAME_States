@@ -8,9 +8,9 @@ TODO:
     * Decide on new features to add.
 """
 import json
+import pprint
 import subprocess
 from pathlib import Path
-from time import gmtime
 
 from PyQt6.QtCore import Qt, QSize, QStringListModel, QSortFilterProxyModel, QTimer, QPoint
 from PyQt6.QtGui import QAction, QFont, QIntValidator
@@ -304,8 +304,11 @@ class MainWindow(QMainWindow):
         print(rom_path)
         print(rom_path.is_file())
 
-        process = subprocess.Popen([mame_exe, rom_name], cwd=rf'{mame_path}')
-        return_code = process.wait()
+        process = subprocess.Popen([mame_exe, rom_name], cwd=rf'{mame_path}', stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        out, err = process.communicate()
+        print(out, err)
+        return_code = process.returncode
+        # return_code = process.wait()
         if return_code == 2:
             QMessageBox.critical(self, 'Rom Not Found',
                                  f'The rom: \'{rom_name}\', has failed to launch. Most likely because it does not exist.')
