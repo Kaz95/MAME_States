@@ -310,6 +310,9 @@ class MainWindow(QMainWindow):
 
     def run_roms(self, rom_name):
         action = self.sender()
+        mame_exe = Path(action.text()) / 'mame.exe'
+        subprocess.Popen([mame_exe, rom_name], cwd=rf'{action.text()}')
+
         print(f'Running {rom_name}, from {action.text()}')
 
     def on_text_changed(self, text):
