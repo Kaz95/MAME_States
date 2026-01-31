@@ -272,15 +272,6 @@ class MainWindow(QMainWindow):
         self.notes_window.raise_()
         self.notes_window.setFocus()
 
-
-
-    def handle_action2(self):
-        rom_description = self.high_score_game_tree.selectedItems()[0].text(0)
-        rom_name = self.description_db[rom_description]
-        path = Path(r"C:\Users\kazac\Downloads\wolfmame-0273") / 'mame.exe'
-        print(path)
-        subprocess.Popen([path, f'{rom_name}'], cwd=r"C:\Users\kazac\Downloads\wolfmame-0273")
-
     def show_high_score_tree_context(self, position: QPoint):
         item = self.high_score_game_tree.itemAt(position)
         if not item:
@@ -290,14 +281,10 @@ class MainWindow(QMainWindow):
         rom_name = self.description_db[item_name]
 
         menu = QMenu()
+
         open_notes = QAction('Open Notes')
-        # test_action2 = QAction('Action 2')
-
         open_notes.triggered.connect(self.handle_action1)
-        # test_action2.triggered.connect(self.handle_action2)
-
         menu.addAction(open_notes)
-        # menu.addAction(test_action2)
 
         sub_menu = QMenu('Open with...')
         for path in self.mame_paths:
