@@ -297,8 +297,19 @@ class MainWindow(QMainWindow):
 
     def run_roms(self, rom_name):
         action = self.sender()
-        mame_exe = Path(action.text()) / 'mame.exe'
-        subprocess.Popen([mame_exe, rom_name], cwd=rf'{action.text()}')
+        mame_path = action.text()
+        mame_exe = Path(mame_path) / 'mame.exe'
+        rom_path = Path(mame_path) / 'roms' / (rom_name + '.zip')
+
+        print(rom_path)
+        print(rom_path.is_file())
+
+        process = subprocess.Popen([mame_exe, rom_name], cwd=rf'{mame_path}')
+        return_code = process.wait()
+        if return_code == 2:
+            QMessageBox.critical(self, 'Rom Not Found',
+                                 f'The rom: \'{rom_name}\', has failed to launch. Most likely because it does not exist.')
+        print(f'Return code is: {return_code}')
 
         print(f'Running {rom_name}, from {action.text()}')
 
