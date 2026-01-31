@@ -290,14 +290,14 @@ class MainWindow(QMainWindow):
         rom_name = self.description_db[item_name]
 
         menu = QMenu()
-        test_action1 = QAction('Action 1')
-        test_action2 = QAction('Action 2')
+        open_notes = QAction('Open Notes')
+        # test_action2 = QAction('Action 2')
 
-        test_action1.triggered.connect(self.handle_action1)
-        test_action2.triggered.connect(self.handle_action2)
+        open_notes.triggered.connect(self.handle_action1)
+        # test_action2.triggered.connect(self.handle_action2)
 
-        menu.addAction(test_action1)
-        menu.addAction(test_action2)
+        menu.addAction(open_notes)
+        # menu.addAction(test_action2)
 
         sub_menu = QMenu('Open with...')
         for path in self.mame_paths:
