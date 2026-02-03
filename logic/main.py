@@ -6,6 +6,7 @@ TODO:
     * Consider renaming functions to improve human readability.
 """
 import pprint
+import sqlite3
 import subprocess
 import os
 import json
@@ -34,6 +35,15 @@ test_pb_info = {'DonPachi': {'hs': 900,
                                   'splits': [['Stage-1', 10000], ['Stage-2', 15069], ['Stage-3', 25069],
                                              ['Stage-4', 38069], ['Stage-5', 50069]]}}
 
+def load_path_from_db(cursor: sqlite3.Cursor):
+    sql_query = """SELECT * FROM paths"""
+    cursor.execute(sql_query)
+    raw_results = cursor.fetchall()
+    paths = []
+    for entry in raw_results:
+        path = Path(entry[1])
+        paths.append(path)
+    return paths
 
 def load_paths_from_json(paths_database) -> list[Path]:
     """Load JSON file containing raw MAME paths and return them as a list of Path objects."""

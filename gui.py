@@ -23,7 +23,7 @@ from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem
     NotesWindow
 from logic.main import build_description_db, paths_db, get_all_roms_with_saves, save_pb_to_json, \
     generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths, load_game_info, PersonalBestDataBase
-from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json
+from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json, load_path_from_db
 
 
 class MainWindow(QMainWindow):
@@ -46,6 +46,9 @@ class MainWindow(QMainWindow):
         self.db_connection: sqlite3.Connection = db_connection
         """Connection object that points to database."""
 
+        self.db_cursor: sqlite3.Cursor = self.db_connection.cursor()
+        """Cursor object used to navigate database."""
+
         self.text_before_editing: str | None = None
         """Text of the previous selected save state item."""
 
@@ -63,7 +66,7 @@ class MainWindow(QMainWindow):
         if not paths_db.is_file():
             save_raw_paths_to_json(raw_mame_paths, paths_db)
 
-        self.mame_paths: list[Path] = load_paths_from_json(paths_db)
+        self.mame_paths: list[Path] = load_path_from_db(self.db_cursor)
         """List of all MAME directories that will be used by the application."""
 
         # Create rom list if it doesn't already exist.
@@ -618,7 +621,9 @@ class MainWindow(QMainWindow):
 
     def menu_button_1_clicked(self) -> None:
         """Temporary"""
-        self.save_state_tree.hide()
+        # self.save_state_tree.hide()
+        results = load_path_from_db(self.db_cursor)
+        print(results)
 
     def menu_button_2_clicked(self) -> None:
         """Temporary"""
