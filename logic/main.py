@@ -97,6 +97,15 @@ def generate_rom_list(mame_path: Path, rom_database) -> None:
     with open(rom_database, 'w') as rom_list:
         subprocess.run([mame_path / 'mame.exe', '-ll'], stdout=rom_list)
 
+def new_build_descriptioin_db(cursor: sqlite3.Cursor):
+    sql = """SELECT name, description FROM roms;"""
+    cursor.execute(sql)
+    results = cursor.fetchall()
+    description_db = {}
+    for item in results:
+        description_db[item[1]] = item[0]
+
+    return description_db
 
 def build_description_db(rom_list: Path) -> dict[str, str]:
     """Create and return a dictionary containing long form names as keys, and rom names as values.

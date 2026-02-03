@@ -23,7 +23,7 @@ from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem
     NotesWindow
 from logic.main import build_description_db, paths_db, get_all_roms_with_saves, save_pb_to_json, \
     generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths, load_game_info, PersonalBestDataBase, \
-    save_paths_to_database
+    save_paths_to_database, new_build_descriptioin_db
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json, load_path_from_db
 
 
@@ -460,7 +460,8 @@ class MainWindow(QMainWindow):
 
     def fill_data_structures(self) -> None:
         """Fill data structures used to derive Save State Tree Widget items."""
-        self.description_db = build_description_db(rom_db)
+        # self.description_db = build_description_db(rom_db)
+        self.description_db = new_build_descriptioin_db(self.db_cursor)
         self.all_save_states = get_all_roms_with_saves(self.mame_paths)
 
     def add_mame_path_items(self):
