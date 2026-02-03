@@ -10,6 +10,7 @@ import sqlite3
 import subprocess
 import os
 import json
+
 from pathlib import Path
 
 paths_db = Path('paths.json')
@@ -45,6 +46,7 @@ def load_path_from_db(cursor: sqlite3.Cursor):
         paths.append(path)
     return paths
 
+# TODO Deprecated
 def load_paths_from_json(paths_database) -> list[Path]:
     """Load JSON file containing raw MAME paths and return them as a list of Path objects."""
     with open(paths_database, 'r') as db:
@@ -56,6 +58,7 @@ def load_paths_from_json(paths_database) -> list[Path]:
         return formatted_paths
 
 
+# TODO Deprecated
 def get_raw_paths(formatted_paths: list[Path]) -> list[str]:
     """Convert a list of Path objects into their string representations. Return them as a new list."""
     raw_paths = []
@@ -65,7 +68,18 @@ def get_raw_paths(formatted_paths: list[Path]) -> list[str]:
 
     return raw_paths
 
+def save_paths_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, paths: list[Path]):
+    sql_statement = """INSERT OR IGNORE INTO paths VALUES (?, ?, ?, ?, ?);"""
+    rows = []
+    for path in paths:
+        row = (None, str(path), path.name, None, None)
+        rows.append(row)
 
+    cursor.executemany(sql_statement, rows)
+    connection.commit()
+
+
+# TODO Deprecated
 def save_raw_paths_to_json(paths: list[str], paths_database) -> None:
     """Save raw MAME paths to JSON."""
     with open(paths_database, 'w') as db:
