@@ -9,6 +9,7 @@ TODO:
 """
 import json
 import pprint
+import sqlite3
 import subprocess
 from pathlib import Path
 
@@ -32,7 +33,7 @@ class MainWindow(QMainWindow):
     Houses all GUI elements of the MAMEStates application.
     """
 
-    def __init__(self):
+    def __init__(self, db_connection: sqlite3.Connection):
         """Initialize the MainWindow subclass
 
         The MainWindow subclass inherits most of its behavior from, and extends, its parent class QMainWindow. The
@@ -41,6 +42,9 @@ class MainWindow(QMainWindow):
         application.
         """
         super().__init__()
+
+        self.db_connection: sqlite3.Connection = db_connection
+        """Connection object that points to database."""
 
         self.text_before_editing: str | None = None
         """Text of the previous selected save state item."""
@@ -636,12 +640,22 @@ class MainWindow(QMainWindow):
         # else:
         #     print('Cancel chosen')
 
+def main():
+    with sqlite3.connect('mame_states.db') as connection:
+        # The order the objects are initialized in matters.
+        app = QApplication([])
+
+        window = MainWindow(connection)
+        window.show()
+
+        app.exec()
 
 if __name__ == '__main__':
-    # The order the objects are initialized in matters.
-    app = QApplication([])
-
-    window = MainWindow()
-    window.show()
-
-    app.exec()
+    main()
+    # # The order the objects are initialized in matters.
+    # app = QApplication([])
+    #
+    # window = MainWindow()
+    # window.show()
+    #
+    # app.exec()
