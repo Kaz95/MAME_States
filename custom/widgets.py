@@ -1,10 +1,13 @@
+import sqlite3
+
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QListWidgetItem, \
     QTextEdit, QLayout, QVBoxLayout
 
-from logic.main import save_pb_to_json, pb_db, PersonalBestDataBase
+from logic.main import save_pb_to_json, pb_db, PersonalBestDataBase, save_pb_to_database
 from pathlib import Path
+
 
 class NotesWindow(QWidget):
     def __init__(self, parent=None):
@@ -22,6 +25,7 @@ class NotesWindow(QWidget):
         with open(Path('./notes') / self.current_game, 'w') as notes:
             notes.write(self.text_edit.toPlainText())
 
+
 class ToggleableLabel(QLabel):
     """Subclass and extend the QLabel class of the PyQt6.QyWidgets module
 
@@ -30,13 +34,13 @@ class ToggleableLabel(QLabel):
     Double-clicking the label toggles the editor. Pressing enter or changing focus will toggle back to the label.
     The current text is persisted when toggled.
     """
+
     def __init__(self, editor: QLineEdit, parent=None):
         super().__init__(parent)
         self.setMouseTracking(True)
         self.editor: QLineEdit = editor
         """The editor associated with this label"""
         self.editor.editingFinished.connect(self.toggle_labels)
-
 
     def mouseDoubleClickEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
@@ -65,13 +69,17 @@ class StageSplitItem(QWidget):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used as a customer item widget on a QListWidget instance."""
 
-    def __init__(self, split: list[str | int], game_db: dict, game_name: str, parent_list: 'StageSplitListWidget') -> None:
+    def __init__(self, split: list[str | int], game_db: dict, game_name: str,
+                 parent_list: 'StageSplitListWidget', connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
         """ Initialize the StageSplitItem subclass
 
         The StageSplitItem subclass inherits most of its behavior from, and extends, its parent class QWidget.
         The initialization process creates the widgets and layouts that will make up the custom item widget.
         """
         super().__init__()
+        self.db_connection = connection
+        self.db_cursor = cursor
+
         self.split = split
         """The data that comprises a split. \n[index, stage, score]"""
 
@@ -163,13 +171,19 @@ class StageSplitItem(QWidget):
         self.score_label.show()
 
     def _update_split_db(self):
-        """Update the 'in-memory' copy of the database and save to JSON"""
+        """Update the 'in-memory' copy of the database and save to JSON
+
+        Split order is preserved by the position of the in-memory representation of this item in the game's splits list.
+        Grabbing the index of the list that represents this item in memory allows you to act on the correct list.
+        """
         item_index = self.game_db[self.game_name]['splits'].index(self.split)
 
         self.game_db[self.game_name]['splits'][item_index][1] = int(self.score_editor.text())
         self.game_db[self.game_name]['splits'][item_index][0] = self.name_editor.text()
 
-        save_pb_to_json(self.game_db, pb_db)
+        if self.name_editor.text():
+            save_pb_to_json(self.game_db, pb_db)
+            save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
 
 
 class StageSplitListWidget(QListWidget):
@@ -179,13 +193,17 @@ class StageSplitListWidget(QListWidget):
     Internal movement is active. The order of splits is preserved.
     The difference between splits is calculated and displayed.
     """
-    def __init__(self, game_db: PersonalBestDataBase):
+
+    def __init__(self, game_db: PersonalBestDataBase, connection: sqlite3.Connection, cursor: sqlite3.Cursor):
         """ The StageSplitListWidget subclass inherits most of its behavior from, and extends,
         its parent class QListWidget.
 
         The initialization process customizes the widget.
         """
         super().__init__()
+        self.db_connection = connection
+        self.db_cursor = cursor
+
         self.game_db: PersonalBestDataBase = game_db
         """In-memory representation of DB schema."""
 
@@ -228,6 +246,7 @@ class StageSplitListWidget(QListWidget):
         split = splits.pop(old_index)
         splits.insert(new_index, split)
         save_pb_to_json(self.game_db, pb_db)
+        save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
 
     def add_diffs(self, splits: list):
         """Calculate and display the difference between a splits score, and the previous splits score."""
@@ -250,6 +269,7 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
     When a QLineEdit is created, a custom validator is automatically set. The validator disallows forbidden file names.
     The event filter is also extended to replace all instances of the 'space' key with a hyphen.
     """
+
     def createEditor(self, parent, option, index):
         """Automatically apply a custom validator on the created editor, if it is a QLineEdit."""
         editor = super().createEditor(parent, option, index)

@@ -23,7 +23,8 @@ from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem
     NotesWindow
 from logic.main import build_description_db, paths_db, get_all_roms_with_saves, save_pb_to_json, \
     generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths, load_game_info, PersonalBestDataBase, \
-    save_paths_to_database, new_build_descriptioin_db, load_personal_bests_from_database
+    save_paths_to_database, new_build_descriptioin_db, load_personal_bests_from_database, save_pb_to_database, \
+    delete_split
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json, load_path_from_db
 
 
@@ -80,7 +81,7 @@ class MainWindow(QMainWindow):
             with open(pb_db, 'w') as db:
                 json.dump(test_pb_info, db, indent=4)
 
-        self.test_game_info: PersonalBestDataBase = load_personal_bests_from_database(self.db_cursor)
+        self.pb_info: PersonalBestDataBase = load_personal_bests_from_database(self.db_cursor)
         """Personal best information."""
 
         self.fill_data_structures()
@@ -169,7 +170,7 @@ class MainWindow(QMainWindow):
         self.add_game_button: QPushButton = QPushButton('Add Game')
         self.delete_game_button: QPushButton = QPushButton('Delete Game')
 
-        self.split_list: StageSplitListWidget = StageSplitListWidget(self.test_game_info)
+        self.split_list: StageSplitListWidget = StageSplitListWidget(self.pb_info, self.db_connection, self.db_cursor)
         self.add_split_button: QPushButton = QPushButton('Add Split')
         self.delete_split_button: QPushButton = QPushButton('Delete Split')
 
@@ -364,7 +365,7 @@ class MainWindow(QMainWindow):
         """High Score Panel widget customization"""
         self.notes_window.hide()
         # Fill Game List
-        for key in self.test_game_info:
+        for key in self.pb_info:
             QTreeWidgetItem(self.high_score_game_tree, [key])
 
         self.high_score_game_tree.setHeaderLabels(['Games'])
@@ -423,7 +424,7 @@ class MainWindow(QMainWindow):
 
     def add_split(self, split, game_name):
         """Create a new custom widget item and assign it to a list widget item."""
-        split_item = StageSplitItem(split, self.test_game_info, game_name, self.split_list)
+        split_item = StageSplitItem(split, self.pb_info, game_name, self.split_list, self.db_connection, self.db_cursor)
         list_item = QListWidgetItem(self.split_list)
         self.split_list.setItemWidget(list_item, split_item)
         return list_item
@@ -491,14 +492,15 @@ class MainWindow(QMainWindow):
         if selected:
             game_item = selected[0]
             game_name = game_item.text(0)
-            game_splits = self.test_game_info[game_name]['splits']
+            game_splits = self.pb_info[game_name]['splits']
             # split_count = len(game_splits)
             new_split = ['', 0]
             game_splits.append(new_split)
             new_item = self.add_split(new_split, game_name)
             self.split_list.setCurrentItem(new_item)
             self.split_double_clicked(new_item)
-            save_pb_to_json(self.test_game_info, pb_db)
+            save_pb_to_json(self.pb_info, pb_db)
+            # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def add_game(self):
         """Add a game to PB game tree. User is prompted to enter the games name. Save new game to JSON"""
@@ -506,10 +508,11 @@ class MainWindow(QMainWindow):
         if game_name and ok:
             QTreeWidgetItem(self.high_score_game_tree, [game_name])
 
-            self.test_game_info[game_name] = {'hs': 0,
+            self.pb_info[game_name] = {'hs': 0,
                                               'distance': '',
                                               'splits': []}
-            save_pb_to_json(self.test_game_info, pb_db)
+            save_pb_to_json(self.pb_info, pb_db)
+            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def delete_game(self):
         selected = self.high_score_game_tree.selectedItems()
@@ -526,8 +529,9 @@ class MainWindow(QMainWindow):
                 self.high_score_game_tree.clearSelection()
 
             game_name = game_item.text(0)
-            del self.test_game_info[game_name]
-            save_pb_to_json(self.test_game_info, pb_db)
+            del self.pb_info[game_name]
+            save_pb_to_json(self.pb_info, pb_db)
+            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
 
             game_item_index = self.high_score_game_tree.indexFromItem(game_item)
@@ -542,9 +546,12 @@ class MainWindow(QMainWindow):
             row = self.split_list.currentRow()
             if row != -1:
                 self.split_list.takeItem(row)
-                splits = self.test_game_info[game_name]['splits']
+                splits = self.pb_info[game_name]['splits']
+                label = splits[row][0]
                 del splits[row]
-                save_pb_to_json(self.test_game_info, pb_db)
+                save_pb_to_json(self.pb_info, pb_db)
+                delete_split(self.db_connection ,self.db_cursor, game_name, label)
+                save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     # TODO re-enable file renaming after ensuring user input is properly sanitized.
     def save_state_tree_item_changed(self, save_state_item: QTreeWidgetItem):
@@ -577,7 +584,7 @@ class MainWindow(QMainWindow):
         selected = self.high_score_game_tree.selectedItems()
         if selected:
             game_name = selected[0].text(0)
-            info = self.test_game_info[game_name]
+            info = self.pb_info[game_name]
 
             hs = info['hs']
             distance = info['distance']
@@ -599,7 +606,8 @@ class MainWindow(QMainWindow):
         """Show split item labels. Hide editors."""
         if prev:
             widget_item = self.split_list.itemWidget(prev)
-            widget_item.toggle_labels()
+            if widget_item:
+                widget_item.toggle_labels()
 
     def update_high_score_pb(self):
         """Update in memory DB and saves to JSON"""
@@ -608,8 +616,9 @@ class MainWindow(QMainWindow):
         if selected:
             game_item = selected[0]
             game_name = game_item.text(0)
-            self.test_game_info[game_name]['hs'] = new_pb
-            save_pb_to_json(self.test_game_info, pb_db)
+            self.pb_info[game_name]['hs'] = new_pb
+            save_pb_to_json(self.pb_info, pb_db)
+            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def update_distance_pb(self):
         """Update in memory DB and saves to JSON"""
@@ -618,14 +627,14 @@ class MainWindow(QMainWindow):
         if selected:
             game_item = selected[0]
             game_name = game_item.text(0)
-            self.test_game_info[game_name]['distance'] = new_pb
-            save_pb_to_json(self.test_game_info, pb_db)
+            self.pb_info[game_name]['distance'] = new_pb
+            save_pb_to_json(self.pb_info, pb_db)
+            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def menu_button_1_clicked(self) -> None:
         """Temporary"""
         # self.save_state_tree.hide()
-        results = load_personal_bests_from_database(self.db_cursor)
-        print(results)
+        delete_split(self.db_connection, self.db_cursor, 'Puzzle Bobble (Japan, B-System)', '')
 
     def menu_button_2_clicked(self) -> None:
         """Temporary"""

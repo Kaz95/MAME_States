@@ -85,6 +85,64 @@ def save_raw_paths_to_json(paths: list[str], paths_database) -> None:
     with open(paths_database, 'w') as db:
         json.dump(paths, db, indent=4)
 
+def id_from_name(name_, cursor_):
+    sql = "SELECT id FROM roms WHERE description = ?"
+    cursor_.execute(sql, (name_,))
+    romid = cursor_.fetchall()
+    romid = romid[0][0]
+    return romid
+
+def collate_pb_rows(cursor_, pb_info):
+        rows = []
+        for key in pb_info:
+            pb_dict = pb_info[key]
+            rom_id = id_from_name(key, cursor_)
+            highscore = pb_dict['hs']
+            distance = pb_dict['distance']
+            row = (None, highscore, distance, rom_id)
+            rows.append(row)
+        return rows
+
+def delete_split(connection, cursor_, name_, label):
+    delete_row = "DELETE FROM splits WHERE rom_id = ? AND label = ?"
+    rom_id = id_from_name(name_, cursor_)
+    cursor_.execute(delete_row, (rom_id, label))
+    connection.commit()
+
+def get_split_pk(cursor_, name_, label):
+    id_query = "SELECT id FROM splits WHERE rom_id = ? AND label = ?"
+    rom_id = id_from_name(name_, cursor_)
+    cursor_.execute(id_query, (rom_id, label))
+    results = cursor_.fetchall()
+    return results
+
+def get_splits(cursor_, pb_info):
+    splits = []
+    for pb in pb_info:
+        pb_dict = pb_info[pb]
+        split = pb_dict['splits']
+        for item in split:
+            split_pk = get_split_pk(cursor_, pb, item[0])
+            if split_pk:
+                split_pk = split_pk[0][0]
+            else:
+                split_pk = None
+            row = (split_pk, item[0], item[1], split.index(item), id_from_name(pb, cursor_))
+            splits.append(row)
+    return splits
+
+def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase):
+    pb_insert = "INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = excluded.highscore, distance = excluded.distance"
+    splits_insert = "INSERT INTO splits VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET label = excluded.label, score = excluded.score, 'index' = excluded.'index'"
+
+    pb_rows = collate_pb_rows(cursor, pb_info)
+    splits = get_splits(cursor, pb_info)
+
+    cursor.executemany(pb_insert, pb_rows)
+    cursor.executemany(splits_insert, splits)
+
+    connection.commit()
+
 
 def save_pb_to_json(pb_info: dict[str, dict], pb_database) -> None:
     """Save the 'in-memory' copy of the personal best database to JSON."""
