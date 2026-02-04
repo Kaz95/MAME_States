@@ -14,7 +14,7 @@ import json
 from pathlib import Path
 
 paths_db = Path('paths.json')
-pb_db = Path('game_db.json')
+pb_db: Path = Path('game_db.json')
 rom_db = Path('logic/rom_list.txt')
 
 raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
@@ -169,6 +169,38 @@ def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: st
     """Rename a MAME save file"""
     os.rename(mame_folder / "sta" / rom_folder / (old_save_name + '.sta'),
               mame_folder / "sta" / rom_folder / (new_save_name + '.sta'))
+
+def load_personal_bests_from_database(cursor: sqlite3.Cursor):
+    pb_info: PersonalBestDataBase = {}
+
+    pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.distance 
+    FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
+
+    splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description 
+        FROM 'splits' JOIN 'roms' ON splits.rom_id = roms.id 
+        ORDER BY roms.description, splits.'index'"""
+
+    cursor.execute(pb_query)
+    personal_bests = cursor.fetchall()
+
+    for pb in personal_bests:
+        pb_info[pb[0]] = {'hs': pb[1], 'distance': pb[2], 'splits': []}
+
+    cursor.execute(splits_query)
+    splits = cursor.fetchall()
+    for split in splits:
+        pb_info[split[3]]['splits'].append([split[0], split[1]])
+
+    return pb_info
+
+    # Load personal_bests.highscore & distance. Join rom name.
+    # Create key using rom name, if not exist.
+    # Use key to insert 'hs' & 'distance'.
+    # Load splits.label, score, & index. Join rom name. Order by index.
+    # Use key to insert 'splits'.
+    # Splits will need formatting from tuple to list while dropping index and rom name.
+    pass
+
 
 
 def load_game_info(pb_database: Path) -> PersonalBestDataBase:

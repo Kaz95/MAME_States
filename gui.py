@@ -23,7 +23,7 @@ from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem
     NotesWindow
 from logic.main import build_description_db, paths_db, get_all_roms_with_saves, save_pb_to_json, \
     generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths, load_game_info, PersonalBestDataBase, \
-    save_paths_to_database, new_build_descriptioin_db
+    save_paths_to_database, new_build_descriptioin_db, load_personal_bests_from_database
 from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json, load_path_from_db
 
 
@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
             with open(pb_db, 'w') as db:
                 json.dump(test_pb_info, db, indent=4)
 
-        self.test_game_info: PersonalBestDataBase = load_game_info(pb_db)
+        self.test_game_info: PersonalBestDataBase = load_personal_bests_from_database(self.db_cursor)
         """Personal best information."""
 
         self.fill_data_structures()
@@ -624,7 +624,7 @@ class MainWindow(QMainWindow):
     def menu_button_1_clicked(self) -> None:
         """Temporary"""
         # self.save_state_tree.hide()
-        results = load_path_from_db(self.db_cursor)
+        results = load_personal_bests_from_database(self.db_cursor)
         print(results)
 
     def menu_button_2_clicked(self) -> None:
