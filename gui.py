@@ -60,23 +60,8 @@ class MainWindow(QMainWindow):
         # --------- #
         # Load Data #
         # --------- #
-
-        # # Build sample paths DB if it's not already there.
-        # if not paths_db.is_file():
-        #     save_raw_paths_to_json(raw_mame_paths, paths_db)
-
         self.mame_paths: list[Path] = load_path_from_db(self.db_cursor)
         """List of all MAME directories that will be used by the application."""
-
-        # # Create rom list if it doesn't already exist.
-        # if not rom_db.is_file():
-        #     if self.mame_paths:
-        #         generate_rom_list(self.mame_paths[0], rom_db)
-
-        # # Create Personal Best database if it doesn't already exist.
-        # if not pb_db.is_file():
-        #     with open(pb_db, 'w') as db:
-        #         json.dump(test_pb_info, db, indent=4)
 
         self.pb_info: PersonalBestDataBase = load_personal_bests_from_database(self.db_cursor)
         """Personal best information."""
@@ -229,24 +214,10 @@ class MainWindow(QMainWindow):
             item = QTreeWidgetItem(self.rom_search_tree, [game_name])
             item.setToolTip(0, self.description_db[game_name])
 
-
-        # self.source_model = QStringListModel(self.description_db.keys())
-        # self.proxy_model = QSortFilterProxyModel()
-        # self.proxy_model.setSourceModel(self.source_model)
-        # self.proxy_model.setFilterKeyColumn(0)
-        #
-        #
-        #
-        # self.rom_search_list: QListView = QListView()
-        # self.rom_search_list.setModel(self.proxy_model)
-
-
-
         # Layouts
         self.rom_search_page_layout = QVBoxLayout()
         self.rom_search_page_layout.addWidget(self.rom_search_bar)
         self.rom_search_page_layout.addWidget(self.rom_search_tree)
-        # self.rom_search_page_layout.addWidget(self.rom_search_list)
         self.rom_search_page.setLayout(self.rom_search_page_layout)
         self.rom_search_page.setFont(self.top_level_item_font)
 
@@ -264,7 +235,7 @@ class MainWindow(QMainWindow):
         rom_name = self.description_db[game_name]
         if self.notes_window.isHidden():
             self.notes_window.show()
-        # self.notes_window.text_edit.setText(f'{game_name} - Notes')
+
         note_path = Path('notes') / rom_name
 
         if not note_path.is_file():
@@ -326,20 +297,12 @@ class MainWindow(QMainWindow):
     def on_text_changed(self, text):
         self.debounce_timer.start(300)
 
-    # def update_filter(self):
-    #     search_text = self.rom_search_bar.text()
-    #     # Set the filter using a regular expression
-    #     # Qt.CaseInsensitive ensures the search is case-insensitive
-    #     self.proxy_model.setFilterFixedString(search_text)
-    #     self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
-
     def update_filter(self):
         search_text = self.rom_search_bar.text().lower()
         self.rom_search_tree.clear()
 
         for game_name in self.description_db.keys():
             if search_text in game_name.lower():
-                # QTreeWidgetItem(self.rom_search_tree, [game_name])
                 item = QTreeWidgetItem(self.rom_search_tree, [game_name])
                 item.setToolTip(0, self.description_db[game_name])
 
@@ -381,8 +344,6 @@ class MainWindow(QMainWindow):
 
         first_item = self.high_score_game_tree.topLevelItem(0)
         self.high_score_game_tree.setCurrentItem(first_item)
-        # self.game_list_container.addWidget(self.add_game_button)
-        # self.game_list_container.addWidget(self.delete_game_button)
 
     def setup_pb_panel(self):
         """Personal Best Panel widget customization."""
@@ -490,14 +451,12 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             game_splits = self.pb_info[game_name]['splits']
-            # split_count = len(game_splits)
             new_split = ['', 0]
             game_splits.append(new_split)
             new_item = self.add_split(new_split, game_name)
             self.split_list.setCurrentItem(new_item)
             self.split_double_clicked(new_item)
-            # save_pb_to_json(self.pb_info, pb_db)
-            # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+
 
     def add_game(self):
         """Add a game to PB game tree. User is prompted to enter the games name. Save new game to JSON"""
@@ -508,7 +467,7 @@ class MainWindow(QMainWindow):
             self.pb_info[game_name] = {'hs': 0,
                                               'distance': '',
                                               'splits': []}
-            # save_pb_to_json(self.pb_info, pb_db)
+
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def delete_game(self):
@@ -527,7 +486,6 @@ class MainWindow(QMainWindow):
 
             game_name = game_item.text(0)
             del self.pb_info[game_name]
-            # save_pb_to_json(self.pb_info, pb_db)
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
 
@@ -546,7 +504,6 @@ class MainWindow(QMainWindow):
                 splits = self.pb_info[game_name]['splits']
                 label = splits[row][0]
                 del splits[row]
-                # save_pb_to_json(self.pb_info, pb_db)
                 delete_split(self.db_connection ,self.db_cursor, game_name, label)
                 save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
@@ -614,7 +571,6 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.pb_info[game_name]['hs'] = new_pb
-            # save_pb_to_json(self.pb_info, pb_db)
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def update_distance_pb(self):
@@ -625,13 +581,11 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.pb_info[game_name]['distance'] = new_pb
-            # save_pb_to_json(self.pb_info, pb_db)
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def menu_button_1_clicked(self) -> None:
         """Temporary"""
         self.save_state_tree.hide()
-        # delete_split(self.db_connection, self.db_cursor, 'Puzzle Bobble (Japan, B-System)', '')
 
     def menu_button_2_clicked(self) -> None:
         """Temporary"""
@@ -644,8 +598,7 @@ class MainWindow(QMainWindow):
         if path:
             if path not in self.mame_paths:
                 self.mame_paths.append(path)
-            # raw_paths = get_raw_paths(self.mame_paths)
-            # save_raw_paths_to_json(raw_paths, paths_db)
+
             save_paths_to_database(self.db_connection, self.db_cursor, self.mame_paths)
             self.all_save_states = get_all_roms_with_saves(self.mame_paths)
             self.save_state_tree.itemChanged.disconnect(self.save_state_tree_item_changed)

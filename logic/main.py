@@ -9,10 +9,6 @@ import os
 import sqlite3
 from pathlib import Path
 
-# paths_db = Path('paths.json')
-# pb_db: Path = Path('game_db.json')
-# rom_db = Path('logic/rom_list.txt')
-
 raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
                   r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10']
 
@@ -42,28 +38,6 @@ def load_path_from_db(cursor: sqlite3.Cursor):
         paths.append(path)
     return paths
 
-# # TODO Deprecated
-# def load_paths_from_json(paths_database) -> list[Path]:
-#     """Load JSON file containing raw MAME paths and return them as a list of Path objects."""
-#     with open(paths_database, 'r') as db:
-#         formatted_paths = []
-#         raw_paths = json.load(db)
-#         for path in raw_paths:
-#             formatted_paths.append(Path(path))
-#
-#         return formatted_paths
-#
-#
-# # TODO Deprecated
-# def get_raw_paths(formatted_paths: list[Path]) -> list[str]:
-#     """Convert a list of Path objects into their string representations. Return them as a new list."""
-#     raw_paths = []
-#     for path in formatted_paths:
-#         path = str(path)
-#         raw_paths.append(path)
-#
-#     return raw_paths
-
 def save_paths_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, paths: list[Path]):
     sql_statement = """INSERT OR IGNORE INTO paths VALUES (?, ?, ?, ?, ?);"""
     rows = []
@@ -74,12 +48,6 @@ def save_paths_to_database(connection: sqlite3.Connection, cursor: sqlite3.Curso
     cursor.executemany(sql_statement, rows)
     connection.commit()
 
-
-# # TODO Deprecated
-# def save_raw_paths_to_json(paths: list[str], paths_database) -> None:
-#     """Save raw MAME paths to JSON."""
-#     with open(paths_database, 'w') as db:
-#         json.dump(paths, db, indent=4)
 
 def id_from_name(name_, cursor_):
     sql = "SELECT id FROM roms WHERE description = ?"
@@ -140,17 +108,6 @@ def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, 
     connection.commit()
 
 
-# def save_pb_to_json(pb_info: dict[str, dict], pb_database) -> None:
-#     """Save the 'in-memory' copy of the personal best database to JSON."""
-#     with open(pb_database, 'w') as db:
-#         json.dump(pb_info, db, indent=4)
-
-
-# def generate_rom_list(mame_path: Path, rom_database) -> None:
-#     """Generate a full list of rom names and save to a text file: 'romlist.txt'."""
-#     with open(rom_database, 'w') as rom_list:
-#         subprocess.run([mame_path / 'mame.exe', '-ll'], stdout=rom_list)
-
 def new_build_descriptioin_db(cursor: sqlite3.Cursor):
     sql = """SELECT name, description FROM roms;"""
     cursor.execute(sql)
@@ -160,24 +117,6 @@ def new_build_descriptioin_db(cursor: sqlite3.Cursor):
         description_db[item[1]] = item[0]
 
     return description_db
-
-# def build_description_db(rom_list: Path) -> dict[str, str]:
-#     """Create and return a dictionary containing long form names as keys, and rom names as values.
-#
-#     All resulting strings are stripped of white space and double quotes.
-#     """
-#     description_db = {}
-#     with open(rom_list, 'r') as rom_list:
-#         next(rom_list)
-#         for line in rom_list:
-#             description_start = line.index('"')
-#             description = line[description_start:]
-#             description = description.strip()
-#             description = description.strip('"')
-#             rom_name = line[:description_start]
-#             rom_name = rom_name.strip()
-#             description_db[description] = rom_name
-#     return description_db
 
 
 def get_roms_with_saves(mame_path: Path) -> list[str]:
@@ -246,10 +185,3 @@ def load_personal_bests_from_database(cursor: sqlite3.Cursor):
         pb_info[split[3]]['splits'].append([split[0], split[1]])
 
     return pb_info
-
-
-# def load_game_info(pb_database: Path) -> PersonalBestDataBase:
-#     """Load JSON file containing personal best information. Return the loaded information."""
-#     with open(pb_database, 'r') as game_info:
-#         game_dict = json.load(game_info)
-#         return game_dict

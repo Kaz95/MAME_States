@@ -182,7 +182,6 @@ class StageSplitItem(QWidget):
         self.game_db[self.game_name]['splits'][item_index][0] = self.name_editor.text()
 
         if self.name_editor.text():
-            # save_pb_to_json(self.game_db, pb_db)
             save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
 
 
@@ -245,7 +244,6 @@ class StageSplitListWidget(QListWidget):
         splits = self.game_db[game_name]['splits']
         split = splits.pop(old_index)
         splits.insert(new_index, split)
-        # save_pb_to_json(self.game_db, pb_db)
         save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
 
     def add_diffs(self, splits: list):
