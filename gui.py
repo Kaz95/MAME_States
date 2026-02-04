@@ -8,25 +8,21 @@ TODO:
     * Consider sizing policies and size hints
     * Decide on new features to add.
 """
-import json
-import pprint
 import sqlite3
 import subprocess
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QSize, QStringListModel, QSortFilterProxyModel, QTimer, QPoint
+from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
 from PyQt6.QtGui import QAction, QFont, QIntValidator
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
-    QInputDialog, QFileDialog, QMessageBox, QListView, QMenu
+    QInputDialog, QFileDialog, QMessageBox, QMenu
 
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
     NotesWindow
-from logic.main import build_description_db, paths_db, get_all_roms_with_saves, save_pb_to_json, \
-    generate_rom_list, save_raw_paths_to_json, raw_mame_paths, get_raw_paths, load_game_info, PersonalBestDataBase, \
-    save_paths_to_database, new_build_descriptioin_db, load_personal_bests_from_database, save_pb_to_database, \
-    delete_split
-from logic.main import get_real_name, test_pb_info, pb_db, rom_db, load_paths_from_json, load_path_from_db
+from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase
+from logic.main import save_paths_to_database, new_build_descriptioin_db, load_personal_bests_from_database, \
+    save_pb_to_database, delete_split
 
 
 class MainWindow(QMainWindow):
@@ -65,22 +61,22 @@ class MainWindow(QMainWindow):
         # Load Data #
         # --------- #
 
-        # Build sample paths DB if it's not already there.
-        if not paths_db.is_file():
-            save_raw_paths_to_json(raw_mame_paths, paths_db)
+        # # Build sample paths DB if it's not already there.
+        # if not paths_db.is_file():
+        #     save_raw_paths_to_json(raw_mame_paths, paths_db)
 
         self.mame_paths: list[Path] = load_path_from_db(self.db_cursor)
         """List of all MAME directories that will be used by the application."""
 
-        # Create rom list if it doesn't already exist.
-        if not rom_db.is_file():
-            if self.mame_paths:
-                generate_rom_list(self.mame_paths[0], rom_db)
+        # # Create rom list if it doesn't already exist.
+        # if not rom_db.is_file():
+        #     if self.mame_paths:
+        #         generate_rom_list(self.mame_paths[0], rom_db)
 
-        # Create Personal Best database if it doesn't already exist.
-        if not pb_db.is_file():
-            with open(pb_db, 'w') as db:
-                json.dump(test_pb_info, db, indent=4)
+        # # Create Personal Best database if it doesn't already exist.
+        # if not pb_db.is_file():
+        #     with open(pb_db, 'w') as db:
+        #         json.dump(test_pb_info, db, indent=4)
 
         self.pb_info: PersonalBestDataBase = load_personal_bests_from_database(self.db_cursor)
         """Personal best information."""
@@ -500,7 +496,7 @@ class MainWindow(QMainWindow):
             new_item = self.add_split(new_split, game_name)
             self.split_list.setCurrentItem(new_item)
             self.split_double_clicked(new_item)
-            save_pb_to_json(self.pb_info, pb_db)
+            # save_pb_to_json(self.pb_info, pb_db)
             # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def add_game(self):
@@ -512,7 +508,7 @@ class MainWindow(QMainWindow):
             self.pb_info[game_name] = {'hs': 0,
                                               'distance': '',
                                               'splits': []}
-            save_pb_to_json(self.pb_info, pb_db)
+            # save_pb_to_json(self.pb_info, pb_db)
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def delete_game(self):
@@ -531,7 +527,7 @@ class MainWindow(QMainWindow):
 
             game_name = game_item.text(0)
             del self.pb_info[game_name]
-            save_pb_to_json(self.pb_info, pb_db)
+            # save_pb_to_json(self.pb_info, pb_db)
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
 
@@ -550,7 +546,7 @@ class MainWindow(QMainWindow):
                 splits = self.pb_info[game_name]['splits']
                 label = splits[row][0]
                 del splits[row]
-                save_pb_to_json(self.pb_info, pb_db)
+                # save_pb_to_json(self.pb_info, pb_db)
                 delete_split(self.db_connection ,self.db_cursor, game_name, label)
                 save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
@@ -618,7 +614,7 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.pb_info[game_name]['hs'] = new_pb
-            save_pb_to_json(self.pb_info, pb_db)
+            # save_pb_to_json(self.pb_info, pb_db)
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def update_distance_pb(self):
@@ -629,13 +625,13 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.pb_info[game_name]['distance'] = new_pb
-            save_pb_to_json(self.pb_info, pb_db)
+            # save_pb_to_json(self.pb_info, pb_db)
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def menu_button_1_clicked(self) -> None:
         """Temporary"""
-        # self.save_state_tree.hide()
-        delete_split(self.db_connection, self.db_cursor, 'Puzzle Bobble (Japan, B-System)', '')
+        self.save_state_tree.hide()
+        # delete_split(self.db_connection, self.db_cursor, 'Puzzle Bobble (Japan, B-System)', '')
 
     def menu_button_2_clicked(self) -> None:
         """Temporary"""
