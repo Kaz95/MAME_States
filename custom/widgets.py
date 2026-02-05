@@ -5,10 +5,47 @@ from PyQt6.QtCore import Qt, QEvent, QRegularExpression
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout
-from PyQt6.QtWidgets.QMainWindow import closeEvent
 
 from logic.main import PersonalBestDataBase, save_pb_to_database
 
+######################
+#   Save State Page  #
+######################
+
+class SaveStateNameInputValidator(QStyledItemDelegate):
+    """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    When a QLineEdit is created, a custom validator is automatically set. The validator disallows forbidden file names.
+    The event filter is also extended to replace all instances of the 'space' key with a hyphen.
+    """
+
+    def createEditor(self, parent, option, index):
+        """Automatically apply a custom validator on the created editor, if it is a QLineEdit."""
+        editor = super().createEditor(parent, option, index)
+        if isinstance(editor, QLineEdit):
+            # TODO Get rid of match case, there is only one case now.
+            match index.column():
+                case 0:
+                    editor.setMaxLength(10)
+                    # TODO Fully understand this regex.
+                    pattern = QRegularExpression(r'^[^<>:"/\|?* ]*$')
+                    validator = QRegularExpressionValidator(pattern, editor)
+                    editor.setValidator(validator)
+        return editor
+
+    def eventFilter(self, watched, event):
+        """Extend the eventFilter to replace 'space' key presses with hyphens."""
+        if event.type() == QEvent.Type.KeyPress:
+            if event.key() == Qt.Key.Key_Space:
+                watched.insert('-')
+                return True
+
+        return super().eventFilter(watched, event)
+
+#####################
+#   Highscore Page  #
+#####################
 
 class NotesWindow(QWidget):
     """Subclass and extend QWidget class of the PyQt6.QyWidgets module.
@@ -274,35 +311,3 @@ class StageSplitListWidget(QListWidget):
                 list_item = self.item(index)
                 widget_item = self.itemWidget(list_item)
                 widget_item.score_label.setText(str(split[1]))
-
-
-class SaveStateNameInputValidator(QStyledItemDelegate):
-    """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.
-
-    This class inherits most of its behavior from its parent class, while extending its functionality.
-    When a QLineEdit is created, a custom validator is automatically set. The validator disallows forbidden file names.
-    The event filter is also extended to replace all instances of the 'space' key with a hyphen.
-    """
-
-    def createEditor(self, parent, option, index):
-        """Automatically apply a custom validator on the created editor, if it is a QLineEdit."""
-        editor = super().createEditor(parent, option, index)
-        if isinstance(editor, QLineEdit):
-            # TODO Get rid of match case, there is only one case now.
-            match index.column():
-                case 0:
-                    editor.setMaxLength(10)
-                    # TODO Fully understand this regex.
-                    pattern = QRegularExpression(r'^[^<>:"/\|?* ]*$')
-                    validator = QRegularExpressionValidator(pattern, editor)
-                    editor.setValidator(validator)
-        return editor
-
-    def eventFilter(self, watched, event):
-        """Extend the eventFilter to replace 'space' key presses with hyphens."""
-        if event.type() == QEvent.Type.KeyPress:
-            if event.key() == Qt.Key.Key_Space:
-                watched.insert('-')
-                return True
-
-        return super().eventFilter(watched, event)
