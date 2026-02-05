@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget
 
 from logic.main import PersonalBestDataBase, save_pb_to_database
 
+
 ######################
 #   Save State Page  #
 ######################
@@ -43,6 +44,7 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
 
         return super().eventFilter(watched, event)
 
+
 #####################
 #   Highscore Page  #
 #####################
@@ -55,6 +57,7 @@ class NotesWindow(QWidget):
     This window allows users to view and update notes a persistent set of notes, ona  per-game basis.
     When the window is closed, all text in the notes widget replaces previous text in corresponding notes.txt file.
     """
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowFlags(Qt.WindowType.Window)
@@ -74,6 +77,7 @@ class NotesWindow(QWidget):
             notes.write(self.text_edit.toPlainText())
         # Do I need to call super? What does close usually do?
         # super().closeEvent(event)
+
 
 class ToggleableLabel(QLabel):
     """Subclass and extend the QLabel class of the PyQt6.QyWidgets module.
