@@ -76,6 +76,17 @@ def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> li
         rows.append(row)
     return rows
 
+def delete_personal_best(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str) -> None:
+    sql_statement = "DELETE FROM personal_bests WHERE rom_id = ?"
+    rom_id = id_from_description(rom_description, cursor)
+    cursor.execute(sql_statement, (rom_id,))
+    connection.commit()
+
+def delete_splits(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str) -> None:
+    sql_statement = "DELETE FROM splits WHERE rom_id = ?"
+    rom_id = id_from_description(rom_description, cursor)
+    cursor.execute(sql_statement, (rom_id,))
+    connection.commit()
 
 def delete_split(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str, split_label: str) -> None:
     """Delete a split from the database. Rom id and split label text are used as unique identifier."""
