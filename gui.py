@@ -516,13 +516,14 @@ class MainWindow(QMainWindow):
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def delete_game(self) -> None:
-        """"""
+        """Delete game from Highscore Game Tree and remove all its information from database."""
         selected = self.high_score_game_tree.selectedItems()
         if selected:
             game_item = selected[0]
             previous_item = self.high_score_game_tree.itemAbove(game_item)
             next_item = self.high_score_game_tree.itemBelow(game_item)
 
+            # Move selection before deleting.
             if previous_item:
                 self.high_score_game_tree.setCurrentItem(previous_item)
             elif next_item:
@@ -531,21 +532,23 @@ class MainWindow(QMainWindow):
                 self.high_score_game_tree.clearSelection()
 
             rom_description = game_item.text(0)
+            # Delete from in-memory database representation.
             del self.pb_info[rom_description]
+            # Delete from database.
             delete_personal_best(self.db_connection, self.db_cursor, rom_description)
             delete_splits(self.db_connection, self.db_cursor, rom_description)
-            # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
-
+            # Finally, remove item from Highscore Game Tree.
             game_item_index = self.high_score_game_tree.indexFromItem(game_item)
             game_row = game_item_index.row()
             self.high_score_game_tree.takeTopLevelItem(game_row)
 
-    def delete_split(self):
-        """Delete a split in the split list. Also deleted from in-memory db and saved to database."""
+    def delete_split(self) -> None:
+        """Delete a split in the split list. Also deleted from in-memory database representation and database."""
         selected = self.high_score_game_tree.selectedItems()
         if selected:
             game_name = selected[0].text(0)
+            # Row becomes -1 when nothing selected.....I think.
             row = self.split_list.currentRow()
             if row != -1:
                 self.split_list.takeItem(row)
@@ -556,7 +559,7 @@ class MainWindow(QMainWindow):
                 save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     # TODO re-enable file renaming after ensuring user input is properly sanitized.
-    def save_state_tree_item_changed(self, save_state_item: QTreeWidgetItem):
+    def save_state_tree_item_changed(self, save_state_item: QTreeWidgetItem) -> None:
         """Does not currently have any effect."""
         if save_state_item.childCount() == 0:
             save_state_name = save_state_item.text(0)
@@ -576,11 +579,11 @@ class MainWindow(QMainWindow):
 
             # print(f'An item was changed from {self.text_before_editing}, to {save_state_item.text(0)}')
 
-    def save_state_tree_selection_changed(self, current_item: QTreeWidgetItem):
+    def save_state_tree_selection_changed(self, current_item: QTreeWidgetItem) -> None:
         """Used internally for renaming."""
         self.text_before_editing = current_item.text(0)
 
-    def high_score_tree_selection_changed(self):
+    def high_score_tree_selection_changed(self) -> None:
         """Clear and refill 'splits list' based on currently selected item. Split diffs are calculated and displayed."""
         self.split_list.clear()
         selected = self.high_score_game_tree.selectedItems()
@@ -599,20 +602,20 @@ class MainWindow(QMainWindow):
 
             self.split_list.add_diffs(splits)
 
-    def split_double_clicked(self, item: QListWidgetItem):
+    def split_double_clicked(self, item: QListWidgetItem) -> None:
         """Show split item editors. Hide labels."""
         widget_item = self.split_list.itemWidget(item)
         widget_item.toggle_editors()
 
-    def split_current_item_changed(self, cur: QListWidgetItem, prev: QListWidgetItem):
+    def split_current_item_changed(self, cur: QListWidgetItem, prev: QListWidgetItem) -> None:
         """Show split item labels. Hide editors."""
         if prev:
             widget_item = self.split_list.itemWidget(prev)
             if widget_item:
                 widget_item.toggle_labels()
 
-    def update_high_score_pb(self):
-        """Update in memory DB and saves to JSON"""
+    def update_high_score_pb(self) -> None:
+        """Update in database representation and saves to database"""
         new_pb = int(self.high_score_edit.text())
         selected = self.high_score_game_tree.selectedItems()
         if selected:
@@ -621,8 +624,8 @@ class MainWindow(QMainWindow):
             self.pb_info[game_name]['hs'] = new_pb
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
-    def update_distance_pb(self):
-        """Update in memory DB and saves to JSON"""
+    def update_distance_pb(self) -> None:
+        """Update in database representation and saves to database"""
         new_pb = self.distance_edit.text()
         selected = self.high_score_game_tree.selectedItems()
         if selected:
@@ -641,7 +644,12 @@ class MainWindow(QMainWindow):
 
     # TODO Same problem here I have to disconnect and reconnect slot to avoid breaking shit. Look into it.
     def add_path_button_clicked(self) -> None:
-        """Prompt user for new MAME path, then clear and refill save state tree."""
+        """Prompt user for new MAME path and then, clear and refill save state tree.
+
+        Path must be valid filepath, not already in the in-memory representation of the 'paths' database table.
+        Path is saved to database and in-memory representation. Slots are disconnected before refilling tree.
+        This avoids the incidental signals emitted when adding objects.
+        """
         path = self.get_mame_path()
         if path:
             if path not in self.mame_paths:
@@ -656,7 +664,12 @@ class MainWindow(QMainWindow):
         # else:
         #     print('Cancel chosen')
 
-def main():
+def main() -> None:
+    """MAMEStates program entry point.
+
+    This function allows me to create DB connects with context manager. If the program ends early, rollback occurs.
+    Alternative would be creating db connection with context inside MainWindow _init_, which seems not ideal.
+    """
     with sqlite3.connect('mame_states.db') as connection:
         # The order the objects are initialized in matters.
         app = QApplication([])
