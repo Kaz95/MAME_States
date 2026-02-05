@@ -5,11 +5,19 @@ from PyQt6.QtCore import Qt, QEvent, QRegularExpression
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout
+from PyQt6.QtWidgets.QMainWindow import closeEvent
 
 from logic.main import PersonalBestDataBase, save_pb_to_database
 
 
 class NotesWindow(QWidget):
+    """Subclass and extend QWidget class of the PyQt6.QyWidgets module.
+
+    This class inherits most of its behavior from its parent class , while extending its functionality.
+    A QWidget is initialized to create a detached window via flags. A single text edit is the only widget added.
+    This window allows users to view and update notes a persistent set of notes, ona  per-game basis.
+    When the window is closed, all text in the notes widget replaces previous text in corresponding notes.txt file.
+    """
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowFlags(Qt.WindowType.Window)
@@ -19,15 +27,19 @@ class NotesWindow(QWidget):
         layout = QVBoxLayout()
         layout.addWidget(self.text_edit)
         self.setLayout(layout)
+
         self.current_game = None
+        """Name of game that corresponds to this instance of NotesWindow."""
 
     def closeEvent(self, event: QCloseEvent):
+        """Extend closeEvent to save text edit data to notes.txt corresponding to this NotesWindow."""
         with open(Path('./notes') / self.current_game, 'w') as notes:
             notes.write(self.text_edit.toPlainText())
-
+        # Do I need to call super? What does close usually do?
+        # super().closeEvent(event)
 
 class ToggleableLabel(QLabel):
-    """Subclass and extend the QLabel class of the PyQt6.QyWidgets module
+    """Subclass and extend the QLabel class of the PyQt6.QyWidgets module.
 
     This class inherits most of its behavior from its parent class, while extending its functionality.
     A normal QLabel instance is tied to a QlineEdit instance on initialization.
@@ -47,14 +59,14 @@ class ToggleableLabel(QLabel):
             self.toggle_editors()
         super().mouseDoubleClickEvent(event)
 
-    def toggle_editors(self):
+    def toggle_editors(self) -> None:
         """Show associated editor, hide label."""
         self.hide()
         self.editor.setText(self.text())
         self.editor.show()
         self.editor.setFocus()
 
-    def toggle_labels(self):
+    def toggle_labels(self) -> None:
         """Show associated label, hide editor."""
         self.editor.hide()
         text = self.editor.text()
@@ -77,8 +89,11 @@ class StageSplitItem(QWidget):
         The initialization process creates the widgets and layouts that will make up the custom item widget.
         """
         super().__init__()
-        self.db_connection = connection
-        self.db_cursor = cursor
+        self.db_connection: sqlite3.Connection = connection
+        """Connection object that points to database connection."""
+
+        self.db_cursor: sqlite3.Cursor = cursor
+        """Cursor object used to navigate database."""
 
         self.split = split
         """The data that comprises a split. \n[index, stage, score]"""
@@ -128,7 +143,7 @@ class StageSplitItem(QWidget):
 
         self.setLayout(layout)
 
-    def toggle_editors(self):
+    def toggle_editors(self) -> None:
         """Show editors, hide labels. Text is persisted."""
         self.name_label.hide()
         self.score_label.hide()
@@ -137,6 +152,7 @@ class StageSplitItem(QWidget):
         name_text = name_text.strip(':')
 
         score_text = self.score_label.text()
+        # TODO This is a complete slop job. Has to be something cleaner.
         try:
             end = score_text.index('(')
             score_text = score_text[:end]
@@ -152,7 +168,7 @@ class StageSplitItem(QWidget):
 
     # TODO This is a bit of a slop job. Is there a better way to determine if editor text should be copied?
     #   The problem is sometimes name and editor text is none and will blank out other items.
-    def toggle_labels(self):
+    def toggle_labels(self) -> None:
         """Show labels, hide editors. Text is persisted."""
         self.name_editor.hide()
         self.score_editor.hide()
@@ -170,7 +186,7 @@ class StageSplitItem(QWidget):
         self.name_label.show()
         self.score_label.show()
 
-    def _update_split_db(self):
+    def _update_split_db(self) -> None:
         """Update the 'in-memory' copy of the database and save to JSON
 
         Split order is preserved by the position of the in-memory representation of this item in the game's splits list.
@@ -200,8 +216,8 @@ class StageSplitListWidget(QListWidget):
         The initialization process customizes the widget.
         """
         super().__init__()
-        self.db_connection = connection
-        self.db_cursor = cursor
+        self.db_connection: sqlite3.Connection = connection
+        self.db_cursor: sqlite3.Cursor = cursor
 
         self.game_db: PersonalBestDataBase = game_db
         """In-memory representation of DB schema."""
@@ -214,6 +230,7 @@ class StageSplitListWidget(QListWidget):
         self.currentItemChanged.connect(self.selection_changed)
 
     def itemWidget(self, item) -> QWidget | StageSplitItem | None:
+        """Overloaded to extend typehint."""
         return super().itemWidget(item)
 
     def eventFilter(self, sender, event):
@@ -230,23 +247,22 @@ class StageSplitListWidget(QListWidget):
                 splits = self.game_db[game_name]['splits']
                 self.add_diffs(splits)
                 # print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
-
                 self.last_row = self.row(moved)
         return super().eventFilter(sender, event)
 
-    def selection_changed(self, cur, prev):
+    def selection_changed(self, cur, prev) -> None:
         """Used internally to preserve split order."""
         if cur:
             self.last_row = self.row(cur)
 
-    def update_db(self, game_name: str, old_index: int, new_index: int):
+    def update_db(self, game_name: str, old_index: int, new_index: int) -> None:
         """Mirror internal list changes to the in-memory representation. Save to JSON."""
         splits = self.game_db[game_name]['splits']
         split = splits.pop(old_index)
         splits.insert(new_index, split)
         save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
 
-    def add_diffs(self, splits: list):
+    def add_diffs(self, splits: list) -> None:
         """Calculate and display the difference between a splits score, and the previous splits score."""
         for index, split in enumerate(splits):
             if index > 0:
