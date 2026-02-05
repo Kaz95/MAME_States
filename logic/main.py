@@ -12,7 +12,9 @@ from pathlib import Path
 raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
                   r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10']
 
-PersonalBestDataBase = dict[str, dict[str, any]]
+PersonalBestDataBase = dict[str, dict[str, int | str | list]]
+"""In-memory representation of the 'personal_bests' table of the database."""
+
 
 test_pb_info = {'DonPachi': {'hs': 900,
                              'distance': 'Stage 6',
@@ -28,7 +30,9 @@ test_pb_info = {'DonPachi': {'hs': 900,
                                   'splits': [['Stage-1', 10000], ['Stage-2', 15069], ['Stage-3', 25069],
                                              ['Stage-4', 38069], ['Stage-5', 50069]]}}
 
-def load_path_from_db(cursor: sqlite3.Cursor):
+
+def load_path_from_db(cursor: sqlite3.Cursor) -> list[Path]:
+    """Load paths as strings from database. Convert to Path objects before returning them."""
     sql_query = """SELECT * FROM paths"""
     cursor.execute(sql_query)
     raw_results = cursor.fetchall()
@@ -38,7 +42,9 @@ def load_path_from_db(cursor: sqlite3.Cursor):
         paths.append(path)
     return paths
 
-def save_paths_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, paths: list[Path]):
+
+def save_paths_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, paths: list[Path]) -> None:
+    """Format list of paths as rows. Insert them into database. """
     sql_statement = """INSERT OR IGNORE INTO paths VALUES (?, ?, ?, ?, ?);"""
     rows = []
     for path in paths:
@@ -49,58 +55,75 @@ def save_paths_to_database(connection: sqlite3.Connection, cursor: sqlite3.Curso
     connection.commit()
 
 
-def id_from_name(name_, cursor_):
-    sql = "SELECT id FROM roms WHERE description = ?"
-    cursor_.execute(sql, (name_,))
-    romid = cursor_.fetchall()
-    romid = romid[0][0]
-    return romid
+def id_from_description(name: str, cursor: sqlite3.Cursor) -> int:
+    """Retrieve the corresponding rom_id, for a given rom description, from the database."""
+    sql_statement = "SELECT id FROM roms WHERE description = ?"
+    cursor.execute(sql_statement, (name,))
+    rom_id = cursor.fetchall()
+    rom_id = rom_id[0][0]
+    return rom_id
 
-def collate_pb_rows(cursor_, pb_info):
-        rows = []
-        for key in pb_info:
-            pb_dict = pb_info[key]
-            rom_id = id_from_name(key, cursor_)
-            highscore = pb_dict['hs']
-            distance = pb_dict['distance']
-            row = (None, highscore, distance, rom_id)
-            rows.append(row)
-        return rows
 
-def delete_split(connection, cursor_, name_, label):
-    delete_row = "DELETE FROM splits WHERE rom_id = ? AND label = ?"
-    rom_id = id_from_name(name_, cursor_)
-    cursor_.execute(delete_row, (rom_id, label))
+def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> list[tuple]:
+    """Serialize personal best highscore and distance information into rows for database insertion."""
+    rows = []
+    for key in pb_info:
+        pb_dict = pb_info[key]
+        rom_id = id_from_description(key, cursor)
+        highscore = pb_dict['hs']
+        distance = pb_dict['distance']
+        row = (None, highscore, distance, rom_id)
+        rows.append(row)
+    return rows
+
+
+def delete_split(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str, split_label: str) -> None:
+    """Delete a split from the database. Rom id and split label text are used as unique identifier."""
+    sql_statement = "DELETE FROM splits WHERE rom_id = ? AND label = ?"
+    rom_id = id_from_description(rom_description, cursor)
+    cursor.execute(sql_statement, (rom_id, split_label))
     connection.commit()
 
-def get_split_pk(cursor_, name_, label):
-    id_query = "SELECT id FROM splits WHERE rom_id = ? AND label = ?"
-    rom_id = id_from_name(name_, cursor_)
-    cursor_.execute(id_query, (rom_id, label))
-    results = cursor_.fetchall()
+
+def get_split_pk(cursor:sqlite3.Cursor, rom_description: str, split_label: str) -> list[tuple]:
+    """Retrieve a primary key from database. Rom id and split label are used as unique identifier."""
+    sql_statement = "SELECT id FROM splits WHERE rom_id = ? AND label = ?"
+    rom_id = id_from_description(rom_description, cursor)
+    cursor.execute(sql_statement, (rom_id, split_label))
+    results = cursor.fetchall()
     return results
 
-def get_splits(cursor_, pb_info):
+
+def collate_splits(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> list[tuple]:
+    """Serialize splits information into rows for database insertion."""
     splits = []
     for pb in pb_info:
         pb_dict = pb_info[pb]
         split = pb_dict['splits']
         for item in split:
-            split_pk = get_split_pk(cursor_, pb, item[0])
-            if split_pk:
-                split_pk = split_pk[0][0]
+            # Results are returned raw and may be empty.
+            split_primary_key = get_split_pk(cursor, pb, item[0])
+            if split_primary_key:
+                split_primary_key = split_primary_key[0][0]
             else:
-                split_pk = None
-            row = (split_pk, item[0], item[1], split.index(item), id_from_name(pb, cursor_))
+                split_primary_key = None
+            row = (split_primary_key, item[0], item[1], split.index(item), id_from_description(pb, cursor))
             splits.append(row)
     return splits
 
-def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase):
-    pb_insert = "INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = excluded.highscore, distance = excluded.distance"
-    splits_insert = "INSERT INTO splits VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET label = excluded.label, score = excluded.score, 'index' = excluded.'index'"
+
+def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> None:
+    """Update database with provided personal best and split information.
+
+    Rows are added if they do not exist, and updated otherwise.
+    """
+    pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
+                 "excluded.highscore, distance = excluded.distance")
+    splits_insert = ("INSERT INTO splits VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET label = excluded.label, "
+                     "score = excluded.score, 'index' = excluded.'index'")
 
     pb_rows = collate_pb_rows(cursor, pb_info)
-    splits = get_splits(cursor, pb_info)
+    splits = collate_splits(cursor, pb_info)
 
     cursor.executemany(pb_insert, pb_rows)
     cursor.executemany(splits_insert, splits)
@@ -108,15 +131,20 @@ def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, 
     connection.commit()
 
 
-def new_build_descriptioin_db(cursor: sqlite3.Cursor):
-    sql = """SELECT name, description FROM roms;"""
-    cursor.execute(sql)
-    results = cursor.fetchall()
-    description_db = {}
-    for item in results:
-        description_db[item[1]] = item[0]
+def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str:str]:
+    """Construct {rom_description:rom_name} dictionary.
 
-    return description_db
+    This dictionary is used as a quick in-memory reference that binds a roms description, to its name.
+    The alternative would be querying them as needed.
+    """
+    sql_statement = """SELECT name, description FROM roms;"""
+    cursor.execute(sql_statement)
+    results = cursor.fetchall()
+    descriptions_and_names = {}
+    for item in results:
+        descriptions_and_names[item[1]] = item[0]
+
+    return descriptions_and_names
 
 
 def get_roms_with_saves(mame_path: Path) -> list[str]:
@@ -163,7 +191,9 @@ def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: st
     os.rename(mame_folder / "sta" / rom_folder / (old_save_name + '.sta'),
               mame_folder / "sta" / rom_folder / (new_save_name + '.sta'))
 
-def load_personal_bests_from_database(cursor: sqlite3.Cursor):
+
+def load_personal_bests_from_database(cursor: sqlite3.Cursor) -> PersonalBestDataBase:
+    """Load and format all personal best information from the database."""
     pb_info: PersonalBestDataBase = {}
 
     pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.distance 

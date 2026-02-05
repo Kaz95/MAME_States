@@ -21,7 +21,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
     NotesWindow
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase
-from logic.main import save_paths_to_database, new_build_descriptioin_db, load_personal_bests_from_database, \
+from logic.main import save_paths_to_database, get_descriptions_and_names, load_personal_bests_from_database, \
     save_pb_to_database, delete_split
 
 
@@ -420,7 +420,7 @@ class MainWindow(QMainWindow):
     def fill_data_structures(self) -> None:
         """Fill data structures used to derive Save State Tree Widget items."""
         # self.description_db = build_description_db(rom_db)
-        self.description_db = new_build_descriptioin_db(self.db_cursor)
+        self.description_db = get_descriptions_and_names(self.db_cursor)
         self.all_save_states = get_all_roms_with_saves(self.mame_paths)
 
     def add_mame_path_items(self):
