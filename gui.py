@@ -609,10 +609,10 @@ class MainWindow(QMainWindow):
         search_text = self.rom_search_bar.text().lower()
         self.rom_search_tree.clear()
 
-        for game_name in self.descriptions_and_names.keys():
-            if search_text in game_name.lower():
-                item = QTreeWidgetItem(self.rom_search_tree, [game_name])
-                item.setToolTip(0, self.descriptions_and_names[game_name])
+        for rom_description, rom_name in self.descriptions_and_names.items():
+            if search_text in rom_name.lower() or search_text in rom_description.lower():
+                item = QTreeWidgetItem(self.rom_search_tree, [rom_description])
+                item.setToolTip(0, rom_name)
 
     # --------------------- #
     # Save State Page Slots #
