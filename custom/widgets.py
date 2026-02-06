@@ -208,8 +208,6 @@ class StageSplitItem(QWidget):
 
         self.score_editor.setFocus()
 
-    # TODO This is a bit of a slop job. Is there a better way to determine if editor text should be copied?
-    #   The problem is sometimes name and editor text is none and will blank out other items.
     def toggle_labels(self) -> None:
         """Show labels, hide editors. Text is persisted."""
         self.name_editor.hide()
@@ -220,17 +218,6 @@ class StageSplitItem(QWidget):
 
         score_text = self.score_editor.text()
         self.score_label.setText(score_text)
-
-
-        # name_text = self.name_editor.text()
-        # if name_text:
-        #     self.name_label.setText(name_text + ':')
-        #
-        # score_text = self.score_editor.text()
-        # if score_text:
-        #     self.score_label.setText(score_text)
-
-        
 
         self.parent_list.add_diffs(self.game_db[self.game_name]['splits'])
 
