@@ -161,6 +161,9 @@ class StageSplitItem(QWidget):
         self.name_editor.setPlaceholderText('Stage-69')
         self.score_editor.setPlaceholderText('696969')
 
+        self.name_editor.setText(self.stage)
+        self.score_editor.setText(str(self.score))
+
         self.name_editor.hide()
         self.score_editor.hide()
 
@@ -213,12 +216,19 @@ class StageSplitItem(QWidget):
         self.score_editor.hide()
 
         name_text = self.name_editor.text()
-        if name_text:
-            self.name_label.setText(name_text + ':')
+        self.name_label.setText(name_text)
 
         score_text = self.score_editor.text()
-        if score_text:
-            self.score_label.setText(score_text)
+        self.score_label.setText(score_text)
+
+
+        # name_text = self.name_editor.text()
+        # if name_text:
+        #     self.name_label.setText(name_text + ':')
+        #
+        # score_text = self.score_editor.text()
+        # if score_text:
+        #     self.score_label.setText(score_text)
 
         
 
