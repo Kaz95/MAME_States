@@ -621,12 +621,13 @@ class MainWindow(QMainWindow):
         """Used internally for renaming."""
         self.text_before_editing = current_item.text(0)
 
-    # TODO re-enable file renaming after ensuring user input is properly sanitized.
     def save_state_tree_item_changed(self, save_state_item: QTreeWidgetItem) -> None:
-        """Does not currently have any effect."""
+        """Rename save state file corresponding to item in tree.
+
+        If file name already in use, item has its text reverted and file is not renamed.
+        """
         if save_state_item.childCount() == 0:
             save_state_name = save_state_item.text(0)
-            print(save_state_name)
             game_item = save_state_item.parent()
             game_name = game_item.text(0)
 
@@ -643,20 +644,13 @@ class MainWindow(QMainWindow):
             try:
                 old_save_state_path.rename(new_save_state_path)
             except FileExistsError:
-                print('File Name Already in Use. Try again.')
+                QMessageBox.critical(self, 'Error', 'Sorry, that name is already in use.')
                 self.save_state_tree.blockSignals(True)
                 save_state_item.setText(0, self.text_before_editing)
                 self.save_state_tree.blockSignals(False)
                 return
             # Have to set this to new save_state_name so multiple renames can take place without reselection.
             self.text_before_editing = save_state_name
-
-            # print(f'save state: {save_state_name}')
-            # print(f'game name: {rom_name}')
-            # print(f'mame path: {mame_path}')
-            # rename(mame_path, rom_name, self.text_before_editing, save_state_name)
-
-            # print(f'An item was changed from {self.text_before_editing}, to {save_state_item.text(0)}')
 
     # --------------- #
     # File Menu Slots #
