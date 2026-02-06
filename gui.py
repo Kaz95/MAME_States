@@ -179,7 +179,6 @@ class MainWindow(QMainWindow):
         self.setup_pb_panel()
         self.setup_split_panel()
 
-        # TODO look into stretch factors
         self.info_layout.addLayout(self.personal_best_layout)
         self.info_layout.addStretch()
 
@@ -192,7 +191,6 @@ class MainWindow(QMainWindow):
         self.high_score_page_layout.addLayout(self.info_layout)
         self.high_score_page.setLayout(self.high_score_page_layout)
         self.high_score_page.setFont(self.top_level_item_font)
-
 
         # --------------- #
         # Rom Search Page #
@@ -566,6 +564,7 @@ class MainWindow(QMainWindow):
         menu.addMenu(sub_menu)
         menu.exec(self.high_score_game_tree.viewport().mapToGlobal(position))
 
+    # TODO Take another look at this.
     def run_rom(self, rom_name: str) -> None:
         """Attempt to run a rom, with a given MAME path.
 
@@ -615,7 +614,6 @@ class MainWindow(QMainWindow):
                 item = QTreeWidgetItem(self.rom_search_tree, [game_name])
                 item.setToolTip(0, self.descriptions_and_names[game_name])
 
-
     # --------------------- #
     # Save State Page Slots #
     # --------------------- #
@@ -636,6 +634,22 @@ class MainWindow(QMainWindow):
 
             mame_path_item = game_item.parent()
             mame_path = mame_path_item.text(0)
+
+            mame_path = Path(mame_path)
+            save_folder = mame_path / 'sta' / rom_name
+            old_save_state_path = save_folder / (self.text_before_editing + '.sta')
+            new_save_state_path = old_save_state_path.with_stem(save_state_name)
+
+            try:
+                old_save_state_path.rename(new_save_state_path)
+            except FileExistsError:
+                print('File Name Already in Use. Try again.')
+                self.save_state_tree.blockSignals(True)
+                save_state_item.setText(0, self.text_before_editing)
+                self.save_state_tree.blockSignals(False)
+                return
+            # Have to set this to new save_state_name so multiple renames can take place without reselection.
+            self.text_before_editing = save_state_name
 
             # print(f'save state: {save_state_name}')
             # print(f'game name: {rom_name}')
@@ -676,6 +690,7 @@ class MainWindow(QMainWindow):
         # else:
         #     print('Cancel chosen')
 
+
 def main() -> None:
     """MAMEStates program entry point.
 
@@ -690,6 +705,7 @@ def main() -> None:
         window.show()
 
         app.exec()
+
 
 if __name__ == '__main__':
     main()
