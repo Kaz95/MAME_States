@@ -25,14 +25,12 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
         """Automatically apply a custom validator on the created editor, if it is a QLineEdit."""
         editor = super().createEditor(parent, option, index)
         if isinstance(editor, QLineEdit):
-            # TODO Get rid of match case, there is only one case now.
-            match index.column():
-                case 0:
-                    editor.setMaxLength(10)
-                    # TODO Fully understand this regex.
-                    pattern = QRegularExpression(r'^[^<>:"/\|?* ]*$')
-                    validator = QRegularExpressionValidator(pattern, editor)
-                    editor.setValidator(validator)
+            editor.setMaxLength(10)
+            # TODO Fully understand this regex.
+            pattern = QRegularExpression(r'^[^<>:"/\|?* ]*$')
+            validator = QRegularExpressionValidator(pattern, editor)
+            editor.setValidator(validator)
+
         return editor
 
     def eventFilter(self, watched, event):
