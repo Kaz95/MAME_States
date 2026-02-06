@@ -22,11 +22,13 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
     """
 
     def createEditor(self, parent, option, index):
-        """Automatically apply a custom validator on the created editor, if it is a QLineEdit."""
+        """Automatically apply a custom validator on the created editor, if it is a QLineEdit.
+
+        Custom validator disallows characters that are not valid in a Windows file path.
+        """
         editor = super().createEditor(parent, option, index)
         if isinstance(editor, QLineEdit):
             editor.setMaxLength(10)
-            # TODO Fully understand this regex.
             pattern = QRegularExpression(r'^[^<>:"/\|?* ]*$')
             validator = QRegularExpressionValidator(pattern, editor)
             editor.setValidator(validator)
