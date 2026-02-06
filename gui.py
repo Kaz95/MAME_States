@@ -3,7 +3,6 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Code review
     * Reactivate file renaming eventually.
     * Consider sizing policies and size hints
     * Decide on new features to add.
@@ -130,7 +129,6 @@ class MainWindow(QMainWindow):
         self.save_state_page_layout.addWidget(self.save_state_tree)
 
         # Signals and Slots
-        # TODO If these aren't connected after filling treewidget, everything's fucked. Look into it.
         self.save_state_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
         self.save_state_tree.itemChanged.connect(self.save_state_tree_item_changed)
 
@@ -657,7 +655,6 @@ class MainWindow(QMainWindow):
         """Temporary"""
         self.save_state_tree.show()
 
-    # TODO Same problem here I have to disconnect and reconnect slot to avoid breaking shit. Look into it.
     def add_path_button_clicked(self) -> None:
         """Prompt user for new MAME path and then, clear and refill save state tree.
 
@@ -672,9 +669,9 @@ class MainWindow(QMainWindow):
 
             save_paths_to_database(self.db_connection, self.db_cursor, self.mame_paths)
             self.all_save_states = get_all_roms_with_saves(self.mame_paths)
-            self.save_state_tree.itemChanged.disconnect(self.save_state_tree_item_changed)
+            self.save_state_tree.blockSignals(True)
             self.fill_save_state_tree()
-            self.save_state_tree.itemChanged.connect(self.save_state_tree_item_changed)
+            self.save_state_tree.blockSignals(False)
             # print(f'New MAME path: {path}')
         # else:
         #     print('Cancel chosen')
