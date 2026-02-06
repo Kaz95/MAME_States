@@ -191,12 +191,12 @@ class StageSplitItem(QWidget):
         name_text = name_text.strip(':')
 
         score_text = self.score_label.text()
-        # TODO This is a complete slop job. Has to be something cleaner.
-        try:
+
+        # Check for presence of diff text, strip if there.
+        if '(' in score_text:
             end = score_text.index('(')
             score_text = score_text[:end]
-        except ValueError:
-            print('no parenthesis found')
+
         self.name_editor.setText(name_text)
         self.score_editor.setText(score_text)
 
@@ -219,6 +219,8 @@ class StageSplitItem(QWidget):
         score_text = self.score_editor.text()
         if score_text:
             self.score_label.setText(score_text)
+
+        
 
         self.parent_list.add_diffs(self.game_db[self.game_name]['splits'])
 
