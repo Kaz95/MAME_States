@@ -480,6 +480,12 @@ class MainWindow(QMainWindow):
         if selected:
             item = selected[0]
             rom_description = item.text(0)
+            if rom_description in self.pb_info.keys():
+                QMessageBox.critical(self, 'Error', 'That Game already has a PB entry.')
+                self.rom_search_popup.raise_()
+                self.rom_search_popup.setFocus()
+                return
+
             print(rom_description)
 
             QTreeWidgetItem(self.high_score_game_tree, [rom_description])
