@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QInputDialog, QFileDialog, QMessageBox, QMenu
 
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
-    NotesWindow
+    NotesWindow, RomSearchWindow
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase, \
     delete_personal_best, delete_splits
 from logic.main import save_paths_to_database, get_descriptions_and_names, load_personal_bests_from_database, \
@@ -42,6 +42,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
+        self.rom_search_popup: QWidget | None = None
         self.db_connection: sqlite3.Connection = db_connection
         """Connection object that points to database connection."""
 
@@ -148,7 +149,7 @@ class MainWindow(QMainWindow):
 
         self.high_score_game_tree: QTreeWidget = QTreeWidget()
         self.notes_window = NotesWindow(self)
-        self.add_game_button: QPushButton = QPushButton('Add Game')
+        self.highscore_add_game_button: QPushButton = QPushButton('Add Game')
         self.delete_game_button: QPushButton = QPushButton('Delete Game')
 
         self.split_list: StageSplitListWidget = StageSplitListWidget(self.pb_info, self.db_connection, self.db_cursor)
@@ -211,10 +212,22 @@ class MainWindow(QMainWindow):
             item = QTreeWidgetItem(self.rom_search_tree, [game_name])
             item.setToolTip(0, self.descriptions_and_names[game_name])
 
+        self.rom_search_add_game_button: QPushButton = QPushButton('Add Game')
+        self.rom_search_cancel_button: QPushButton = QPushButton('Cancel')
+
+        self.rom_search_cancel_button.clicked.connect(self.close_rom_search_window)
+        self.rom_search_add_game_button.clicked.connect(self.rom_search_add_game_clicked)
+
         # Layouts
         self.rom_search_page_layout = QVBoxLayout()
+        self.rom_search_buttons = QHBoxLayout()
         self.rom_search_page_layout.addWidget(self.rom_search_bar)
         self.rom_search_page_layout.addWidget(self.rom_search_tree)
+        self.rom_search_buttons.addWidget(self.rom_search_add_game_button)
+        self.rom_search_buttons.addWidget(self.rom_search_cancel_button)
+        self.rom_search_page_layout.addLayout(self.rom_search_buttons)
+        self.rom_search_add_game_button.hide()
+        self.rom_search_cancel_button.hide()
         self.rom_search_page.setLayout(self.rom_search_page_layout)
         self.rom_search_page.setFont(self.top_level_item_font)
 
@@ -256,10 +269,10 @@ class MainWindow(QMainWindow):
         self.high_score_game_tree.customContextMenuRequested.connect(self.show_high_score_tree_context)
         self.high_score_game_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
-        self.add_game_button.clicked.connect(self.add_game)
+        self.highscore_add_game_button.clicked.connect(self.highscore_add_game_clicked)
         self.delete_game_button.clicked.connect(self.delete_game)
 
-        self.game_list_button_container.addWidget(self.add_game_button)
+        self.game_list_button_container.addWidget(self.highscore_add_game_button)
         self.game_list_button_container.addWidget(self.delete_game_button)
 
         self.game_list_container.addWidget(self.high_score_game_tree)
@@ -385,6 +398,9 @@ class MainWindow(QMainWindow):
     # ------------------------- #
     # Personal Bests Page Slots #
     # ------------------------- #
+    def close_rom_search_window(self):
+        self.rom_search_popup.close()
+
     def high_score_tree_selection_changed(self) -> None:
         """Clear and refill 'splits list' based on currently selected item. Split diffs are calculated and displayed."""
         self.split_list.clear()
@@ -438,20 +454,40 @@ class MainWindow(QMainWindow):
 
     #  FIXME Enforce restrictions on what name can be used. Needs to be real rom description.
     #   Maybe I can check if game_name in keys of dict. Still need a way to easily create.
-    def add_game(self) -> None:
+    def highscore_add_game_clicked(self) -> None:
         """Add a game to PB game tree. User is prompted to enter the games name. Save new game to database.
 
         If the game name entered does not match any roms description, it causes problems later.
         """
-        game_name, ok = QInputDialog.getText(self, 'New Game', 'Please enter new game name.')
-        if game_name and ok:
-            QTreeWidgetItem(self.high_score_game_tree, [game_name])
+        # game_name, ok = QInputDialog.getText(self, 'New Game', 'Please enter new game name.')
+        # if game_name and ok:
+        #     QTreeWidgetItem(self.high_score_game_tree, [game_name])
+        #
+        #     self.pb_info[game_name] = {'hs': 0,
+        #                                'distance': '',
+        #                                'splits': []}
+        #
+        #     save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
-            self.pb_info[game_name] = {'hs': 0,
-                                       'distance': '',
-                                       'splits': []}
+        self.tabs.removeTab(2)
+        self.rom_search_popup = RomSearchWindow(self.rom_search_page, self.tabs, self.rom_search_add_game_button,
+                                                self.rom_search_cancel_button)
+        self.rom_search_popup.show()
+        self.setEnabled(False)
 
+    def rom_search_add_game_clicked(self):
+        selected = self.rom_search_tree.selectedItems()
+        if selected:
+            item = selected[0]
+            rom_description = item.text(0)
+            print(rom_description)
+
+            QTreeWidgetItem(self.high_score_game_tree, [rom_description])
+            self.pb_info[rom_description] = {'hs': 0,
+                                             'distance': '',
+                                             'splits': []}
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            self.rom_search_popup.close()
 
     def delete_game(self) -> None:
         """Delete game from Highscore Game Tree and remove all its information from database."""

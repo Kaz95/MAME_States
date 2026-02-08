@@ -4,7 +4,7 @@ from pathlib import Path
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
-    QVBoxLayout
+    QVBoxLayout, QPushButton
 
 from logic.main import PersonalBestDataBase, save_pb_to_database
 
@@ -48,6 +48,31 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
 #####################
 #   Highscore Page  #
 #####################
+class RomSearchWindow(QWidget):
+    def __init__(self, widget, original_tab_widget, add_game_button, cancel_button):
+        super().__init__()
+        self.add_game_button: QPushButton = add_game_button
+        self.cancel_button: QPushButton = cancel_button
+        self.original_tab_widget = original_tab_widget
+        self.widget = widget
+        self.add_game_button.show()
+        self.cancel_button.show()
+        # self.widget.setWindowFlags(Qt.WindowType.Window)
+        self.widget.show()
+        layout = QVBoxLayout()
+        layout.addWidget(self.widget)
+        self.setLayout(layout)
+        self.resize(800, 500)
+
+    def closeEvent(self, event):
+        # Reattach to tab when closed
+        self.original_tab_widget.addTab(self.widget, 'Rom Search')
+        self.add_game_button.hide()
+        self.cancel_button.hide()
+        main_window = self.original_tab_widget.parent()
+        main_window.setEnabled(True)
+        event.accept()
+
 
 class NotesWindow(QWidget):
     """Subclass and extend QWidget class of the PyQt6.QyWidgets module.
