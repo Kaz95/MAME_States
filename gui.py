@@ -650,11 +650,30 @@ class MainWindow(QMainWindow):
         """
         search_text = self.rom_search_bar.text().lower()
         self.rom_search_tree.clear()
-
+        items = []
         for rom_description, rom_name in self.descriptions_and_names.items():
-            if search_text in rom_name.lower() or search_text in rom_description.lower():
-                item = QTreeWidgetItem(self.rom_search_tree, [rom_description])
+            if search_text == rom_name.lower() or search_text == rom_description.lower():
+                item = QTreeWidgetItem([rom_description])
                 item.setToolTip(0, rom_name)
+                item = (item, 1)
+                items.append(item)
+
+            elif rom_name.lower().startswith(search_text) or rom_description.lower().startswith(search_text):
+                item = QTreeWidgetItem([rom_description])
+                item.setToolTip(0, rom_name)
+                item = (item, 2)
+                items.append(item)
+
+            elif search_text in rom_name.lower() or search_text in rom_description.lower():
+                item = QTreeWidgetItem([rom_description])
+                item.setToolTip(0, rom_name)
+                item = (item, 3)
+                items.append(item)
+
+        items.sort(key=lambda x: (x[1], x[0].text(0)))
+
+        for item in items:
+            self.rom_search_tree.addTopLevelItem(item[0])
 
     # --------------------- #
     # Save State Page Slots #
