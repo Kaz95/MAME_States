@@ -133,7 +133,7 @@ class MainWindow(QMainWindow):
 
         # Signals and Slots
         self.save_state_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
-        self.save_state_tree.itemChanged.connect(self.save_state_tree_item_changed)
+        self.save_state_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
 
         # ------------------#
         #   Highscore Page  #
@@ -389,7 +389,8 @@ class MainWindow(QMainWindow):
                 input_files_container = QTreeWidgetItem(path_item, ['Input Files'])
                 input_files_container.setFont(0, self.top_level_item_font)
                 for file in input_files:
-                    item = QTreeWidgetItem(input_files_container, [file])
+                    item = QTreeWidgetItem(input_files_container, [file.split('.')[0]])
+                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
                     item.setFont(0, self.sub_item_font)
 
             # Add game items.
@@ -694,14 +695,38 @@ class MainWindow(QMainWindow):
         """Used internally for renaming."""
         self.text_before_editing = current_item.text(0)
 
-    def save_state_tree_item_changed(self, save_state_item: QTreeWidgetItem) -> None:
+    def save_state_tree_leaf_item_changed(self, leaf_item: QTreeWidgetItem) -> None:
         """Rename save state file corresponding to item in tree.
 
         If file name already in use, item has its text reverted and file is not renamed.
         """
-        if save_state_item.childCount() == 0 and save_state_item.parent().parent().text(0) == 'Save States':
-            save_state_name = save_state_item.text(0)
-            game_item = save_state_item.parent()
+        if leaf_item.childCount() == 0 and leaf_item.parent().text(0) == 'Input Files':
+            input_file = leaf_item.text(0)
+            mame_path_item = leaf_item.parent().parent()
+            mame_path = mame_path_item.text(0)
+            mame_path = Path(mame_path)
+            old_input_file_path = mame_path / 'inp'/ f'{self.text_before_editing}.inp'
+            new_input_file_path = old_input_file_path.with_stem(input_file)
+
+            response = QMessageBox.question(self, 'Rename Input File', 'Are you sure you would like to rename file?')
+            if response == QMessageBox.StandardButton.Yes:
+                try:
+                    old_input_file_path.rename(new_input_file_path)
+                except FileExistsError:
+                    QMessageBox.critical(self, 'Error', 'Sorry, that name is already in use.')
+                    self.save_state_tree.blockSignals(True)
+                    leaf_item.setText(0, self.text_before_editing)
+                    self.save_state_tree.blockSignals(False)
+                    return
+            else:
+                self.save_state_tree.blockSignals(True)
+                leaf_item.setText(0, self.text_before_editing)
+                self.save_state_tree.blockSignals(False)
+                return
+
+        if leaf_item.childCount() == 0 and leaf_item.parent().parent().text(0) == 'Save States':
+            save_state_name = leaf_item.text(0)
+            game_item = leaf_item.parent()
             game_name = game_item.text(0)
 
             rom_name = self.descriptions_and_names[game_name]
@@ -719,7 +744,7 @@ class MainWindow(QMainWindow):
             except FileExistsError:
                 QMessageBox.critical(self, 'Error', 'Sorry, that name is already in use.')
                 self.save_state_tree.blockSignals(True)
-                save_state_item.setText(0, self.text_before_editing)
+                leaf_item.setText(0, self.text_before_editing)
                 self.save_state_tree.blockSignals(False)
                 return
             # Have to set this to new save_state_name so multiple renames can take place without reselection.

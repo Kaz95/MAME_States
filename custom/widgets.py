@@ -28,7 +28,7 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
         """
         editor = super().createEditor(parent, option, index)
         if isinstance(editor, QLineEdit):
-            editor.setMaxLength(10)
+            editor.setMaxLength(20)
             pattern = QRegularExpression(r'^[^<>:"/\|?* ]*$')
             validator = QRegularExpressionValidator(pattern, editor)
             editor.setValidator(validator)
