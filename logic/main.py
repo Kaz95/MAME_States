@@ -7,7 +7,8 @@ import sqlite3
 from pathlib import Path
 
 raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
-                  r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10']
+                  r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10',
+                  r'C:\Users\kazac\Downloads\mame']
 
 PersonalBestDataBase = dict[str, dict[str, int | str | list]]
 """In-memory representation of the 'personal_bests' table of the database."""
@@ -50,6 +51,13 @@ def get_save_names(games_with_saves: list[str], mame_folder: Path) -> dict[str, 
         save_states[game] = saves
     return save_states
 
+def get_all_input_files(mame_paths: list[Path]):
+    all_inps = {}
+    for path in mame_paths:
+        inp_folder = path / 'inp'
+        if inp_folder.is_dir():
+            all_inps[path] = [item.name for item in inp_folder.iterdir()]
+    return all_inps
 
 def get_all_roms_with_saves(mame_paths: list[Path]) -> dict[str:dict[str:list[str]]]:
     """Retrieve all save state data."""
@@ -240,3 +248,7 @@ def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str:str]:
         descriptions_and_names[item[1]] = item[0]
 
     return descriptions_and_names
+
+if __name__ == '__main__':
+    paths = [Path(x) for x in raw_mame_paths]
+    print(get_all_input_files(paths))

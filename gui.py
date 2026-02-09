@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase, \
-    delete_personal_best, delete_splits
+    delete_personal_best, delete_splits, get_all_input_files
 from logic.main import save_paths_to_database, get_descriptions_and_names, load_personal_bests_from_database, \
     save_pb_to_database, delete_split
 
@@ -57,6 +57,8 @@ class MainWindow(QMainWindow):
 
         self.all_save_states: dict[str:dict[str:list[str]]] | None = None
         """Names of games that have a save folder, and their respective save states"""
+
+        self.all_input_files = None
 
         # --------- #
         # Load Data #
@@ -366,6 +368,7 @@ class MainWindow(QMainWindow):
         """Fill data structures that are used as convenient in-memory references."""
         self.descriptions_and_names = get_descriptions_and_names(self.db_cursor)
         self.all_save_states = get_all_roms_with_saves(self.mame_paths)
+        self.all_input_files = get_all_input_files(self.mame_paths)
 
     def fill_save_state_tree(self) -> None:
         """Clear, then fill and customize the Save State Tree Widget.
@@ -379,11 +382,20 @@ class MainWindow(QMainWindow):
         for path in self.mame_paths:
             path_item = QTreeWidgetItem(self.save_state_tree, [str(path)])
             path_item.setFont(0, self.top_level_item_font)
+            saves_container_item = QTreeWidgetItem(path_item, ['Save States'])
+            saves_container_item.setFont(0, self.top_level_item_font)
+            input_files = self.all_input_files.get(path)
+            if input_files:
+                input_files_container = QTreeWidgetItem(path_item, ['Input Files'])
+                input_files_container.setFont(0, self.top_level_item_font)
+                for file in input_files:
+                    item = QTreeWidgetItem(input_files_container, [file])
+                    item.setFont(0, self.sub_item_font)
 
             # Add game items.
             for key in self.all_save_states[path]:
                 game_description = get_real_name(self.descriptions_and_names, key)
-                game_item = QTreeWidgetItem(path_item, [game_description])
+                game_item = QTreeWidgetItem(saves_container_item, [game_description])
                 game_item.setFont(0, self.top_level_item_font)
 
                 # Add savestate items.
@@ -687,14 +699,14 @@ class MainWindow(QMainWindow):
 
         If file name already in use, item has its text reverted and file is not renamed.
         """
-        if save_state_item.childCount() == 0:
+        if save_state_item.childCount() == 0 and save_state_item.parent().parent().text(0) == 'Save States':
             save_state_name = save_state_item.text(0)
             game_item = save_state_item.parent()
             game_name = game_item.text(0)
 
             rom_name = self.descriptions_and_names[game_name]
 
-            mame_path_item = game_item.parent()
+            mame_path_item = game_item.parent().parent()
             mame_path = mame_path_item.text(0)
 
             mame_path = Path(mame_path)
