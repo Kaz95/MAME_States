@@ -226,6 +226,7 @@ class MainWindow(QMainWindow):
 
 
         self.rom_description_label: QLabel = QLabel()
+        self.rom_description_label.setWordWrap(True)
         self.rom_name_label: QLabel = QLabel()
         self.rom_manufacturer_label: QLabel = QLabel()
         self.rom_release_year_label: QLabel = QLabel()
@@ -241,7 +242,7 @@ class MainWindow(QMainWindow):
         self.rom_search_buttons = QHBoxLayout()
         self.rom_search_container = QWidget()
         self.rom_search_container.setLayout(self.rom_search_panel)
-        self.rom_search_container.setFixedWidth(600)
+        self.rom_search_container.setFixedWidth(800)
         self.rom_search_panel.addWidget(self.rom_search_bar)
         self.rom_search_panel.addWidget(self.rom_search_tree)
         self.rom_search_buttons.addWidget(self.rom_search_add_game_button)
@@ -250,6 +251,9 @@ class MainWindow(QMainWindow):
         self.rom_search_add_game_button.hide()
         self.rom_search_cancel_button.hide()
 
+        self.rom_info_container = QWidget()
+        self.rom_info_container.setLayout(self.rom_info_panel)
+        self.rom_info_container.setFixedWidth(600)
         self.rom_info_panel.addWidget(self.rom_description_label)
         self.rom_info_panel.addWidget(self.rom_name_label)
         self.rom_info_panel.addWidget(self.rom_manufacturer_label)
@@ -258,9 +262,12 @@ class MainWindow(QMainWindow):
         self.rom_info_panel.addWidget(self.rom_video_info_label)
         self.rom_info_panel.addWidget(self.rom_video_driver_warnings_label)
         self.rom_info_panel.addWidget(self.rom_audio_driver_warnings_label)
+        self.rom_info_panel.addStretch()
+
 
         self.rom_search_page_layout.addWidget(self.rom_search_container)
-        self.rom_search_page_layout.addLayout(self.rom_info_panel)
+        self.rom_search_page_layout.addWidget(self.rom_info_container)
+
 
         self.rom_search_page.setLayout(self.rom_search_page_layout)
         self.rom_search_page.setFont(self.top_level_item_font)
