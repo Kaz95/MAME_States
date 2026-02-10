@@ -242,7 +242,7 @@ class MainWindow(QMainWindow):
         self.rom_search_buttons = QHBoxLayout()
         self.rom_search_container = QWidget()
         self.rom_search_container.setLayout(self.rom_search_panel)
-        self.rom_search_container.setFixedWidth(800)
+        # self.rom_search_container.setFixedWidth(800)
         self.rom_search_panel.addWidget(self.rom_search_bar)
         self.rom_search_panel.addWidget(self.rom_search_tree)
         self.rom_search_buttons.addWidget(self.rom_search_add_game_button)
@@ -253,7 +253,7 @@ class MainWindow(QMainWindow):
 
         self.rom_info_container = QWidget()
         self.rom_info_container.setLayout(self.rom_info_panel)
-        self.rom_info_container.setFixedWidth(600)
+        # self.rom_info_container.setFixedWidth(600)
         self.rom_info_panel.addWidget(self.rom_description_label)
         self.rom_info_panel.addWidget(self.rom_name_label)
         self.rom_info_panel.addWidget(self.rom_manufacturer_label)
