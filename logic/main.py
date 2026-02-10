@@ -3,6 +3,7 @@
 This module encompasses the static functions used by the MAMEStates application.
 """
 import os
+import pprint
 import sqlite3
 from pathlib import Path
 
@@ -181,6 +182,12 @@ def delete_split(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_des
     cursor.execute(sql_statement, (rom_id, split_label))
     connection.commit()
 
+def get_rom_info(cursor: sqlite3.Cursor):
+    sql_statement = "SELECT * FROM roms"
+    cursor.execute(sql_statement)
+    results = cursor.fetchall()
+    return results
+
 
 ##########
 # Helper #
@@ -249,6 +256,19 @@ def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str:str]:
 
     return descriptions_and_names
 
+def serialize_rom_info(cursor: sqlite3.Cursor):
+    rom_info = {}
+    results = get_rom_info(cursor)
+    for row in results:
+        rom_info[row[2]] = {'name': row[1], 'manufacturer': row[3], 'year': row[4], 'parent': row[5],
+                            'video_info': f'{row[6]}x{row[7]}@{row[9]} - Rotate {row[8]}°', 'video_driver': row[10],
+                            'sound_driver': row[11]}
+    return rom_info
+
+
 if __name__ == '__main__':
-    paths = [Path(x) for x in raw_mame_paths]
-    print(get_all_input_files(paths))
+    with sqlite3.connect(r'..\mame_states.db') as connection:
+        cursor = connection.cursor()
+        rom_info = serialize_rom_info(cursor)
+    pprint.pp(rom_info)
+

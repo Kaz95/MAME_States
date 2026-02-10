@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase, \
-    delete_personal_best, delete_splits, get_all_input_files
+    delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info
 from logic.main import save_paths_to_database, get_descriptions_and_names, load_personal_bests_from_database, \
     save_pb_to_database, delete_split
 
@@ -59,6 +59,7 @@ class MainWindow(QMainWindow):
         """Names of games that have a save folder, and their respective save states"""
 
         self.all_input_files = None
+        self.all_rom_info = None
 
         # --------- #
         # Load Data #
@@ -221,17 +222,46 @@ class MainWindow(QMainWindow):
 
         self.rom_search_cancel_button.clicked.connect(self.close_rom_search_window)
         self.rom_search_add_game_button.clicked.connect(self.rom_search_add_game_clicked)
+        self.rom_search_tree.itemSelectionChanged.connect(self.rom_search_tree_selection_changed)
+
+
+        self.rom_description_label: QLabel = QLabel()
+        self.rom_name_label: QLabel = QLabel()
+        self.rom_manufacturer_label: QLabel = QLabel()
+        self.rom_release_year_label: QLabel = QLabel()
+        self.rom_parent_label: QLabel = QLabel()
+        self.rom_video_info_label: QLabel = QLabel()
+        self.rom_video_driver_warnings_label: QLabel = QLabel()
+        self.rom_audio_driver_warnings_label: QLabel = QLabel()
 
         # Layouts
-        self.rom_search_page_layout = QVBoxLayout()
+        self.rom_search_page_layout = QHBoxLayout()
+        self.rom_info_panel = QVBoxLayout()
+        self.rom_search_panel = QVBoxLayout()
         self.rom_search_buttons = QHBoxLayout()
-        self.rom_search_page_layout.addWidget(self.rom_search_bar)
-        self.rom_search_page_layout.addWidget(self.rom_search_tree)
+        self.rom_search_container = QWidget()
+        self.rom_search_container.setLayout(self.rom_search_panel)
+        self.rom_search_container.setFixedWidth(600)
+        self.rom_search_panel.addWidget(self.rom_search_bar)
+        self.rom_search_panel.addWidget(self.rom_search_tree)
         self.rom_search_buttons.addWidget(self.rom_search_add_game_button)
         self.rom_search_buttons.addWidget(self.rom_search_cancel_button)
-        self.rom_search_page_layout.addLayout(self.rom_search_buttons)
+        self.rom_search_panel.addLayout(self.rom_search_buttons)
         self.rom_search_add_game_button.hide()
         self.rom_search_cancel_button.hide()
+
+        self.rom_info_panel.addWidget(self.rom_description_label)
+        self.rom_info_panel.addWidget(self.rom_name_label)
+        self.rom_info_panel.addWidget(self.rom_manufacturer_label)
+        self.rom_info_panel.addWidget(self.rom_release_year_label)
+        self.rom_info_panel.addWidget(self.rom_parent_label)
+        self.rom_info_panel.addWidget(self.rom_video_info_label)
+        self.rom_info_panel.addWidget(self.rom_video_driver_warnings_label)
+        self.rom_info_panel.addWidget(self.rom_audio_driver_warnings_label)
+
+        self.rom_search_page_layout.addWidget(self.rom_search_container)
+        self.rom_search_page_layout.addLayout(self.rom_info_panel)
+
         self.rom_search_page.setLayout(self.rom_search_page_layout)
         self.rom_search_page.setFont(self.top_level_item_font)
 
@@ -324,7 +354,8 @@ class MainWindow(QMainWindow):
         self.add_split_button.clicked.connect(self.new_split)
         self.delete_split_button.clicked.connect(self.delete_split)
 
-
+    def setup_search_page(self):
+        pass
     # ------ #
     # Helper #
     # ------ #
@@ -385,6 +416,7 @@ class MainWindow(QMainWindow):
         self.descriptions_and_names = get_descriptions_and_names(self.db_cursor)
         self.all_save_states = get_all_roms_with_saves(self.mame_paths)
         self.all_input_files = get_all_input_files(self.mame_paths)
+        self.all_rom_info = serialize_rom_info(self.db_cursor)
 
     def fill_save_state_tree(self) -> None:
         """Clear, then fill and customize the Save State Tree Widget.
@@ -729,6 +761,31 @@ class MainWindow(QMainWindow):
 
         for item in items:
             self.rom_search_tree.addTopLevelItem(item[0])
+
+    def rom_search_tree_selection_changed(self):
+        self.rom_description_label.setText('')
+        self.rom_name_label.setText('')
+        self.rom_manufacturer_label.setText('')
+        self.rom_release_year_label.setText('')
+        self.rom_parent_label.setText('')
+        self.rom_video_info_label.setText('')
+        self.rom_video_driver_warnings_label.setText('')
+        self.rom_audio_driver_warnings_label.setText('')
+
+        selected = self.rom_search_tree.selectedItems()
+        if selected:
+            game_description = selected[0].text(0)
+            rom_info = self.all_rom_info[game_description]
+            self.rom_description_label.setText(f'Game: {game_description}')
+            self.rom_name_label.setText(f'Rom Name: {rom_info['name']}')
+            self.rom_manufacturer_label.setText(f'Manufacturer: {rom_info['manufacturer']}')
+            self.rom_release_year_label.setText(f'Year: {str(rom_info['year'])}')
+            self.rom_parent_label.setText(f'Parent: {rom_info['parent']}')
+            self.rom_video_info_label.setText(f'Video Info: {rom_info['video_info']}')
+            self.rom_video_driver_warnings_label.setText(f'Video Driver: {rom_info['video_driver']}')
+            self.rom_audio_driver_warnings_label.setText(f'Sound Driver: {rom_info['sound_driver']}')
+
+
 
     # --------------------- #
     # Save State Page Slots #
