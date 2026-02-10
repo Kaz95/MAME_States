@@ -651,7 +651,14 @@ class MainWindow(QMainWindow):
             action.triggered.connect(lambda: self.run_rom(rom_name))
             sub_menu.addAction(action)
 
+        sub_menu_two = QMenu('Open with input file...')
+        for path in self.mame_paths:
+            action = QAction(str(path), self)
+            action.triggered.connect(lambda:print(self.sender().text()))
+            sub_menu_two.addAction(action)
+
         menu.addMenu(sub_menu)
+        menu.addMenu(sub_menu_two)
         menu.exec(self.high_score_game_tree.viewport().mapToGlobal(position))
 
     # TODO Take another look at this.
