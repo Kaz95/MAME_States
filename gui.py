@@ -118,12 +118,13 @@ class MainWindow(QMainWindow):
         # Widgets
         self.save_state_tree: QTreeWidget = QTreeWidget()
         """Main widget of the save state tab"""
-        self.save_state_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
-        self.save_state_tree.setHeaderLabels(['MAME Folders'])
-        self.save_state_tree.setColumnWidth(0, 1000)
-        self.save_state_tree.setItemDelegate(SaveStateNameInputValidator(self))
-        self.save_state_tree.setTabKeyNavigation(True)
-        self.fill_save_state_tree()
+        # self.save_state_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
+        # self.save_state_tree.setHeaderLabels(['MAME Folders'])
+        # self.save_state_tree.setColumnWidth(0, 1000)
+        # self.save_state_tree.setItemDelegate(SaveStateNameInputValidator(self))
+        # self.save_state_tree.setTabKeyNavigation(True)
+        # self.fill_save_state_tree()
+
 
         # Layouts
         self.save_state_page_layout: QHBoxLayout = QHBoxLayout()
@@ -132,8 +133,8 @@ class MainWindow(QMainWindow):
         self.save_state_page_layout.addWidget(self.save_state_tree)
 
         # Signals and Slots
-        self.save_state_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
-        self.save_state_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
+        # self.save_state_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
+        # self.save_state_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
 
         # ------------------#
         #   Highscore Page  #
@@ -178,6 +179,7 @@ class MainWindow(QMainWindow):
         """Contains buttons related to stage splits."""
 
         # Add widgets to layout. Setup signals and slots.
+        self.setup_save_state_page()
         self.setup_highscore_panel()
         self.setup_pb_panel()
         self.setup_split_panel()
@@ -259,6 +261,19 @@ class MainWindow(QMainWindow):
         self.file_menu.addAction(self.button_2_action)
         self.file_menu.addAction(self.button_3_action)
 
+    def setup_save_state_page(self):
+        self.save_state_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
+        self.save_state_tree.setHeaderLabels(['MAME Folders'])
+        self.save_state_tree.setColumnWidth(0, 1000)
+        self.save_state_tree.setItemDelegate(SaveStateNameInputValidator(self))
+        self.save_state_tree.setTabKeyNavigation(True)
+        self.save_state_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.save_state_tree.customContextMenuRequested.connect(self.show_input_file_context)
+
+        self.fill_save_state_tree()
+        self.save_state_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
+        self.save_state_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
+
     def setup_highscore_panel(self) -> None:
         """High Score Panel widget customization"""
         self.notes_window.hide()
@@ -308,6 +323,7 @@ class MainWindow(QMainWindow):
 
         self.add_split_button.clicked.connect(self.new_split)
         self.delete_split_button.clicked.connect(self.delete_split)
+
 
     # ------ #
     # Helper #
@@ -591,6 +607,25 @@ class MainWindow(QMainWindow):
         self.notes_window.setWindowTitle(f'{rom_name} - Notes')
         self.notes_window.raise_()
         self.notes_window.setFocus()
+
+    def show_input_file_context(self, position: QPoint):
+        tree_item = self.save_state_tree.itemAt(position)
+        if not tree_item:
+            return
+        if tree_item.childCount() > 0:
+            return
+        menu = QMenu()
+
+        delete = QAction('Delete')
+        menu.addAction(delete)
+        sub_menu = QMenu('Playback with...')
+        for path in self.mame_paths:
+            action = QAction(str(path), self)
+            action.triggered.connect(lambda: print(self.sender().text()))
+            sub_menu.addAction(action)
+        menu.addMenu(sub_menu)
+        menu.exec(self.save_state_tree.viewport().mapToGlobal(position))
+
 
     def show_high_score_tree_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
