@@ -270,5 +270,5 @@ if __name__ == '__main__':
     with sqlite3.connect(r'..\mame_states.db') as connection:
         cursor = connection.cursor()
         rom_info = serialize_rom_info(cursor)
-    pprint.pp(rom_info)
+
 

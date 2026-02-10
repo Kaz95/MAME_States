@@ -12,7 +12,7 @@ import subprocess
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
-from PyQt6.QtGui import QAction, QFont, QIntValidator
+from PyQt6.QtGui import QAction, QFont, QIntValidator, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
     QInputDialog, QFileDialog, QMessageBox, QMenu
@@ -59,7 +59,7 @@ class MainWindow(QMainWindow):
         """Names of games that have a save folder, and their respective save states"""
 
         self.all_input_files = None
-        self.all_rom_info = None
+        self.all_rom_info: dict | None = None
 
         # --------- #
         # Load Data #
@@ -215,6 +215,12 @@ class MainWindow(QMainWindow):
         self.rom_search_tree.setHeaderLabels(['Games'])
         for game_name in self.descriptions_and_names.keys():
             item = QTreeWidgetItem(self.rom_search_tree, [game_name])
+            parent = self.all_rom_info[game_name]['parent']
+            if parent is not None:
+                color = QColor(211, 211, 211, 127)
+                brush = QBrush(color)
+                # Apply to item (column 0)
+                item.setForeground(0, brush)
             item.setToolTip(0, self.descriptions_and_names[game_name])
 
         self.rom_search_add_game_button: QPushButton = QPushButton('Add Game')
@@ -362,7 +368,10 @@ class MainWindow(QMainWindow):
         self.delete_split_button.clicked.connect(self.delete_split)
 
     def setup_search_page(self):
-        pass
+        color = QColor(211, 211, 211, 127)
+        brush = QBrush(color)
+
+
     # ------ #
     # Helper #
     # ------ #
@@ -749,18 +758,36 @@ class MainWindow(QMainWindow):
             if search_text == rom_name.lower() or search_text == rom_description.lower():
                 item = QTreeWidgetItem([rom_description])
                 item.setToolTip(0, rom_name)
+                parent = self.all_rom_info[rom_description]['parent']
+                if parent is not None:
+                    color = QColor(211, 211, 211, 127)
+                    brush = QBrush(color)
+                    # Apply to item (column 0)
+                    item.setForeground(0, brush)
                 item = (item, 1)
                 items.append(item)
 
             elif rom_name.lower().startswith(search_text) or rom_description.lower().startswith(search_text):
                 item = QTreeWidgetItem([rom_description])
                 item.setToolTip(0, rom_name)
+                parent = self.all_rom_info[rom_description]['parent']
+                if parent is not None:
+                    color = QColor(211, 211, 211, 127)
+                    brush = QBrush(color)
+                    # Apply to item (column 0)
+                    item.setForeground(0, brush)
                 item = (item, 2)
                 items.append(item)
 
             elif search_text in rom_name.lower() or search_text in rom_description.lower():
                 item = QTreeWidgetItem([rom_description])
                 item.setToolTip(0, rom_name)
+                parent = self.all_rom_info[rom_description]['parent']
+                if parent is not None:
+                    color = QColor(211, 211, 211, 127)
+                    brush = QBrush(color)
+                    # Apply to item (column 0)
+                    item.setForeground(0, brush)
                 item = (item, 3)
                 items.append(item)
 
