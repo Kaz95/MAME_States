@@ -2,6 +2,7 @@
 
 This module encompasses the static functions used by the MAMEStates application.
 """
+import json
 import os
 import pprint
 import sqlite3
@@ -168,7 +169,7 @@ def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, 
 def delete_personal_best(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str) -> None:
     """Delete 'highscore' and 'distance' data from database, for a given rom."""
     sql_statement = "DELETE FROM personal_bests WHERE rom_id = ?"
-    rom_id = id_from_description(rom_description, cursor)
+    rom_id = id_from_rom_name(rom_description, cursor)
     cursor.execute(sql_statement, (rom_id,))
     connection.commit()
 
@@ -176,7 +177,7 @@ def delete_personal_best(connection: sqlite3.Connection, cursor: sqlite3.Cursor,
 def delete_splits(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str) -> None:
     """Delete all 'splits' data from database, for a given rom."""
     sql_statement = "DELETE FROM splits WHERE rom_id = ?"
-    rom_id = id_from_description(rom_description, cursor)
+    rom_id = id_from_rom_name(rom_description, cursor)
     cursor.execute(sql_statement, (rom_id,))
     connection.commit()
 
@@ -185,7 +186,7 @@ def delete_split(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_des
                  split_label: str) -> None:
     """Delete a single split from the database. Rom id and split label text are used as unique identifier."""
     sql_statement = "DELETE FROM splits WHERE rom_id = ? AND label = ?"
-    rom_id = id_from_description(rom_description, cursor)
+    rom_id = id_from_rom_name(rom_description, cursor)
     cursor.execute(sql_statement, (rom_id, split_label))
     connection.commit()
 
@@ -208,13 +209,22 @@ def id_from_description(name: str, cursor: sqlite3.Cursor) -> int:
     rom_id = rom_id[0][0]
     return rom_id
 
+def id_from_rom_name(name: str, cursor: sqlite3.Cursor) -> int:
+    """Retrieve the corresponding rom_id, for a given rom description, from the database."""
+    sql_statement = "SELECT id FROM roms WHERE name = ?"
+    cursor.execute(sql_statement, (name,))
+    rom_id = cursor.fetchall()
+    rom_id = rom_id[0][0]
+    return rom_id
+
+
 
 def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> list[tuple]:
     """Serialize personal best highscore and distance information into rows for database insertion."""
     rows = []
     for key in pb_info:
         pb_dict = pb_info[key]
-        rom_id = id_from_description(key, cursor)
+        rom_id = id_from_rom_name(key, cursor)
         highscore = pb_dict['hs']
         distance = pb_dict['distance']
         row = (None, highscore, distance, rom_id)
@@ -225,7 +235,7 @@ def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> li
 def get_split_pk(cursor: sqlite3.Cursor, rom_description: str, split_label: str) -> list[tuple]:
     """Retrieve a primary key from database. Rom id and split label are used as unique identifier."""
     sql_statement = "SELECT id FROM splits WHERE rom_id = ? AND label = ?"
-    rom_id = id_from_description(rom_description, cursor)
+    rom_id = id_from_rom_name(rom_description, cursor)
     cursor.execute(sql_statement, (rom_id, split_label))
     results = cursor.fetchall()
     return results
@@ -244,7 +254,7 @@ def collate_splits(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> lis
                 split_primary_key = split_primary_key[0][0]
             else:
                 split_primary_key = None
-            row = (split_primary_key, item[0], item[1], split.index(item), id_from_description(pb, cursor))
+            row = (split_primary_key, item[0], item[1], split.index(item), id_from_rom_name(pb, cursor))
             splits.append(row)
     return splits
 
@@ -315,11 +325,12 @@ if __name__ == '__main__':
                 print('whoops')
 
     defaults_xml = Path(r'C:\Users\kazac\Downloads\hi2txt\hi2txt_doc\hi2txt_defaults')
-
+    new_pbs = {}
     # pprint.pp(hi_text_output)
     for path in hi_text_output:
         pb_dict = hi_text_output[path]
         # print(pb_dict)
+
         for game in pb_dict:
             leaderboards = pb_dict[game].split('\n#')
             for leaderboard in leaderboards:
@@ -340,6 +351,12 @@ if __name__ == '__main__':
                                     if line.split('|') != default_table['row'][index]['cell']:
                                         print(f'New PB detected - {game} - {leaderboard_name}')
                                         print(f'{default_table['row'][index]['cell']} --> \n{columns}\n{line}')
+                                        some_dic = {}
+                                        for i, section in enumerate(line.split('|')):
+                                            some_dic[columns.split('|')[i]] = section
+
+                                        new_pbs[game] = some_dic
+                                        pprint.pp(some_dic)
                                         break
                 else:
                     columns = leaderboard.pop(0)
@@ -353,12 +370,42 @@ if __name__ == '__main__':
                                 if line.split('|') != default_table['row'][index]['cell']:
                                     print(f'New PB detected - {game}')
                                     print(f'{default_table['row'][index]['cell']} --> \n{columns}\n{line}')
+                                    some_dic = {}
+                                    for i, section in enumerate(line.split('|')):
+                                        some_dic[columns.split('|')[i]] = section
+
+                                    pprint.pp(some_dic)
+                                    new_pbs[game] = some_dic
                                     break
                             else:
                                 if line.split('|') != default_table['row']['cell']:
                                     print(f'New PB detected - {game}')
                                     print(f'{default_table['row']['cell']} --> \n{columns}\n{line}')
+                                    some_dic = {}
+                                    for i, section in enumerate(line.split('|')):
+                                        some_dic[columns.split('|')[i]] = section
+
+                                    new_pbs[game] = some_dic
+                                    pprint.pp(some_dic)
                                     break
+
+    for game in new_pbs:
+        pb = new_pbs[game]
+        pb.pop('RANK', None)
+        pb.pop('NAME', None)
+
+        with sqlite3.connect(r'C:\Users\kazac\AppData\Roaming\JetBrains\PyCharmCE2024.3\scratches\mame_states.db') as connection:
+            cursor = connection.cursor()
+            score = pb.pop('SCORE')
+            if not pb:
+                other_fields = None
+            else:
+                other_fields = json.dumps(pb)
+            row = (None, score, other_fields, id_from_rom_name(game, cursor))
+            sql = "INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore"
+            cursor.execute(sql, row)
+            connection.commit()
+    # pprint.pp(new_pbs)
             # formatted_table = {'col': None,
             #                    'row': None}
             # table = pb_dict[game]
