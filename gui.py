@@ -356,6 +356,18 @@ class MainWindow(QMainWindow):
         self.personal_best_layout.addWidget(self.distance_edit, 1, 1)
         self.personal_best_layout.addWidget(self.distance_value_label, 1, 1)
 
+        for _ in range(5):
+            editor = QLineEdit(self)
+            tlabel = ToggleableLabel(editor)
+            tlabel.toggle_labels()
+            tlabel.setText('somererereasf')
+
+            label = QLabel(f'Test label {_}:')
+
+            self.personal_best_layout.addWidget(label, (_ + 2), 0)
+            self.personal_best_layout.addWidget(editor, (_ + 2), 1)
+            self.personal_best_layout.addWidget(tlabel, (_ + 2), 1)
+
     def setup_split_panel(self) -> None:
         """Split Panel widget customization."""
         self.splits_tree_button_container.addWidget(self.add_split_button)
