@@ -43,6 +43,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
+        self.temp_fields = []
         self.rom_search_popup: QWidget | None = None
         self.db_connection: sqlite3.Connection = db_connection
         """Connection object that points to database connection."""
@@ -389,7 +390,12 @@ class MainWindow(QMainWindow):
     # ------ #
     # Helper #
     # ------ #
-    def update_pb_panel(self, high_score: int, distance: str) -> None:
+    def update_pb_panel(self, high_score: int, other_fields: dict) -> None:
+        for _ in self.temp_fields:
+            self.personal_best_layout.removeWidget(_)
+            _.hide()
+            print(self.temp_fields)
+        self.temp_fields.clear()
         """Sets the text of the labels and editors associated with the Personal Best Panel."""
         self.high_score_edit.setText(str(high_score))
         # self.distance_edit.setText(distance)
@@ -397,6 +403,28 @@ class MainWindow(QMainWindow):
         # self.distance_value_label.setText(distance)
         self.high_score_edit.hide()
         # self.distance_edit.hide()
+
+        if not other_fields:
+            return
+
+        for index, key in enumerate(other_fields):
+            editor = QLineEdit(self)
+            tlabel = ToggleableLabel(editor)
+
+            # tlabel.toggle_labels()
+            editor.hide()
+
+            tlabel.setText(other_fields[key])
+            label = QLabel(key)
+            # label.show()
+
+            self.temp_fields.append(label)
+            self.temp_fields.append(tlabel)
+            self.temp_fields.append(editor)
+            self.personal_best_layout.addWidget(label, (index + 1), 0)
+            self.personal_best_layout.addWidget(editor, (index + 1), 1)
+            self.personal_best_layout.addWidget(tlabel, (index + 1), 1)
+
 
     def create_split_item(self, split: list[int | str], game_name: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
