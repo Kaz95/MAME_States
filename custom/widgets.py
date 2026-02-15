@@ -6,7 +6,7 @@ from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton
 
-from logic.main import PersonalBestDataBase, save_pb_to_database
+from logic.main import PersonalBestDataBase, save_pb_to_database, new_save_pb_to_database
 
 
 ######################
@@ -263,8 +263,8 @@ class StageSplitItem(QWidget):
         self.game_db[self.game_name]['splits'][item_index][0] = self.name_editor.text()
 
         if self.name_editor.text():
-            save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
-
+            # save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
+            new_save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
 
 class StageSplitListWidget(QListWidget):
     """Subclass and extend the QListWidget class of the PyQt6.QtWidgets module.
@@ -325,8 +325,8 @@ class StageSplitListWidget(QListWidget):
         splits = self.game_db[game_name]['splits']
         split = splits.pop(old_index)
         splits.insert(new_index, split)
-        save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
-
+        # save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
+        new_save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
     def add_diffs(self, splits: list) -> None:
         """Calculate and display the difference between a splits score, and the previous splits score."""
         for index, split in enumerate(splits):

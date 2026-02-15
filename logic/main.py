@@ -138,7 +138,7 @@ def new_load_personal_bests_from_database(cursor: sqlite3.Cursor) -> PersonalBes
 
     for pb in personal_bests:
         if pb[2]:
-            other_fields = pb[2]
+            other_fields = json.loads(pb[2])
         else:
             other_fields = None
         pb_info[pb[0]] = {'hs': pb[1], 'other_fields': other_fields, 'splits': []}

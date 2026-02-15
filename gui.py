@@ -20,7 +20,8 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase, \
-    delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info
+    delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info, new_load_personal_bests_from_database, \
+    new_save_pb_to_database
 from logic.main import save_paths_to_database, get_descriptions_and_names, load_personal_bests_from_database, \
     save_pb_to_database, delete_split
 
@@ -67,8 +68,9 @@ class MainWindow(QMainWindow):
         self.mame_paths: list[Path] = load_path_from_db(self.db_cursor)
         """List of all MAME directories that will be used by the application."""
 
-        self.pb_info: PersonalBestDataBase = load_personal_bests_from_database(self.db_cursor)
-        """Personal best information."""
+        # self.pb_info: PersonalBestDataBase = load_personal_bests_from_database(self.db_cursor)
+        # """Personal best information."""
+        self.pb_info = new_load_personal_bests_from_database(self.db_cursor)
 
         self.fill_data_structures()
 
@@ -142,13 +144,13 @@ class MainWindow(QMainWindow):
         # ------------------#
 
         # Widgets
-        self.distance_label: QLabel = QLabel('Distance PB:')
+        # self.distance_label: QLabel = QLabel('Distance PB:')
         self.high_score_label: QLabel = QLabel('High Score:')
 
         self.high_score_edit: QLineEdit = QLineEdit()
-        self.distance_edit: QLineEdit = QLineEdit()
+        # self.distance_edit: QLineEdit = QLineEdit()
 
-        self.distance_value_label = ToggleableLabel(self.distance_edit)
+        # self.distance_value_label = ToggleableLabel(self.distance_edit)
         self.high_score_value_label = ToggleableLabel(self.high_score_edit)
 
         self.high_score_game_tree: QTreeWidget = QTreeWidget()
@@ -346,27 +348,27 @@ class MainWindow(QMainWindow):
         self.high_score_edit.setValidator(QIntValidator())
         self.high_score_edit.editingFinished.connect(self.update_high_score_pb)
 
-        self.distance_edit.editingFinished.connect(self.update_distance_pb)
+        # self.distance_edit.editingFinished.connect(self.update_distance_pb)
 
         self.personal_best_layout.addWidget(self.high_score_label, 0, 0)
         self.personal_best_layout.addWidget(self.high_score_edit, 0, 1)
         self.personal_best_layout.addWidget(self.high_score_value_label, 0, 1)
 
-        self.personal_best_layout.addWidget(self.distance_label, 1, 0)
-        self.personal_best_layout.addWidget(self.distance_edit, 1, 1)
-        self.personal_best_layout.addWidget(self.distance_value_label, 1, 1)
-
-        for _ in range(5):
-            editor = QLineEdit(self)
-            tlabel = ToggleableLabel(editor)
-            tlabel.toggle_labels()
-            tlabel.setText('somererereasf')
-
-            label = QLabel(f'Test label {_}:')
-
-            self.personal_best_layout.addWidget(label, (_ + 2), 0)
-            self.personal_best_layout.addWidget(editor, (_ + 2), 1)
-            self.personal_best_layout.addWidget(tlabel, (_ + 2), 1)
+        # self.personal_best_layout.addWidget(self.distance_label, 1, 0)
+        # self.personal_best_layout.addWidget(self.distance_edit, 1, 1)
+        # self.personal_best_layout.addWidget(self.distance_value_label, 1, 1)
+        #
+        # for _ in range(5):
+        #     editor = QLineEdit(self)
+        #     tlabel = ToggleableLabel(editor)
+        #     tlabel.toggle_labels()
+        #     tlabel.setText('somererereasf')
+        #
+        #     label = QLabel(f'Test label {_}:')
+        #
+        #     self.personal_best_layout.addWidget(label, (_ + 2), 0)
+        #     self.personal_best_layout.addWidget(editor, (_ + 2), 1)
+        #     self.personal_best_layout.addWidget(tlabel, (_ + 2), 1)
 
     def setup_split_panel(self) -> None:
         """Split Panel widget customization."""
@@ -390,11 +392,11 @@ class MainWindow(QMainWindow):
     def update_pb_panel(self, high_score: int, distance: str) -> None:
         """Sets the text of the labels and editors associated with the Personal Best Panel."""
         self.high_score_edit.setText(str(high_score))
-        self.distance_edit.setText(distance)
+        # self.distance_edit.setText(distance)
         self.high_score_value_label.setText(str(high_score))
-        self.distance_value_label.setText(distance)
+        # self.distance_value_label.setText(distance)
         self.high_score_edit.hide()
-        self.distance_edit.hide()
+        # self.distance_edit.hide()
 
     def create_split_item(self, split: list[int | str], game_name: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
@@ -499,10 +501,10 @@ class MainWindow(QMainWindow):
             info = self.pb_info[game_name]
 
             hs = info['hs']
-            distance = info['distance']
+            other_fields = info['other_fields']
             splits = info['splits']
 
-            self.update_pb_panel(hs, distance)
+            self.update_pb_panel(hs, other_fields)
 
             for split in splits:
                 self.create_split_item(split, game_name)
@@ -529,17 +531,17 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.pb_info[game_name]['hs'] = new_pb
-            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
-
-    def update_distance_pb(self) -> None:
-        """Update in database representation and saves to database"""
-        new_pb = self.distance_edit.text()
-        selected = self.high_score_game_tree.selectedItems()
-        if selected:
-            game_item = selected[0]
-            game_name = game_item.text(0)
-            self.pb_info[game_name]['distance'] = new_pb
-            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            new_save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+    # def update_distance_pb(self) -> None:
+    #     """Update in database representation and saves to database"""
+    #     new_pb = self.distance_edit.text()
+    #     selected = self.high_score_game_tree.selectedItems()
+    #     if selected:
+    #         game_item = selected[0]
+    #         game_name = game_item.text(0)
+    #         self.pb_info[game_name]['distance'] = new_pb
+    #         save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     #  FIXME Enforce restrictions on what name can be used. Needs to be real rom description.
     #   Maybe I can check if game_name in keys of dict. Still need a way to easily create.
@@ -578,10 +580,14 @@ class MainWindow(QMainWindow):
             print(rom_description)
 
             QTreeWidgetItem(self.high_score_game_tree, [rom_description])
+            # self.pb_info[rom_description] = {'hs': 0,
+            #                                  'distance': '',
+            #                                  'splits': []}
             self.pb_info[rom_description] = {'hs': 0,
-                                             'distance': '',
+                                             'other_fields': None,
                                              'splits': []}
-            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            new_save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
             self.rom_search_popup.close()
 
     def delete_game(self) -> None:
@@ -625,7 +631,8 @@ class MainWindow(QMainWindow):
                 label = splits[row][0]
                 del splits[row]
                 delete_split(self.db_connection, self.db_cursor, game_name, label)
-                save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+                new_save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+                # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def new_split(self) -> None:
         """Create a new, blank split item. Add it to the list widget and the in memory database representation.
@@ -934,7 +941,7 @@ def main() -> None:
     This function allows me to create DB connects with context manager. If the program ends early, rollback occurs.
     Alternative would be creating db connection with context inside MainWindow _init_, which seems not ideal.
     """
-    with sqlite3.connect('mame_states.db') as connection:
+    with sqlite3.connect(r'C:\Users\kazac\AppData\Roaming\JetBrains\PyCharmCE2024.3\scratches\test_mame_states.db') as connection:
         # The order the objects are initialized in matters.
         app = QApplication([])
 
