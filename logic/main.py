@@ -169,7 +169,7 @@ def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, 
 def delete_personal_best(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str) -> None:
     """Delete 'highscore' and 'distance' data from database, for a given rom."""
     sql_statement = "DELETE FROM personal_bests WHERE rom_id = ?"
-    rom_id = id_from_rom_name(rom_description, cursor)
+    rom_id = id_from_description(rom_description, cursor)
     cursor.execute(sql_statement, (rom_id,))
     connection.commit()
 
@@ -177,7 +177,7 @@ def delete_personal_best(connection: sqlite3.Connection, cursor: sqlite3.Cursor,
 def delete_splits(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str) -> None:
     """Delete all 'splits' data from database, for a given rom."""
     sql_statement = "DELETE FROM splits WHERE rom_id = ?"
-    rom_id = id_from_rom_name(rom_description, cursor)
+    rom_id = id_from_description(rom_description, cursor)
     cursor.execute(sql_statement, (rom_id,))
     connection.commit()
 
@@ -186,7 +186,7 @@ def delete_split(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_des
                  split_label: str) -> None:
     """Delete a single split from the database. Rom id and split label text are used as unique identifier."""
     sql_statement = "DELETE FROM splits WHERE rom_id = ? AND label = ?"
-    rom_id = id_from_rom_name(rom_description, cursor)
+    rom_id = id_from_description(rom_description, cursor)
     cursor.execute(sql_statement, (rom_id, split_label))
     connection.commit()
 
@@ -224,7 +224,7 @@ def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> li
     rows = []
     for key in pb_info:
         pb_dict = pb_info[key]
-        rom_id = id_from_rom_name(key, cursor)
+        rom_id = id_from_description(key, cursor)
         highscore = pb_dict['hs']
         distance = pb_dict['distance']
         row = (None, highscore, distance, rom_id)
@@ -235,7 +235,7 @@ def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> li
 def get_split_pk(cursor: sqlite3.Cursor, rom_description: str, split_label: str) -> list[tuple]:
     """Retrieve a primary key from database. Rom id and split label are used as unique identifier."""
     sql_statement = "SELECT id FROM splits WHERE rom_id = ? AND label = ?"
-    rom_id = id_from_rom_name(rom_description, cursor)
+    rom_id = id_from_description(rom_description, cursor)
     cursor.execute(sql_statement, (rom_id, split_label))
     results = cursor.fetchall()
     return results
@@ -254,7 +254,7 @@ def collate_splits(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> lis
                 split_primary_key = split_primary_key[0][0]
             else:
                 split_primary_key = None
-            row = (split_primary_key, item[0], item[1], split.index(item), id_from_rom_name(pb, cursor))
+            row = (split_primary_key, item[0], item[1], split.index(item), id_from_description(pb, cursor))
             splits.append(row)
     return splits
 
@@ -401,7 +401,7 @@ if __name__ == '__main__':
                 other_fields = None
             else:
                 other_fields = json.dumps(pb)
-            row = (None, score, other_fields, id_from_rom_name(game, cursor))
+            row = (None, score, other_fields, id_from_description(game, cursor))
             sql = "INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore"
             cursor.execute(sql, row)
             connection.commit()
