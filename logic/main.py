@@ -181,7 +181,7 @@ def new_save_pb_to_database(connection, cursor, pb_info):
        Rows are added if they do not exist, and updated otherwise.
        """
     pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
-                 "excluded.highscore, other_fields = excluded.other_fields")
+                 "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
     splits_insert = ("INSERT INTO splits VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET label = excluded.label, "
                      "score = excluded.score, 'index' = excluded.'index'")
 
@@ -346,48 +346,52 @@ def serialize_rom_info(cursor: sqlite3.Cursor):
 
 
 if __name__ == '__main__':
-    with sqlite3.connect(r'C:\Users\kazac\AppData\Roaming\JetBrains\PyCharmCE2024.3\scratches\test_mame_states.db') as con:
-        cursor = con.cursor()
-        r = new_load_personal_bests_from_database(cursor)
-        pprint.pp(r)
-    # yarp = {'col': None,
-    #         'row': []}
-    #
-    # games_with_hi = {}
-    # for raw_string in raw_mame_paths:
-    #     path = Path(raw_string)
-    #     hi_path = path / 'hiscore'
-    #     hi_file_paths = list(hi_path.glob('*.hi'))
-    #     hi_file_names = [x for x in hi_file_paths]
-    #     games_with_hi[str(path)] = hi_file_names
-    #
-    # zip_path = r'C:\Users\kazac\Downloads\hi2txt\hi2txt.zip'
-    # with zipfile.ZipFile(zip_path, 'r') as zip_obj:
-    #     xml_strings = zip_obj.namelist()
-    #     xml_paths = [Path(x) for x in xml_strings]
-    #     xml_names = [x.stem for x in xml_paths]
-    #
-    # for path in games_with_hi:
-    #     hi = games_with_hi[path]
-    #     hi_with_xml = [x for x in hi if x.stem in xml_names]
-    #     games_with_hi[path] = hi_with_xml
-    #
+    # with sqlite3.connect(r'C:\Users\kazac\AppData\Roaming\JetBrains\PyCharmCE2024.3\scratches\test_mame_states.db') as con:
+    #     cursor = con.cursor()
+    #     r = new_load_personal_bests_from_database(cursor)
+    #     pprint.pp(r)
+    #  -------------------------------------------------------------------
+    # Get games with hs {mame_path: [hi_score_paths], ...}
+    games_with_hi = {}
+    for raw_string in raw_mame_paths:
+        path = Path(raw_string)
+        hi_path = path / 'hiscore'
+        hi_file_paths = list(hi_path.glob('*.hi'))
+        # hi_file_names = [x for x in hi_file_paths]
+        games_with_hi[str(path)] = hi_file_paths
+
+    zip_path = r'C:\Users\kazac\Downloads\hi2txt\hi2txt.zip'
+    with zipfile.ZipFile(zip_path, 'r') as zip_obj:
+        xml_strings = zip_obj.namelist()
+        xml_paths = [Path(x) for x in xml_strings]
+        xml_names = [x.stem for x in xml_paths]
+
+    for path in games_with_hi:
+        hi = games_with_hi[path]
+        hi_with_xml = [x for x in hi if x.stem in xml_names]
+        games_with_hi[path] = hi_with_xml
+
     # pprint.pp(games_with_hi)
-    # hi_text_output = {}
-    #
-    # for path in games_with_hi:
-    #     hi_text_output[path] = {}
-    #     scores = games_with_hi[path]
-    #     for score in scores:
-    #         print(f'Score is: {score}')
-    #         try:
-    #             results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{score}'],
-    #                                      cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
-    #                                      check=True, encoding='utf-8')
-    #             hi_text_output[path][f'{score.stem}'] = results.stdout
-    #         except FileNotFoundError:
-    #             print('whoops')
-    #
+
+    # --------------------------------------------
+    # Use hi2txt to retrieve hi score tables.
+    hi_text_output = {}
+    for path in games_with_hi:
+        hi_text_output[path] = {}
+        scores = games_with_hi[path]
+        for score in scores:
+            print(f'Score is: {score}')
+            try:
+                results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{score}'],
+                                         cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
+                                         check=True, encoding='utf-8')
+                hi_text_output[path][f'{score.stem}'] = results.stdout
+            except FileNotFoundError:
+                print('whoops')
+
+    pprint.pp(hi_text_output)
+    # ----------------------------------------------------------------------------------------
+    # Create dictionary of all possible new PBs. Uses hi score tables to compare against default tables.
     # defaults_xml = Path(r'C:\Users\kazac\Downloads\hi2txt\hi2txt_doc\hi2txt_defaults')
     # new_pbs = {}
     # # pprint.pp(hi_text_output)
@@ -453,6 +457,9 @@ if __name__ == '__main__':
     #                                 pprint.pp(some_dic)
     #                                 break
     #
+
+    # -------------------------------------------------------------------------------------------------------------
+    # Insert or update new pbs, where score is higher.
     # for game in new_pbs:
     #     pb = new_pbs[game]
     #     pb.pop('RANK', None)
@@ -469,17 +476,11 @@ if __name__ == '__main__':
     #         sql = "INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore"
     #         cursor.execute(sql, row)
     #         connection.commit()
-
-
-
-
-
-
-
-
-
-
     # pprint.pp(new_pbs)
+
+
+
+
             # formatted_table = {'col': None,
             #                    'row': None}
             # table = pb_dict[game]
