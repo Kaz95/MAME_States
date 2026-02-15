@@ -21,7 +21,7 @@ from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem
     NotesWindow, RomSearchWindow
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase, \
     delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info, new_load_personal_bests_from_database, \
-    new_save_pb_to_database
+    new_save_pb_to_database, get_games_with_hs, get_hs_tables, get_new_pbs, save_pbs, scan_for_pb
 from logic.main import save_paths_to_database, get_descriptions_and_names, load_personal_bests_from_database, \
     save_pb_to_database, delete_split
 
@@ -97,6 +97,7 @@ class MainWindow(QMainWindow):
         self.button_1_action: QAction = QAction('button 1', self)
         self.button_2_action: QAction = QAction('button 2', self)
         self.button_3_action: QAction = QAction('Add MAME Path', self)
+        self.button_4_action: QAction = QAction('Update Personal Bests', self)
 
         self.setup_file_menu()
 
@@ -302,10 +303,12 @@ class MainWindow(QMainWindow):
         self.button_1_action.triggered.connect(self.menu_button_1_clicked)
         self.button_2_action.triggered.connect(self.menu_button_2_clicked)
         self.button_3_action.triggered.connect(self.add_path_button_clicked)
+        self.button_4_action.triggered.connect(self.scan_for_pb)
 
         self.file_menu.addAction(self.button_1_action)
         self.file_menu.addAction(self.button_2_action)
         self.file_menu.addAction(self.button_3_action)
+        self.file_menu.addAction(self.button_4_action)
 
     def setup_save_state_page(self):
         self.save_state_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
@@ -320,12 +323,16 @@ class MainWindow(QMainWindow):
         self.save_state_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
         self.save_state_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
 
+    def fill_highscore_game_list(self):
+        self.high_score_game_tree.clear()
+        for key in self.pb_info:
+            QTreeWidgetItem(self.high_score_game_tree, [key])
+
     def setup_highscore_panel(self) -> None:
         """High Score Panel widget customization"""
         self.notes_window.hide()
         # Fill Game List
-        for key in self.pb_info:
-            QTreeWidgetItem(self.high_score_game_tree, [key])
+        self.fill_highscore_game_list()
 
         self.high_score_game_tree.setHeaderLabels(['Games'])
         self.high_score_game_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -978,6 +985,10 @@ class MainWindow(QMainWindow):
         # else:
         #     print('Cancel chosen')
 
+    def scan_for_pb(self):
+        scan_for_pb(self.db_connection, self.db_cursor)
+        self.pb_info = new_load_personal_bests_from_database(self.db_cursor)
+        self.fill_highscore_game_list()
 
 def main() -> None:
     """MAMEStates program entry point.
@@ -985,7 +996,7 @@ def main() -> None:
     This function allows me to create DB connects with context manager. If the program ends early, rollback occurs.
     Alternative would be creating db connection with context inside MainWindow _init_, which seems not ideal.
     """
-    with sqlite3.connect(r'C:\Users\kazac\AppData\Roaming\JetBrains\PyCharmCE2024.3\scratches\test_mame_states.db') as connection:
+    with sqlite3.connect(r'mame_states.db') as connection:
         # The order the objects are initialized in matters.
         app = QApplication([])
 

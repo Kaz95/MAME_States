@@ -449,29 +449,34 @@ def get_new_pbs(hi_text_output: dict[str:dict[str:str]]):
                                     break
     return new_pbs
 
-def save_pbs(new_pbs: dict[str:dict[str:str]]):
+def save_pbs(new_pbs: dict[str:dict[str:str]], connection,  cursor):
     for game in new_pbs:
         pb = new_pbs[game]
         pb.pop('RANK', None)
         pb.pop('NAME', None)
 
-        with sqlite3.connect(r'C:\Users\kazac\AppData\Roaming\JetBrains\PyCharmCE2024.3\scratches\mame_states.db') as connection:
-            cursor = connection.cursor()
-            score = pb.pop('SCORE')
-            if not pb:
-                other_fields = None
-            else:
-                other_fields = json.dumps(pb)
-            row = (None, score, other_fields, id_from_rom_name(game, cursor))
-            sql = "INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore"
-            cursor.execute(sql, row)
-            connection.commit()
+        score = pb.pop('SCORE')
+        if not pb:
+            other_fields = None
+        else:
+            other_fields = json.dumps(pb)
+        row = (None, score, other_fields, id_from_rom_name(game, cursor))
+        sql = "INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore"
+        cursor.execute(sql, row)
+    connection.commit()
+
+def scan_for_pb(connection, cursor):
+    hi_scores = get_games_with_hs()
+    hi2txt_output = get_hs_tables(hi_scores)
+    new_pbs = get_new_pbs(hi2txt_output)
+    save_pbs(new_pbs, connection, cursor)
 
 if __name__ == '__main__':
     hi_scores = get_games_with_hs()
     hi2txt_output = get_hs_tables(hi_scores)
     new_pbs = get_new_pbs(hi2txt_output)
-    pprint.pp(new_pbs)
+    # save_pbs(new_pbs)
+    # pprint.pp(new_pbs)
     # with sqlite3.connect(r'C:\Users\kazac\AppData\Roaming\JetBrains\PyCharmCE2024.3\scratches\test_mame_states.db') as con:
     #     cursor = con.cursor()
     #     r = new_load_personal_bests_from_database(cursor)
