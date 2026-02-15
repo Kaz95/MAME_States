@@ -344,15 +344,8 @@ def serialize_rom_info(cursor: sqlite3.Cursor):
                             'sound_driver': row[11]}
     return rom_info
 
-
-if __name__ == '__main__':
-    # with sqlite3.connect(r'C:\Users\kazac\AppData\Roaming\JetBrains\PyCharmCE2024.3\scratches\test_mame_states.db') as con:
-    #     cursor = con.cursor()
-    #     r = new_load_personal_bests_from_database(cursor)
-    #     pprint.pp(r)
-    #  -------------------------------------------------------------------
-    # Get games with hs {mame_path: [hi_score_paths], ...}
-    games_with_hi = {}
+def get_games_with_hs() -> dict[str: list[Path]]:
+    games_with_hi: dict[str: list[Path]] = {}
     for raw_string in raw_mame_paths:
         path = Path(raw_string)
         hi_path = path / 'hiscore'
@@ -371,11 +364,10 @@ if __name__ == '__main__':
         hi_with_xml = [x for x in hi if x.stem in xml_names]
         games_with_hi[path] = hi_with_xml
 
-    # pprint.pp(games_with_hi)
+    return games_with_hi
 
-    # --------------------------------------------
-    # Use hi2txt to retrieve hi score tables.
-    hi_text_output = {}
+def get_hs_tables(games_with_hi: dict[str: [Path]]) -> dict[str:dict[str:str]]:
+    hi_text_output: dict[str:dict[str:str]] = {}
     for path in games_with_hi:
         hi_text_output[path] = {}
         scores = games_with_hi[path]
@@ -388,8 +380,142 @@ if __name__ == '__main__':
                 hi_text_output[path][f'{score.stem}'] = results.stdout
             except FileNotFoundError:
                 print('whoops')
+    return hi_text_output
 
-    pprint.pp(hi_text_output)
+def get_new_pbs(hi_text_output: dict[str:dict[str:str]]):
+    defaults_xml = Path(r'C:\Users\kazac\Downloads\hi2txt\hi2txt_doc\hi2txt_defaults')
+    new_pbs = {}
+    # pprint.pp(hi_text_output)
+    for path in hi_text_output:
+        pb_dict = hi_text_output[path]
+        # print(pb_dict)
+
+        for game in pb_dict:
+            leaderboards = pb_dict[game].split('\n#')
+            for leaderboard in leaderboards:
+                # pprint.pp(leaderboard.splitlines())
+                leaderboard = leaderboard.splitlines()
+                if leaderboard[0].startswith('#') or leaderboard[0].startswith(' '):
+                    leaderboard_name = leaderboard.pop(0).strip('# ')
+                    columns = leaderboard.pop(0)
+                    with open(defaults_xml / f'{game}.xml', 'r') as xml_file:
+                        xml_data = xml_file.read()
+                        data_dict = xmltodict.parse(xml_data)
+                        tables = data_dict['hi2txt']['table']
+                        for table in tables:
+                            if table['@id'] == leaderboard_name:
+                                default_table = table
+                                leaderboard = [x for x in leaderboard if x]
+                                for index, line in enumerate(leaderboard):
+                                    if line.split('|') != default_table['row'][index]['cell']:
+                                        print(f'New PB detected - {game} - {leaderboard_name}')
+                                        print(f'{default_table['row'][index]['cell']} --> \n{columns}\n{line}')
+                                        some_dic = {}
+                                        for i, section in enumerate(line.split('|')):
+                                            some_dic[columns.split('|')[i]] = section
+
+                                        new_pbs[game] = some_dic
+                                        pprint.pp(some_dic)
+                                        break
+                else:
+                    columns = leaderboard.pop(0)
+                    with open(defaults_xml / f'{game}.xml', 'r') as xml_file:
+                        xml_data = xml_file.read()
+                        data_dict = xmltodict.parse(xml_data)
+                        default_table = data_dict['hi2txt']['table']
+                        leaderboard = [x for x in leaderboard if x]
+                        for index, line in enumerate(leaderboard):
+                            if isinstance(default_table['row'], list) is True:
+                                if line.split('|') != default_table['row'][index]['cell']:
+                                    print(f'New PB detected - {game}')
+                                    print(f'{default_table['row'][index]['cell']} --> \n{columns}\n{line}')
+                                    some_dic = {}
+                                    for i, section in enumerate(line.split('|')):
+                                        some_dic[columns.split('|')[i]] = section
+
+                                    pprint.pp(some_dic)
+                                    new_pbs[game] = some_dic
+                                    break
+                            else:
+                                if line.split('|') != default_table['row']['cell']:
+                                    print(f'New PB detected - {game}')
+                                    print(f'{default_table['row']['cell']} --> \n{columns}\n{line}')
+                                    some_dic = {}
+                                    for i, section in enumerate(line.split('|')):
+                                        some_dic[columns.split('|')[i]] = section
+
+                                    new_pbs[game] = some_dic
+                                    pprint.pp(some_dic)
+                                    break
+    return new_pbs
+
+def save_pbs(new_pbs: dict[str:dict[str:str]]):
+    for game in new_pbs:
+        pb = new_pbs[game]
+        pb.pop('RANK', None)
+        pb.pop('NAME', None)
+
+        with sqlite3.connect(r'C:\Users\kazac\AppData\Roaming\JetBrains\PyCharmCE2024.3\scratches\mame_states.db') as connection:
+            cursor = connection.cursor()
+            score = pb.pop('SCORE')
+            if not pb:
+                other_fields = None
+            else:
+                other_fields = json.dumps(pb)
+            row = (None, score, other_fields, id_from_rom_name(game, cursor))
+            sql = "INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore"
+            cursor.execute(sql, row)
+            connection.commit()
+
+if __name__ == '__main__':
+    hi_scores = get_games_with_hs()
+    hi2txt_output = get_hs_tables(hi_scores)
+    new_pbs = get_new_pbs(hi2txt_output)
+    pprint.pp(new_pbs)
+    # with sqlite3.connect(r'C:\Users\kazac\AppData\Roaming\JetBrains\PyCharmCE2024.3\scratches\test_mame_states.db') as con:
+    #     cursor = con.cursor()
+    #     r = new_load_personal_bests_from_database(cursor)
+    #     pprint.pp(r)
+    #  -------------------------------------------------------------------
+    # Get games with hs {mame_path: [hi_score_paths], ...}
+    # games_with_hi = {}
+    # for raw_string in raw_mame_paths:
+    #     path = Path(raw_string)
+    #     hi_path = path / 'hiscore'
+    #     hi_file_paths = list(hi_path.glob('*.hi'))
+    #     # hi_file_names = [x for x in hi_file_paths]
+    #     games_with_hi[str(path)] = hi_file_paths
+    #
+    # zip_path = r'C:\Users\kazac\Downloads\hi2txt\hi2txt.zip'
+    # with zipfile.ZipFile(zip_path, 'r') as zip_obj:
+    #     xml_strings = zip_obj.namelist()
+    #     xml_paths = [Path(x) for x in xml_strings]
+    #     xml_names = [x.stem for x in xml_paths]
+    #
+    # for path in games_with_hi:
+    #     hi = games_with_hi[path]
+    #     hi_with_xml = [x for x in hi if x.stem in xml_names]
+    #     games_with_hi[path] = hi_with_xml
+
+    # pprint.pp(games_with_hi)
+
+    # --------------------------------------------
+    # Use hi2txt to retrieve hi score tables.
+    # hi_text_output = {}
+    # for path in games_with_hi:
+    #     hi_text_output[path] = {}
+    #     scores = games_with_hi[path]
+    #     for score in scores:
+    #         print(f'Score is: {score}')
+    #         try:
+    #             results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{score}'],
+    #                                      cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
+    #                                      check=True, encoding='utf-8')
+    #             hi_text_output[path][f'{score.stem}'] = results.stdout
+    #         except FileNotFoundError:
+    #             print('whoops')
+    #
+    # pprint.pp(hi_text_output)
     # ----------------------------------------------------------------------------------------
     # Create dictionary of all possible new PBs. Uses hi score tables to compare against default tables.
     # defaults_xml = Path(r'C:\Users\kazac\Downloads\hi2txt\hi2txt_doc\hi2txt_defaults')
@@ -397,7 +523,7 @@ if __name__ == '__main__':
     # # pprint.pp(hi_text_output)
     # for path in hi_text_output:
     #     pb_dict = hi_text_output[path]
-    #     # print(pb_dict)
+    #     print(pb_dict)
     #
     #     for game in pb_dict:
     #         leaderboards = pb_dict[game].split('\n#')
@@ -457,7 +583,7 @@ if __name__ == '__main__':
     #                                 pprint.pp(some_dic)
     #                                 break
     #
-
+    # pprint.pp(new_pbs)
     # -------------------------------------------------------------------------------------------------------------
     # Insert or update new pbs, where score is higher.
     # for game in new_pbs:
@@ -472,59 +598,8 @@ if __name__ == '__main__':
     #             other_fields = None
     #         else:
     #             other_fields = json.dumps(pb)
-    #         row = (None, score, other_fields, id_from_description(game, cursor))
+    #         row = (None, score, other_fields, id_from_rom_name(game, cursor))
     #         sql = "INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore"
     #         cursor.execute(sql, row)
     #         connection.commit()
     # pprint.pp(new_pbs)
-
-
-
-
-            # formatted_table = {'col': None,
-            #                    'row': None}
-            # table = pb_dict[game]
-            #
-            # lines = table.splitlines()
-            # if lines[0].startswith('#'):
-            #     leader_board = lines.pop(0).strip('# ')
-            #
-            # columns = lines.pop(0).split('|')
-            # # set columns
-            # formatted_table['col'] = columns
-            #
-            # # get rows
-            # rows = [x.split('|') for x in lines if x]
-            #
-            # formatted_rows = [{'cell': x} for x in rows]
-            #
-            # formatted_table['row'] = formatted_rows
-            # # pprint.pp(formatted_table)
-            #
-            # with open(defaults_xml / f'{game}.xml', 'r') as xml_file:
-            #     xml_data = xml_file.read()
-            #     xml_dict = xmltodict.parse(xml_data)
-            #     xml_dict = xml_dict['hi2txt']['table']
-            #
-            #     if isinstance(xml_dict, list):
-            #         for d in xml_dict:
-            #             if d['@id'] == leader_board:
-            #                 xml_dict = d
-            #     pprint.pp(xml_dict)
-            #     # print(formatted_table['col'] == xml_dict['col'])
-            #
-            #     # for row in formatted_table['row']:
-            #     #     if isinstance(xml_dict['row'], list):
-            #     #         if row not in xml_dict['row']:
-            #     #             print(row)
-            #     #     else:
-            #     #         if row != xml_dict['row']:
-            #     #             print(row)
-
-
-
-
-
-
-
-    
