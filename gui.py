@@ -393,9 +393,11 @@ class MainWindow(QMainWindow):
     def update_pb_panel(self, high_score: int, other_fields: dict) -> None:
         for _ in self.temp_fields:
             self.personal_best_layout.removeWidget(_)
-            _.hide()
+            if not _.isHidden():
+                _.hide()
             print(self.temp_fields)
         self.temp_fields.clear()
+        # print(self.temp_fields)
         """Sets the text of the labels and editors associated with the Personal Best Panel."""
         self.high_score_edit.setText(str(high_score))
         # self.distance_edit.setText(distance)
@@ -409,6 +411,7 @@ class MainWindow(QMainWindow):
 
         for index, key in enumerate(other_fields):
             editor = QLineEdit(self)
+            editor.editingFinished.connect(lambda: self.update_other_fields(label.text()))
             tlabel = ToggleableLabel(editor)
 
             # tlabel.toggle_labels()
@@ -561,6 +564,19 @@ class MainWindow(QMainWindow):
             self.pb_info[game_name]['hs'] = new_pb
             # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
             new_save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+
+    def update_other_fields(self, label):
+        sender = self.sender()
+        updated_data = sender.text()
+        selected = self.high_score_game_tree.selectedItems()
+        if selected:
+            game_item = selected[0]
+            game_name = game_item.text(0)
+            print(label, ' - ', sender.text())
+            self.pb_info[game_name]['other_fields'][label] = updated_data
+            # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            new_save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+
     # def update_distance_pb(self) -> None:
     #     """Update in database representation and saves to database"""
     #     new_pb = self.distance_edit.text()
