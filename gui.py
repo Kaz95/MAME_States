@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QInputDialog, QFileDialog, QMessageBox, QMenu
 
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
-    NotesWindow, RomSearchWindow
+    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase, \
     delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info, new_load_personal_bests_from_database, \
     new_save_pb_to_database, get_games_with_hs, get_hs_tables, get_new_pbs, save_pbs, scan_for_pb
@@ -986,9 +986,21 @@ class MainWindow(QMainWindow):
         #     print('Cancel chosen')
 
     def scan_for_pb(self):
-        scan_for_pb(self.db_connection, self.db_cursor)
+        self.setEnabled(False)
+        self.progress_bar = ProgressBarWidget(self)
+        self.progress_bar.show()
+        # scan_for_pb(self.db_connection, self.db_cursor)
+        pb_scanner = PBScannerThread()
+        pb_scanner.finished.connect(self.scan_finished)
+        pb_scanner.start()
         self.pb_info = new_load_personal_bests_from_database(self.db_cursor)
         self.fill_highscore_game_list()
+
+    def scan_finished(self):
+        self.setEnabled(True)
+        self.progress_bar.hide()
+
+
 
 def main() -> None:
     """MAMEStates program entry point.

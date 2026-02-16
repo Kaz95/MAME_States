@@ -1,17 +1,57 @@
 import sqlite3
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QEvent, QRegularExpression
+from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
-    QVBoxLayout, QPushButton
+    QVBoxLayout, QPushButton, QDialog, QProgressBar
 
-from logic.main import PersonalBestDataBase, save_pb_to_database, new_save_pb_to_database
+from logic.main import PersonalBestDataBase, save_pb_to_database, new_save_pb_to_database, scan_for_pb
 
 
 ######################
 #   Save State Page  #
 ######################
+class PBScannerThread(QThread):
+    def __init__(self):
+        super().__init__()
+        # finished = pyqtSignal()
+
+
+    def run(self):
+        with sqlite3.connect(r'C:\Users\kazac\PycharmProjects\MAME_States\mame_states.db') as connection:
+            db_cursor = connection.cursor()
+            scan_for_pb(connection, db_cursor)
+            self.finished.emit()
+
+
+class ProgressBarWidget(QDialog):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)
+
+        # self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
+        self.progress = QProgressBar()
+        self.progress.setRange(0, 0)
+        # self.progress.setMinimumWidth(400)
+        self.label = QLabel('Scanning for new PBs...')
+        # self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        layout = QVBoxLayout()
+        # l_layout = QHBoxLayout()
+        # l_layout.addStretch()
+        # l_layout.addWidget(self.label)
+        # l_layout.addStretch()
+        p_layout = QHBoxLayout()
+        p_layout.addStretch()
+        p_layout.addWidget(self.progress)
+        p_layout.addStretch()
+        layout.addWidget(self.label)
+        layout.addLayout(p_layout)
+        self.setLayout(layout)
+
+    # def sizeHint(self):
+    #     return QSize(250, 20)
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
     """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.
