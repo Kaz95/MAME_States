@@ -143,7 +143,7 @@ class NotesWindow(QWidget):
         # Do I need to call super? What does close usually do?
         # super().closeEvent(event)
 
-class NewToggleableLabel(QLabel):
+class NewToggleableLabel(QWidget):
     """Subclass and extend the QLabel class of the PyQt6.QyWidgets module.
 
     This class inherits most of its behavior from its parent class, while extending its functionality.
@@ -162,7 +162,7 @@ class NewToggleableLabel(QLabel):
         self.editor.hide()
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.editor)
-        self.editor.setMinimumHeight(self.sizeHint().height() + 20)
+        self.editor.setMinimumHeight(self.sizeHint().height())
         """The editor associated with this label"""
         self.editor.editingFinished.connect(self.toggle_labels)
 
