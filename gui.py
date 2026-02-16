@@ -7,6 +7,7 @@ TODO:
     * Consider sizing policies and size hints
     * Decide on new features to add.
 """
+import pprint
 import sqlite3
 import subprocess
 from pathlib import Path
@@ -18,7 +19,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QInputDialog, QFileDialog, QMessageBox, QMenu
 
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
-    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget
+    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, NewToggleableLabel
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase, \
     delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info, new_load_personal_bests_from_database, \
     new_save_pb_to_database, get_games_with_hs, get_hs_tables, get_new_pbs, save_pbs, scan_for_pb
@@ -149,11 +150,11 @@ class MainWindow(QMainWindow):
         # self.distance_label: QLabel = QLabel('Distance PB:')
         self.high_score_label: QLabel = QLabel('High Score:')
 
-        self.high_score_edit: QLineEdit = QLineEdit()
+        # self.high_score_edit: QLineEdit = QLineEdit()
         # self.distance_edit: QLineEdit = QLineEdit()
 
         # self.distance_value_label = ToggleableLabel(self.distance_edit)
-        self.high_score_value_label = ToggleableLabel(self.high_score_edit)
+        self.high_score_value_label = NewToggleableLabel('')
 
         self.high_score_game_tree: QTreeWidget = QTreeWidget()
         self.notes_window = NotesWindow(self)
@@ -353,13 +354,13 @@ class MainWindow(QMainWindow):
 
     def setup_pb_panel(self) -> None:
         """Personal Best Panel widget customization."""
-        self.high_score_edit.setValidator(QIntValidator())
-        self.high_score_edit.editingFinished.connect(self.update_high_score_pb)
-
+        self.high_score_value_label.editor.setValidator(QIntValidator())
+        # self.high_score_edit.editingFinished.connect(self.update_high_score_pb)
+        self.high_score_value_label.editor.editingFinished.connect(self.update_high_score_pb)
         # self.distance_edit.editingFinished.connect(self.update_distance_pb)
 
         self.personal_best_layout.addWidget(self.high_score_label, 0, 0)
-        self.personal_best_layout.addWidget(self.high_score_edit, 0, 1)
+        # self.personal_best_layout.addWidget(self.high_score_edit, 0, 1)
         self.personal_best_layout.addWidget(self.high_score_value_label, 0, 1)
 
         # self.personal_best_layout.addWidget(self.distance_label, 1, 0)
@@ -406,33 +407,35 @@ class MainWindow(QMainWindow):
         self.temp_fields.clear()
         # print(self.temp_fields)
         """Sets the text of the labels and editors associated with the Personal Best Panel."""
-        self.high_score_edit.setText(str(high_score))
+        # self.high_score_edit.setText(str(high_score))
+        self.high_score_value_label.editor.setText(str(high_score))
         # self.distance_edit.setText(distance)
-        self.high_score_value_label.setText(str(high_score))
+        self.high_score_value_label.label.setText(str(high_score))
         # self.distance_value_label.setText(distance)
-        self.high_score_edit.hide()
+        self.high_score_value_label.editor.hide()
+        # self.high_score_edit.hide()
         # self.distance_edit.hide()
 
         if not other_fields:
             return
 
         for index, key in enumerate(other_fields):
-            editor = QLineEdit(self)
-            editor.editingFinished.connect(lambda: self.update_other_fields(label.text()))
-            tlabel = ToggleableLabel(editor)
-
+            # editor = QLineEdit(self)
+            # editor.editingFinished.connect(lambda: self.update_other_fields(label.text()))
+            tlabel = NewToggleableLabel(other_fields[key])
+            tlabel.editor.editingFinished.connect(lambda: self.update_other_fields(label.text()))
             # tlabel.toggle_labels()
-            editor.hide()
+            # editor.hide()
 
-            tlabel.setText(other_fields[key])
+            # tlabel.setText(other_fields[key])
             label = QLabel(key)
             # label.show()
 
             self.temp_fields.append(label)
             self.temp_fields.append(tlabel)
-            self.temp_fields.append(editor)
+            # self.temp_fields.append(editor)
             self.personal_best_layout.addWidget(label, (index + 1), 0)
-            self.personal_best_layout.addWidget(editor, (index + 1), 1)
+            # self.personal_best_layout.addWidget(editor, (index + 1), 1)
             self.personal_best_layout.addWidget(tlabel, (index + 1), 1)
 
 
@@ -563,7 +566,7 @@ class MainWindow(QMainWindow):
 
     def update_high_score_pb(self) -> None:
         """Update in database representation and saves to database"""
-        new_pb = int(self.high_score_edit.text())
+        new_pb = int(self.high_score_value_label.editor.text())
         selected = self.high_score_game_tree.selectedItems()
         if selected:
             game_item = selected[0]
@@ -581,6 +584,7 @@ class MainWindow(QMainWindow):
             game_name = game_item.text(0)
             print(label, ' - ', sender.text())
             self.pb_info[game_name]['other_fields'][label] = updated_data
+            pprint.pp(self.pb_info)
             # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
             new_save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 

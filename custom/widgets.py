@@ -4,7 +4,7 @@ from pathlib import Path
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
-    QVBoxLayout, QPushButton, QDialog, QProgressBar
+    QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox
 
 from logic.main import PersonalBestDataBase, save_pb_to_database, new_save_pb_to_database, scan_for_pb
 
@@ -142,6 +142,60 @@ class NotesWindow(QWidget):
             notes.write(self.text_edit.toPlainText())
         # Do I need to call super? What does close usually do?
         # super().closeEvent(event)
+
+class NewToggleableLabel(QLabel):
+    """Subclass and extend the QLabel class of the PyQt6.QyWidgets module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    A normal QLabel instance is tied to a QlineEdit instance on initialization.
+    Double-clicking the label toggles the editor. Pressing enter or changing focus will toggle back to the label.
+    The current text is persisted when toggled.
+    """
+
+    def __init__(self, text, parent=None):
+        super().__init__(parent)
+        self.layout = QHBoxLayout(self)
+        self.setMouseTracking(True)
+        self.label = QLabel(text)
+        self.editor: QLineEdit = QLineEdit(text)
+
+        self.editor.hide()
+        self.layout.addWidget(self.label)
+        self.layout.addWidget(self.editor)
+        self.editor.setMinimumHeight(self.sizeHint().height() + 20)
+        """The editor associated with this label"""
+        self.editor.editingFinished.connect(self.toggle_labels)
+
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.toggle_editors()
+        super().mouseDoubleClickEvent(event)
+
+    def toggle_editors(self) -> None:
+        """Show associated editor, hide label."""
+        self.label.hide()
+        self.editor.show()
+        self.editor.setFocus()
+
+
+    def toggle_labels(self) -> None:
+        """Show associated label, hide editor."""
+        new_text = self.editor.text()
+
+        if new_text != self.label.text():
+            # Create confirmation box
+            reply = QMessageBox.question(self, 'Confirm Change',
+                                         f"Change text to '{new_text}'?",
+                                         QMessageBox.StandardButton.Yes |
+                                         QMessageBox.StandardButton.No)
+
+            if reply == QMessageBox.StandardButton.Yes:
+                self.label.setText(new_text)
+            else:
+                self.editor.setText(self.label.text())  # Revert
+
+        self.editor.hide()
+        self.label.show()
 
 
 class ToggleableLabel(QLabel):

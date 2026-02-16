@@ -181,7 +181,7 @@ def new_save_pb_to_database(connection, cursor, pb_info):
        Rows are added if they do not exist, and updated otherwise.
        """
     pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
-                 "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
+                 "excluded.highscore, other_fields = excluded.other_fields")
     splits_insert = ("INSERT INTO splits VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET label = excluded.label, "
                      "score = excluded.score, 'index' = excluded.'index'")
 
@@ -461,7 +461,8 @@ def save_pbs(new_pbs: dict[str:dict[str:str]], connection,  cursor):
         else:
             other_fields = json.dumps(pb)
         row = (None, score, other_fields, id_from_rom_name(game, cursor))
-        sql = "INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore"
+        sql = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
+               "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
         cursor.execute(sql, row)
     connection.commit()
 
