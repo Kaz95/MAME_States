@@ -266,6 +266,7 @@ class StageSplitItem(QWidget):
         The initialization process creates the widgets and layouts that will make up the custom item widget.
         """
         super().__init__()
+        self.text_before_editing = None
         self.db_connection: sqlite3.Connection = connection
         """Connection object that points to database connection."""
 
@@ -325,11 +326,14 @@ class StageSplitItem(QWidget):
 
     def toggle_editors(self) -> None:
         """Show editors, hide labels. Text is persisted."""
+
         self.name_label.hide()
         self.score_label.hide()
 
         name_text = self.name_label.text()
+        self.text_before_editing = name_text
         name_text = name_text.strip(':')
+
 
         score_text = self.score_label.text()
 
@@ -369,7 +373,13 @@ class StageSplitItem(QWidget):
         Grabbing the index of the list that represents this item in memory allows you to act on the correct list.
         """
         item_index = self.game_db[self.game_name]['splits'].index(self.split)
-
+        print(self.game_db[self.game_name]['splits'])
+        for x in self.game_db[self.game_name]['splits']:
+            if self.name_editor.text() == x[0]:
+                self.blockSignals(True)
+                self.name_editor.setText(self.text_before_editing)
+                self.blockSignals(False)
+                return
         self.game_db[self.game_name]['splits'][item_index][1] = int(self.score_editor.text())
         self.game_db[self.game_name]['splits'][item_index][0] = self.name_editor.text()
 

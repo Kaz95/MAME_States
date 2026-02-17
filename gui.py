@@ -703,6 +703,7 @@ class MainWindow(QMainWindow):
             highscore_tree_item = selected[0]
             rom_description = highscore_tree_item.text(0)
             game_splits = self.pb_info[rom_description]['splits']
+            print(game_splits)
             new_split = ['', 0]
             game_splits.append(new_split)
             new_item = self.create_split_item(new_split, rom_description)
