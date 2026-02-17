@@ -175,6 +175,7 @@ def load_personal_bests_from_database(cursor: sqlite3.Cursor) -> PersonalBestDat
 
     return pb_info
 
+
 def new_save_pb_to_database(connection, cursor, pb_info):
     """Update database with provided personal best and split information.
 
@@ -255,6 +256,7 @@ def id_from_description(name: str, cursor: sqlite3.Cursor) -> int:
     rom_id = cursor.fetchall()
     rom_id = rom_id[0][0]
     return rom_id
+
 
 def id_from_rom_name(name: str, cursor: sqlite3.Cursor) -> int:
     """Retrieve the corresponding rom_id, for a given rom description, from the database."""
@@ -344,6 +346,19 @@ def serialize_rom_info(cursor: sqlite3.Cursor):
                             'sound_driver': row[11]}
     return rom_info
 
+
+def has_xml(rom_name):
+    zip_path = r'C:\Users\kazac\Downloads\hi2txt\hi2txt.zip'
+    with zipfile.ZipFile(zip_path, 'r') as zip_obj:
+        xml_strings = zip_obj.namelist()
+        xml_paths = [Path(x) for x in xml_strings]
+        xml_names = [x.stem for x in xml_paths]
+        if rom_name in xml_names:
+            return True
+        else:
+            return False
+
+
 def get_games_with_hs() -> dict[str: list[Path]]:
     games_with_hi: dict[str: list[Path]] = {}
     for raw_string in raw_mame_paths:
@@ -366,6 +381,7 @@ def get_games_with_hs() -> dict[str: list[Path]]:
 
     return games_with_hi
 
+
 def get_hs_tables(games_with_hi: dict[str: [Path]]) -> dict[str:dict[str:str]]:
     hi_text_output: dict[str:dict[str:str]] = {}
     for path in games_with_hi:
@@ -381,6 +397,51 @@ def get_hs_tables(games_with_hi: dict[str: [Path]]) -> dict[str:dict[str:str]]:
             except FileNotFoundError:
                 print('whoops')
     return hi_text_output
+
+
+def split_table(tables):
+    table = {}
+    leaderboards = tables.split('\n#')
+    for leaderboard in leaderboards:
+        # pprint.pp(leaderboard.splitlines())
+        leaderboard = leaderboard.splitlines()
+        leaderboard = [x for x in leaderboard if x]
+        if leaderboard[0].startswith('#') or leaderboard[0].startswith(' '):
+            leaderboard_name = leaderboard.pop(0).strip('# ')
+            columns = leaderboard.pop(0)
+            table['col'] = columns
+            table['name'] = leaderboard_name
+            table['rows'] = leaderboard
+            return table
+        else:
+            columns = leaderboard.pop(0)
+            table['col'] = columns
+            table['rows'] = leaderboard
+            return table
+
+def get_new_pb(old_table, new_table):
+    old_table = split_table(old_table)
+    new_table = split_table(new_table)
+    old_columns = old_table['col']
+    new_columns = new_table['col']
+    old_leaderboard = old_table.get('name')
+    new_leaderboard = new_table.get('name')
+    old_rows = old_table['rows']
+    new_rows = new_table['rows']
+    new_pb = {}
+
+    if old_columns != new_columns or old_leaderboard != new_leaderboard:
+        print('Incompatible table schemas.')
+        return
+
+    for index, line in enumerate(new_rows):
+        if line != old_rows[index]:
+            new_pb['col'] = new_columns
+            new_pb['row'] = line
+            if new_leaderboard:
+                new_pb['name'] = new_leaderboard
+            return new_pb
+
 
 def get_new_pbs(hi_text_output: dict[str:dict[str:str]]):
     defaults_xml = Path(r'C:\Users\kazac\Downloads\hi2txt\hi2txt_doc\hi2txt_defaults')
@@ -449,7 +510,8 @@ def get_new_pbs(hi_text_output: dict[str:dict[str:str]]):
                                     break
     return new_pbs
 
-def save_pbs(new_pbs: dict[str:dict[str:str]], connection,  cursor):
+
+def save_pbs(new_pbs: dict[str:dict[str:str]], connection, cursor):
     for game in new_pbs:
         pb = new_pbs[game]
         pb.pop('RANK', None)
@@ -466,16 +528,37 @@ def save_pbs(new_pbs: dict[str:dict[str:str]], connection,  cursor):
         cursor.execute(sql, row)
     connection.commit()
 
+
 def scan_for_pb(connection, cursor):
     hi_scores = get_games_with_hs()
     hi2txt_output = get_hs_tables(hi_scores)
     new_pbs = get_new_pbs(hi2txt_output)
     save_pbs(new_pbs, connection, cursor)
 
+
 if __name__ == '__main__':
-    hi_scores = get_games_with_hs()
-    hi2txt_output = get_hs_tables(hi_scores)
-    new_pbs = get_new_pbs(hi2txt_output)
+    test_table = ('# Ima leaderboard\n'
+                  'RANK|SCORE|NAME|CHARACTER\n'
+                  '1|3340|KAZ  |pino\n'
+                  '2|1000|♥♥♥♥♥|\n'
+                  '3|1000|♥♥♥♥ |\n'
+                  '4|1000|♥♥♥  |\n'
+                  '5|1000|♥♥   |\n'
+                  '\n'
+                  '\n')
+    test_table2 = ('# Ima leaderboard\n'
+                  'RANK|SCORE|NAME|CHARACTER\n'
+                  '1|4340|KAZ  |pino\n'
+                  '2|1000|♥♥♥♥♥|\n'
+                  '3|1000|♥♥♥♥ |\n'
+                  '4|1000|♥♥♥  |\n'
+                  '5|1000|♥♥   |\n'
+                  '\n'
+                  '\n')
+    new_pb = get_new_pb(test_table, test_table2)
+    if new_pb:
+        pprint.pp(new_pb)
+
     # save_pbs(new_pbs)
     # pprint.pp(new_pbs)
     # with sqlite3.connect(r'C:\Users\kazac\AppData\Roaming\JetBrains\PyCharmCE2024.3\scratches\test_mame_states.db') as con:

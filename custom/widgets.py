@@ -1,4 +1,5 @@
 import sqlite3
+import subprocess
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize
@@ -12,6 +13,22 @@ from logic.main import PersonalBestDataBase, save_pb_to_database, new_save_pb_to
 ######################
 #   Save State Page  #
 ######################
+class MAMEThread(QThread):
+    done: pyqtSignal = pyqtSignal(dict)
+    def __init__(self, mame_exe, rom_name, mame_path):
+        super().__init__()
+
+        self.mame_exe = mame_exe
+        self.rom_name = rom_name
+        self.mame_path = mame_path
+    def run(self):
+        process = subprocess.Popen([self.mame_exe, self.rom_name], cwd=rf'{self.mame_path}')
+        output, err = process.communicate()
+        return_code = process.returncode
+        print(return_code)
+        results = {'output': output, 'err': err, 'return_code': return_code}
+        self.done.emit(results)
+
 class PBScannerThread(QThread):
     def __init__(self):
         super().__init__()

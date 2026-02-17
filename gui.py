@@ -19,10 +19,10 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QInputDialog, QFileDialog, QMessageBox, QMenu
 
 from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
-    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, NewToggleableLabel
+    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, NewToggleableLabel, MAMEThread
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase, \
     delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info, new_load_personal_bests_from_database, \
-    new_save_pb_to_database, get_games_with_hs, get_hs_tables, get_new_pbs, save_pbs, scan_for_pb
+    new_save_pb_to_database, get_games_with_hs, get_hs_tables, get_new_pbs, save_pbs, scan_for_pb, has_xml, get_new_pb
 from logic.main import save_paths_to_database, get_descriptions_and_names, load_personal_bests_from_database, \
     save_pb_to_database, delete_split
 
@@ -44,6 +44,8 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
+        self.pre_launch_hs_table = None
+        self.mame_thread = None
         self.temp_fields = []
         self.rom_search_popup: QWidget | None = None
         self.db_connection: sqlite3.Connection = db_connection
@@ -795,23 +797,55 @@ class MainWindow(QMainWindow):
         mame_path = action.text()
         mame_exe = Path(mame_path) / 'mame.exe'
         rom_path = Path(mame_path) / 'roms' / (rom_name + '.zip')
+        hi_path = Path(mame_path) / 'hiscore' / (rom_name + '.hi')
 
         print(rom_path)
         print(rom_path.is_file())
 
-        process = subprocess.Popen([mame_exe, rom_name], cwd=rf'{mame_path}', stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE, text=True)
-        output, err = process.communicate()
-        return_code = process.returncode
+        pre_launch_hs_table = None
+        new_hs_table = None
+        hi2txt_compatible = has_xml(rom_name)
+        if hi2txt_compatible:
+            try:
+                results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hi_path}'],
+                                         cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
+                                         check=True, encoding='utf-8')
+                self.pre_launch_hs_table = results.stdout
+            except FileNotFoundError:
+                print('whoops')
+
+        # process = subprocess.Popen([mame_exe, rom_name], cwd=rf'{mame_path}')
+        # output, err = process.communicate()
+        # return_code = process.returncode
+        self.mame_thread = MAMEThread(mame_exe, rom_name, mame_path)
+        self.mame_thread.done.connect(self.rom_done)
+        self.mame_thread.start()
+
         print(f'Running {rom_name}, from {action.text()}')
 
         # return_code = process.wait()
-        if return_code == 2:
-            QMessageBox.critical(self, 'Rom Not Found',
-                                 f'{err}')
+    def rom_done(self, results):
+        new_hs_table = None
+        # mame_exe = Path(self.mame_thread.mame_path) / 'mame.exe'
+        # rom_path = Path(self.mame_thread.mame_path) / 'roms' / (self.mame_thread.rom_name + '.zip')
+        hi_path = Path(self.mame_thread.mame_path) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
+        if results['return_code'] == 2:
+            QMessageBox.critical(self, 'Rom Not Found', 'See console for full error message.')
         else:
-            QMessageBox.information(self, 'Rom Closed', f'{output}')
-        print(f'Return code is: {return_code} and {output}')
+            QMessageBox.information(self, 'Rom Closed', f'{self.mame_thread.rom_name} closed successfully.')
+            if self.pre_launch_hs_table:
+                try:
+                    hi2txt_results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hi_path}'],
+                                             cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
+                                             check=True, encoding='utf-8')
+                    new_hs_table = hi2txt_results.stdout
+                except FileNotFoundError:
+                    print('whoops')
+
+                new_pb = get_new_pb(self.pre_launch_hs_table, new_hs_table)
+                if new_pb:
+                    QMessageBox.information(self, 'New PB Detected!', f'A new personal best has been detected\n{new_pb['col']}\n{new_pb['row']}')
+        print(f'Return code is: {results['return_code']}')
 
     # --------------------- #
     # Rom Search Page Slots #
