@@ -637,7 +637,7 @@ class MainWindow(QMainWindow):
 
             print(rom_description)
 
-            QTreeWidgetItem(self.high_score_game_tree, [rom_description])
+            item = QTreeWidgetItem(self.high_score_game_tree, [rom_description])
             # self.pb_info[rom_description] = {'hs': 0,
             #                                  'distance': '',
             #                                  'splits': []}
@@ -647,6 +647,7 @@ class MainWindow(QMainWindow):
             # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
             new_save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
             self.rom_search_popup.close()
+            self.high_score_game_tree.setCurrentItem(item)
 
     def delete_game(self) -> None:
         """Delete game from Highscore Game Tree and remove all its information from database."""
