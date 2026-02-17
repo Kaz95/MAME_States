@@ -17,8 +17,8 @@ raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
                   r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10',
                   r'C:\Users\kazac\Downloads\mame']
 
-PersonalBestDataBase = dict[str, dict[str, int | str | list]]
-"""In-memory representation of the 'personal_bests' table of the database."""
+# PersonalBestDataBase = dict[str, dict[str, int | str | list]]
+# """In-memory representation of the 'personal_bests' table of the database."""
 
 test_pb_info = {'DonPachi': {'hs': 900,
                              'distance': 'Stage 6',
@@ -122,9 +122,9 @@ def save_paths_to_database(connection: sqlite3.Connection, cursor: sqlite3.Curso
 ##################
 # Personal Bests #
 ##################
-def new_load_personal_bests_from_database(cursor: sqlite3.Cursor) -> PersonalBestDataBase:
+def new_load_personal_bests_from_database(cursor: sqlite3.Cursor):
     """Load and format all personal best information from the database."""
-    pb_info: PersonalBestDataBase = {}
+    pb_info = {}
 
     pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.other_fields 
     FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
@@ -151,9 +151,9 @@ def new_load_personal_bests_from_database(cursor: sqlite3.Cursor) -> PersonalBes
     return pb_info
 
 
-def load_personal_bests_from_database(cursor: sqlite3.Cursor) -> PersonalBestDataBase:
+def load_personal_bests_from_database(cursor: sqlite3.Cursor):
     """Load and format all personal best information from the database."""
-    pb_info: PersonalBestDataBase = {}
+    pb_info = {}
 
     pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.distance 
     FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
@@ -195,7 +195,7 @@ def new_save_pb_to_database(connection, cursor, pb_info):
     connection.commit()
 
 
-def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> None:
+def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info) -> None:
     """Update database with provided personal best and split information.
 
     Rows are added if they do not exist, and updated otherwise.
@@ -267,7 +267,7 @@ def id_from_rom_name(name: str, cursor: sqlite3.Cursor) -> int:
     return rom_id
 
 
-def new_collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> list[tuple]:
+def new_collate_pb_rows(cursor: sqlite3.Cursor, pb_info) -> list[tuple]:
     """Serialize personal best highscore and distance information into rows for database insertion."""
     rows = []
     for key in pb_info:
@@ -281,7 +281,7 @@ def new_collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -
     return rows
 
 
-def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> list[tuple]:
+def collate_pb_rows(cursor: sqlite3.Cursor, pb_info) -> list[tuple]:
     """Serialize personal best highscore and distance information into rows for database insertion."""
     rows = []
     for key in pb_info:
@@ -303,7 +303,7 @@ def get_split_pk(cursor: sqlite3.Cursor, rom_description: str, split_label: str)
     return results
 
 
-def collate_splits(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> list[tuple]:
+def collate_splits(cursor: sqlite3.Cursor, pb_info) -> list[tuple]:
     """Serialize splits information into rows for database insertion."""
     splits = []
     for pb in pb_info:
