@@ -16,16 +16,16 @@ from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
 from PyQt6.QtGui import QAction, QFont, QIntValidator, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
-    QInputDialog, QFileDialog, QMessageBox, QMenu
+    QFileDialog, QMessageBox, QMenu
 
-from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
+from custom.widgets import StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, NewToggleableLabel, MAMEThread
-from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase, \
-    delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info, new_load_personal_bests_from_database, \
-    new_save_pb_to_database, get_games_with_hs, get_hs_tables, get_new_pbs, save_pbs, scan_for_pb, has_xml, get_new_pb, \
+from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, \
+    delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info, load_personal_bests_from_database, \
+    save_pb_to_database, save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db
-from logic.main import save_paths_to_database, get_descriptions_and_names, load_personal_bests_from_database, \
-    save_pb_to_database, delete_split
+from logic.main import save_paths_to_database, get_descriptions_and_names, \
+    delete_split
 
 
 class MainWindow(QMainWindow):
@@ -75,7 +75,7 @@ class MainWindow(QMainWindow):
 
         # self.pb_info: PersonalBestDataBase = load_personal_bests_from_database(self.db_cursor)
         # """Personal best information."""
-        self.pb_info = new_load_personal_bests_from_database(self.db_cursor)
+        self.pb_info = load_personal_bests_from_database(self.db_cursor)
 
         self.fill_data_structures()
 
@@ -576,7 +576,7 @@ class MainWindow(QMainWindow):
             game_name = game_item.text(0)
             self.pb_info[game_name]['hs'] = new_pb
             # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
-            new_save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def update_other_fields(self, label):
         sender = self.sender()
@@ -589,7 +589,7 @@ class MainWindow(QMainWindow):
             self.pb_info[game_name]['other_fields'][label] = updated_data
             pprint.pp(self.pb_info)
             # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
-            new_save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     # def update_distance_pb(self) -> None:
     #     """Update in database representation and saves to database"""
@@ -645,7 +645,7 @@ class MainWindow(QMainWindow):
                                              'other_fields': None,
                                              'splits': []}
             # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
-            new_save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
             self.rom_search_popup.close()
             self.high_score_game_tree.setCurrentItem(item)
 
@@ -690,7 +690,7 @@ class MainWindow(QMainWindow):
                 label = splits[row][0]
                 del splits[row]
                 delete_split(self.db_connection, self.db_cursor, game_name, label)
-                new_save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+                save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
                 # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def new_split(self) -> None:
@@ -1046,7 +1046,7 @@ class MainWindow(QMainWindow):
         pb_scanner = PBScannerThread()
         pb_scanner.finished.connect(self.scan_finished)
         pb_scanner.start()
-        self.pb_info = new_load_personal_bests_from_database(self.db_cursor)
+        self.pb_info = load_personal_bests_from_database(self.db_cursor)
         self.fill_highscore_game_list()
 
     def scan_finished(self):

@@ -17,8 +17,9 @@ raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
                   r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10',
                   r'C:\Users\kazac\Downloads\mame']
 
-# PersonalBestDataBase = dict[str, dict[str, int | str | list]]
-# """In-memory representation of the 'personal_bests' table of the database."""
+PersonalBestDataBase = dict[str, dict[str, int | dict[str, str] | list]]
+
+"""In-memory representation of the 'personal_bests' table of the database."""
 
 test_pb_info = {'DonPachi': {'hs': 900,
                              'distance': 'Stage 6',
@@ -59,7 +60,8 @@ def get_save_names(games_with_saves: list[str], mame_folder: Path) -> dict[str, 
     return save_states
 
 
-def get_all_input_files(mame_paths: list[Path]):
+def get_all_input_files(mame_paths: list[Path]) -> dict[str:list[str]]:
+    """Return a list of roms that have input files, for each path in the given list."""
     all_inps = {}
     for path in mame_paths:
         inp_folder = path / 'inp'
@@ -84,12 +86,6 @@ def get_real_name(description_db: dict[str, str], rom_name: str) -> str:
         if item[1] == rom_name:
             real_name = item[0]
             return real_name
-
-
-def rename_save_state_file(mame_folder: Path, rom_folder: str, old_save_name: str, new_save_name: str) -> None:
-    """Rename a MAME save file"""
-    os.rename(mame_folder / "sta" / rom_folder / (old_save_name + '.sta'),
-              mame_folder / "sta" / rom_folder / (new_save_name + '.sta'))
 
 
 #########
@@ -122,7 +118,7 @@ def save_paths_to_database(connection: sqlite3.Connection, cursor: sqlite3.Curso
 ##################
 # Personal Bests #
 ##################
-def new_load_personal_bests_from_database(cursor: sqlite3.Cursor):
+def load_personal_bests_from_database(cursor: sqlite3.Cursor) -> PersonalBestDataBase:
     """Load and format all personal best information from the database."""
     pb_info = {}
 
@@ -150,7 +146,8 @@ def new_load_personal_bests_from_database(cursor: sqlite3.Cursor):
 
     return pb_info
 
-def new_save_pb_to_database(connection, cursor, pb_info):
+
+def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> None:
     """Update database with provided personal best and split information.
 
        Rows are added if they do not exist, and updated otherwise.
@@ -214,7 +211,7 @@ def id_from_description(name: str, cursor: sqlite3.Cursor) -> int:
 
 
 def id_from_rom_name(name: str, cursor: sqlite3.Cursor) -> int:
-    """Retrieve the corresponding rom_id, for a given rom description, from the database."""
+    """Retrieve the corresponding rom_id, for a given rom name, from the database."""
     sql_statement = "SELECT id FROM roms WHERE name = ?"
     cursor.execute(sql_statement, (name,))
     rom_id = cursor.fetchall()
@@ -222,7 +219,7 @@ def id_from_rom_name(name: str, cursor: sqlite3.Cursor) -> int:
     return rom_id
 
 
-def new_collate_pb_rows(cursor: sqlite3.Cursor, pb_info) -> list[tuple]:
+def new_collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> list[tuple]:
     """Serialize personal best highscore and distance information into rows for database insertion."""
     rows = []
     for key in pb_info:
@@ -245,7 +242,7 @@ def get_split_pk(cursor: sqlite3.Cursor, rom_description: str, split_label: str)
     return results
 
 
-def collate_splits(cursor: sqlite3.Cursor, pb_info) -> list[tuple]:
+def collate_splits(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> list[tuple]:
     """Serialize splits information into rows for database insertion."""
     splits = []
     for pb in pb_info:
@@ -279,7 +276,7 @@ def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str:str]:
     return descriptions_and_names
 
 
-def serialize_rom_info(cursor: sqlite3.Cursor):
+def serialize_rom_info(cursor: sqlite3.Cursor) -> dict[str, dict[str, str]]:
     rom_info = {}
     results = get_rom_info(cursor)
     for row in results:
@@ -289,7 +286,7 @@ def serialize_rom_info(cursor: sqlite3.Cursor):
     return rom_info
 
 
-def has_xml(rom_name):
+def has_xml(rom_name: str) -> bool:
     zip_path = r'C:\Users\kazac\Downloads\hi2txt\hi2txt.zip'
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
@@ -340,7 +337,7 @@ def get_hs_tables(games_with_hi: dict[str: [Path]]) -> dict[str:dict[str:str]]:
     return hi_text_output
 
 
-def split_table(tables):
+def split_table(tables: str) -> dict[str, list | str]:
     table = {}
     leaderboards = tables.split('\n#')
     for leaderboard in leaderboards:
@@ -361,7 +358,7 @@ def split_table(tables):
             return table
 
 
-def get_new_pb(old_table, new_table):
+def get_new_pb(old_table: str, new_table: str) -> dict[str, list | str] | None:
     old_table = split_table(old_table)
     new_table = split_table(new_table)
     old_columns = old_table['col']
@@ -385,7 +382,7 @@ def get_new_pb(old_table, new_table):
             return new_pb
 
 
-def get_new_pbs(hi_text_output: dict[str:dict[str:str]]):
+def get_new_pbs(hi_text_output: dict[str, dict[str, str]]) ->  dict[str, dict[str, str]]:
     defaults_xml = Path(r'C:\Users\kazac\Downloads\hi2txt\hi2txt_doc\hi2txt_defaults')
     new_pbs = {}
     # pprint.pp(hi_text_output)
@@ -453,7 +450,7 @@ def get_new_pbs(hi_text_output: dict[str:dict[str:str]]):
     return new_pbs
 
 
-def prepare_pb_for_db(new_pb, rom):
+def prepare_pb_for_db(new_pb: dict[str, str], rom: str) -> dict[str, dict[str, str]]:
     full_dicc = {}
     some_dicc = {}
     columns = new_pb['col'].split('|')
@@ -465,7 +462,7 @@ def prepare_pb_for_db(new_pb, rom):
     return full_dicc
 
 
-def save_pbs(new_pbs: dict[str:dict[str:str]], connection, cursor):
+def save_pbs(new_pbs: dict[str:dict[str:str]], connection, cursor) -> None:
     for game in new_pbs:
         pb = new_pbs[game]
         pb.pop('RANK', None)
@@ -483,7 +480,7 @@ def save_pbs(new_pbs: dict[str:dict[str:str]], connection, cursor):
     connection.commit()
 
 
-def scan_for_pb(connection, cursor):
+def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor)  -> None:
     hi_scores = get_games_with_hs()
     hi2txt_output = get_hs_tables(hi_scores)
     new_pbs = get_new_pbs(hi2txt_output)

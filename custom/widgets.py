@@ -7,7 +7,7 @@ from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox
 
-from logic.main import PersonalBestDataBase, save_pb_to_database, new_save_pb_to_database, scan_for_pb
+from logic.main import save_pb_to_database, scan_for_pb
 
 
 ######################
@@ -279,7 +279,7 @@ class StageSplitItem(QWidget):
         self.parent_list: StageSplitListWidget = parent_list
         """The list widget that contains this item."""
 
-        self.game_db: PersonalBestDataBase = game_db
+        self.game_db = game_db
         """In-memory representation of DB schema."""
 
         self.game_name: str = game_name
@@ -385,7 +385,7 @@ class StageSplitItem(QWidget):
 
         if self.name_editor.text():
             # save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
-            new_save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
+            save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
 
 class StageSplitListWidget(QListWidget):
     """Subclass and extend the QListWidget class of the PyQt6.QtWidgets module.
@@ -395,7 +395,7 @@ class StageSplitListWidget(QListWidget):
     The difference between splits is calculated and displayed.
     """
 
-    def __init__(self, game_db: PersonalBestDataBase, connection: sqlite3.Connection, cursor: sqlite3.Cursor):
+    def __init__(self, game_db, connection: sqlite3.Connection, cursor: sqlite3.Cursor):
         """ The StageSplitListWidget subclass inherits most of its behavior from, and extends,
         its parent class QListWidget.
 
@@ -405,7 +405,7 @@ class StageSplitListWidget(QListWidget):
         self.db_connection: sqlite3.Connection = connection
         self.db_cursor: sqlite3.Cursor = cursor
 
-        self.game_db: PersonalBestDataBase = game_db
+        self.game_db = game_db
         """In-memory representation of DB schema."""
 
         self.last_row: int | None = None
@@ -447,7 +447,7 @@ class StageSplitListWidget(QListWidget):
         split = splits.pop(old_index)
         splits.insert(new_index, split)
         # save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
-        new_save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
+        save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
     def add_diffs(self, splits: list) -> None:
         """Calculate and display the difference between a splits score, and the previous splits score."""
         for index, split in enumerate(splits):
