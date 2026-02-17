@@ -22,7 +22,8 @@ from custom.widgets import ToggleableLabel, StageSplitListWidget, StageSplitItem
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, NewToggleableLabel, MAMEThread
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, PersonalBestDataBase, \
     delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info, new_load_personal_bests_from_database, \
-    new_save_pb_to_database, get_games_with_hs, get_hs_tables, get_new_pbs, save_pbs, scan_for_pb, has_xml, get_new_pb
+    new_save_pb_to_database, get_games_with_hs, get_hs_tables, get_new_pbs, save_pbs, scan_for_pb, has_xml, get_new_pb, \
+    prepare_pb_for_db
 from logic.main import save_paths_to_database, get_descriptions_and_names, load_personal_bests_from_database, \
     save_pb_to_database, delete_split
 
@@ -844,7 +845,13 @@ class MainWindow(QMainWindow):
 
                 new_pb = get_new_pb(self.pre_launch_hs_table, new_hs_table)
                 if new_pb:
-                    QMessageBox.information(self, 'New PB Detected!', f'A new personal best has been detected\n{new_pb['col']}\n{new_pb['row']}')
+                    response = QMessageBox.question(self, 'New PB Detected!', f'A new personal best has been detected\n{new_pb['col']}\n{new_pb['row']}\nWould you like to add new PB?')
+                    if response == QMessageBox.StandardButton.Yes:
+                        new_pb = prepare_pb_for_db(new_pb, self.mame_thread.rom_name)
+                        save_pbs(new_pb, self.db_connection, self.db_cursor)
+                        QMessageBox.information(self, 'Ok', 'Pb Updated!')
+                    else:
+                        QMessageBox.information(self, 'Ok', 'PB discarded.')
         print(f'Return code is: {results['return_code']}')
 
     # --------------------- #

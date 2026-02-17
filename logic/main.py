@@ -510,6 +510,32 @@ def get_new_pbs(hi_text_output: dict[str:dict[str:str]]):
                                     break
     return new_pbs
 
+def prepare_pb_for_db(new_pb, rom):
+    full_dicc = {}
+    some_dicc = {}
+    columns = new_pb['col'].split('|')
+    row = new_pb['row'].split('|')
+    for i, section in enumerate(row):
+        some_dicc[columns[i]] = section
+
+    full_dicc[rom] = some_dicc
+    return full_dicc
+
+# def save_pb(connection, cursor, pb):
+#     pb.pop('RANK', None)
+#     pb.pop('NAME', None)
+#
+#     score = pb.pop('SCORE')
+#     if not pb:
+#         other_fields = None
+#     else:
+#         other_fields = json.dumps(pb)
+#     row = (None, score, other_fields, id_from_rom_name(game, cursor))
+#     sql = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
+#            "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
+#     cursor.execute(sql, row)
+#     connection.commit()
+
 
 def save_pbs(new_pbs: dict[str:dict[str:str]], connection, cursor):
     for game in new_pbs:
@@ -537,27 +563,33 @@ def scan_for_pb(connection, cursor):
 
 
 if __name__ == '__main__':
-    test_table = ('# Ima leaderboard\n'
-                  'RANK|SCORE|NAME|CHARACTER\n'
-                  '1|3340|KAZ  |pino\n'
-                  '2|1000|♥♥♥♥♥|\n'
-                  '3|1000|♥♥♥♥ |\n'
-                  '4|1000|♥♥♥  |\n'
-                  '5|1000|♥♥   |\n'
-                  '\n'
-                  '\n')
-    test_table2 = ('# Ima leaderboard\n'
-                  'RANK|SCORE|NAME|CHARACTER\n'
-                  '1|4340|KAZ  |pino\n'
-                  '2|1000|♥♥♥♥♥|\n'
-                  '3|1000|♥♥♥♥ |\n'
-                  '4|1000|♥♥♥  |\n'
-                  '5|1000|♥♥   |\n'
-                  '\n'
-                  '\n')
-    new_pb = get_new_pb(test_table, test_table2)
-    if new_pb:
+    with sqlite3.connect(r'C:\Users\kazac\PycharmProjects\MAME_States\mame_states.db') as con:
+        cursor = con.cursor()
+        # scan_for_pb(con, cursor)
+        rom = 'toypop'
+        test_table = ('# Ima leaderboard\n'
+                      'RANK|SCORE|NAME|CHARACTER\n'
+                      '1|3340|KAZ  |pino\n'
+                      '2|1000|♥♥♥♥♥|\n'
+                      '3|1000|♥♥♥♥ |\n'
+                      '4|1000|♥♥♥  |\n'
+                      '5|1000|♥♥   |\n'
+                      '\n'
+                      '\n')
+        test_table2 = ('# Ima leaderboard\n'
+                      'RANK|SCORE|NAME|CHARACTER\n'
+                      '1|4340|KAZ  |pino\n'
+                      '2|1000|♥♥♥♥♥|\n'
+                      '3|1000|♥♥♥♥ |\n'
+                      '4|1000|♥♥♥  |\n'
+                      '5|1000|♥♥   |\n'
+                      '\n'
+                      '\n')
+        new_pb = get_new_pb(test_table, test_table2)
         pprint.pp(new_pb)
+        new_pb = prepare_pb_for_db(new_pb, rom)
+        save_pbs(new_pb, con, cursor)
+
 
     # save_pbs(new_pbs)
     # pprint.pp(new_pbs)

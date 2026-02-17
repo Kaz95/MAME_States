@@ -26,7 +26,7 @@ class MAMEThread(QThread):
         output, err = process.communicate()
         return_code = process.returncode
         print(return_code)
-        results = {'output': output, 'err': err, 'return_code': return_code}
+        results = {'output': output, 'err': err, 'return_code': return_code, 'rom': self.rom_name}
         self.done.emit(results)
 
 class PBScannerThread(QThread):
