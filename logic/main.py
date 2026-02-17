@@ -150,32 +150,6 @@ def new_load_personal_bests_from_database(cursor: sqlite3.Cursor):
 
     return pb_info
 
-
-def load_personal_bests_from_database(cursor: sqlite3.Cursor):
-    """Load and format all personal best information from the database."""
-    pb_info = {}
-
-    pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.distance 
-    FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
-
-    splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description 
-        FROM 'splits' JOIN 'roms' ON splits.rom_id = roms.id 
-        ORDER BY roms.description, splits.'index'"""
-
-    cursor.execute(pb_query)
-    personal_bests = cursor.fetchall()
-
-    for pb in personal_bests:
-        pb_info[pb[0]] = {'hs': pb[1], 'distance': pb[2], 'splits': []}
-
-    cursor.execute(splits_query)
-    splits = cursor.fetchall()
-    for split in splits:
-        pb_info[split[3]]['splits'].append([split[0], split[1]])
-
-    return pb_info
-
-
 def new_save_pb_to_database(connection, cursor, pb_info):
     """Update database with provided personal best and split information.
 
@@ -187,25 +161,6 @@ def new_save_pb_to_database(connection, cursor, pb_info):
                      "score = excluded.score, 'index' = excluded.'index'")
 
     pb_rows = new_collate_pb_rows(cursor, pb_info)
-    splits = collate_splits(cursor, pb_info)
-
-    cursor.executemany(pb_insert, pb_rows)
-    cursor.executemany(splits_insert, splits)
-
-    connection.commit()
-
-
-def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info) -> None:
-    """Update database with provided personal best and split information.
-
-    Rows are added if they do not exist, and updated otherwise.
-    """
-    pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
-                 "excluded.highscore, distance = excluded.distance")
-    splits_insert = ("INSERT INTO splits VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET label = excluded.label, "
-                     "score = excluded.score, 'index' = excluded.'index'")
-
-    pb_rows = collate_pb_rows(cursor, pb_info)
     splits = collate_splits(cursor, pb_info)
 
     cursor.executemany(pb_insert, pb_rows)
@@ -277,19 +232,6 @@ def new_collate_pb_rows(cursor: sqlite3.Cursor, pb_info) -> list[tuple]:
         other_fields = pb_dict['other_fields']
         other_fields = json.dumps(other_fields)
         row = (None, highscore, other_fields, rom_id)
-        rows.append(row)
-    return rows
-
-
-def collate_pb_rows(cursor: sqlite3.Cursor, pb_info) -> list[tuple]:
-    """Serialize personal best highscore and distance information into rows for database insertion."""
-    rows = []
-    for key in pb_info:
-        pb_dict = pb_info[key]
-        rom_id = id_from_description(key, cursor)
-        highscore = pb_dict['hs']
-        distance = pb_dict['distance']
-        row = (None, highscore, distance, rom_id)
         rows.append(row)
     return rows
 
