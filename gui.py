@@ -941,6 +941,12 @@ class MainWindow(QMainWindow):
 
         If file name already in use, item has its text reverted and file is not renamed.
         """
+        if not leaf_item.text(0):
+            self.save_state_tree.blockSignals(True)
+            leaf_item.setText(0, self.text_before_editing)
+            self.save_state_tree.blockSignals(False)
+            return
+
         if leaf_item.childCount() == 0 and leaf_item.parent().text(0) == 'Input Files':
             input_file = leaf_item.text(0)
             mame_path_item = leaf_item.parent().parent()
