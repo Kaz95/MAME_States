@@ -21,9 +21,9 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 from custom.widgets import StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, NewToggleableLabel, MAMEThread
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, \
-    delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info, load_personal_bests_from_database, \
+    delete_personal_best, delete_splits, get_all_input_files, load_personal_bests_from_database, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
-    prepare_pb_for_db, get_formatted_rom_info
+    prepare_pb_for_db, get_formatted_rom_info, PersonalBestDataBase
 from logic.main import save_paths_to_database, get_descriptions_and_names, \
     delete_split
 
@@ -40,15 +40,24 @@ class MainWindow(QMainWindow):
 
         The MainWindow subclass inherits most of its behavior from, and extends, its parent class QMainWindow. The
         initialization process setups the GUI elements present on program launch, as well as connecting signals to
-        slots. In addition, the initialization process also creates persistent files required by the MAMEStates
-        application.
+        slots.
         """
         super().__init__()
+        self.progress_bar = None
+        """Reference to progress bar popup window. Prevents garbage collection and allows access."""
 
         self.pre_launch_hs_table = None
+        """Reference to a roms leaderboard prior to being launched."""
+
         self.mame_thread = None
+        """Reference to thread used to launch MAME subprocess."""
+
         self.temp_fields = []
+        """References to 'other fields' for a given rom PB. Used for deletion."""
+
         self.rom_search_popup: QWidget | None = None
+        """Reference to rom search popup window. Prevents garbage collection and allows access."""
+
         self.db_connection: sqlite3.Connection = db_connection
         """Connection object that points to database connection."""
 
@@ -65,7 +74,10 @@ class MainWindow(QMainWindow):
         """Names of games that have a save folder, and their respective save states"""
 
         self.all_input_files = None
+        """MAME paths and the contents of their respective inp directories."""
+
         self.all_rom_info: dict | None = None
+        """All rom related information. Keyed to rom description."""
 
         # --------- #
         # Load Data #
@@ -73,9 +85,8 @@ class MainWindow(QMainWindow):
         self.mame_paths: list[Path] = load_path_from_db(self.db_cursor)
         """List of all MAME directories that will be used by the application."""
 
-        # self.pb_info: PersonalBestDataBase = load_personal_bests_from_database(self.db_cursor)
-        # """Personal best information."""
-        self.pb_info = load_personal_bests_from_database(self.db_cursor)
+        self.pb_info: PersonalBestDataBase = load_personal_bests_from_database(self.db_cursor)
+        """Personal best information."""
 
         self.fill_data_structures()
 
@@ -127,13 +138,6 @@ class MainWindow(QMainWindow):
         # Widgets
         self.save_state_tree: QTreeWidget = QTreeWidget()
         """Main widget of the save state tab"""
-        # self.save_state_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
-        # self.save_state_tree.setHeaderLabels(['MAME Folders'])
-        # self.save_state_tree.setColumnWidth(0, 1000)
-        # self.save_state_tree.setItemDelegate(SaveStateNameInputValidator(self))
-        # self.save_state_tree.setTabKeyNavigation(True)
-        # self.fill_save_state_tree()
-
 
         # Layouts
         self.save_state_page_layout: QHBoxLayout = QHBoxLayout()
@@ -141,22 +145,12 @@ class MainWindow(QMainWindow):
         self.save_state_page.setLayout(self.save_state_page_layout)
         self.save_state_page_layout.addWidget(self.save_state_tree)
 
-        # Signals and Slots
-        # self.save_state_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
-        # self.save_state_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
-
         # ------------------#
         #   Highscore Page  #
         # ------------------#
 
         # Widgets
-        # self.distance_label: QLabel = QLabel('Distance PB:')
         self.high_score_label: QLabel = QLabel('High Score:')
-
-        # self.high_score_edit: QLineEdit = QLineEdit()
-        # self.distance_edit: QLineEdit = QLineEdit()
-
-        # self.distance_value_label = ToggleableLabel(self.distance_edit)
         self.high_score_value_label = NewToggleableLabel('')
 
         self.high_score_game_tree: QTreeWidget = QTreeWidget()
@@ -358,29 +352,11 @@ class MainWindow(QMainWindow):
     def setup_pb_panel(self) -> None:
         """Personal Best Panel widget customization."""
         self.high_score_value_label.editor.setValidator(QIntValidator())
-        # self.high_score_edit.editingFinished.connect(self.update_high_score_pb)
         self.high_score_value_label.editor.editingFinished.connect(self.update_high_score_pb)
-        # self.distance_edit.editingFinished.connect(self.update_distance_pb)
 
         self.personal_best_layout.addWidget(self.high_score_label, 0, 0)
-        # self.personal_best_layout.addWidget(self.high_score_edit, 0, 1)
         self.personal_best_layout.addWidget(self.high_score_value_label, 0, 1)
 
-        # self.personal_best_layout.addWidget(self.distance_label, 1, 0)
-        # self.personal_best_layout.addWidget(self.distance_edit, 1, 1)
-        # self.personal_best_layout.addWidget(self.distance_value_label, 1, 1)
-        #
-        # for _ in range(5):
-        #     editor = QLineEdit(self)
-        #     tlabel = ToggleableLabel(editor)
-        #     tlabel.toggle_labels()
-        #     tlabel.setText('somererereasf')
-        #
-        #     label = QLabel(f'Test label {_}:')
-        #
-        #     self.personal_best_layout.addWidget(label, (_ + 2), 0)
-        #     self.personal_best_layout.addWidget(editor, (_ + 2), 1)
-        #     self.personal_best_layout.addWidget(tlabel, (_ + 2), 1)
 
     def setup_split_panel(self) -> None:
         """Split Panel widget customization."""
@@ -408,37 +384,22 @@ class MainWindow(QMainWindow):
                 _.hide()
             print(self.temp_fields)
         self.temp_fields.clear()
-        # print(self.temp_fields)
-        """Sets the text of the labels and editors associated with the Personal Best Panel."""
-        # self.high_score_edit.setText(str(high_score))
+
         self.high_score_value_label.editor.setText(str(high_score))
-        # self.distance_edit.setText(distance)
         self.high_score_value_label.label.setText(str(high_score))
-        # self.distance_value_label.setText(distance)
         self.high_score_value_label.editor.hide()
-        # self.high_score_edit.hide()
-        # self.distance_edit.hide()
+
 
         if not other_fields:
             return
 
         for index, key in enumerate(other_fields):
-            # editor = QLineEdit(self)
-            # editor.editingFinished.connect(lambda: self.update_other_fields(label.text()))
             tlabel = NewToggleableLabel(other_fields[key])
             tlabel.editor.editingFinished.connect(lambda: self.update_other_fields(label.text()))
-            # tlabel.toggle_labels()
-            # editor.hide()
-
-            # tlabel.setText(other_fields[key])
             label = QLabel(key)
-            # label.show()
-
             self.temp_fields.append(label)
             self.temp_fields.append(tlabel)
-            # self.temp_fields.append(editor)
             self.personal_best_layout.addWidget(label, (index + 1), 0)
-            # self.personal_best_layout.addWidget(editor, (index + 1), 1)
             self.personal_best_layout.addWidget(tlabel, (index + 1), 1)
 
 
@@ -575,7 +536,6 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             game_name = game_item.text(0)
             self.pb_info[game_name]['hs'] = new_pb
-            # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def update_other_fields(self, label):
@@ -588,35 +548,14 @@ class MainWindow(QMainWindow):
             print(label, ' - ', sender.text())
             self.pb_info[game_name]['other_fields'][label] = updated_data
             pprint.pp(self.pb_info)
-            # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
-    # def update_distance_pb(self) -> None:
-    #     """Update in database representation and saves to database"""
-    #     new_pb = self.distance_edit.text()
-    #     selected = self.high_score_game_tree.selectedItems()
-    #     if selected:
-    #         game_item = selected[0]
-    #         game_name = game_item.text(0)
-    #         self.pb_info[game_name]['distance'] = new_pb
-    #         save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
-    #  FIXME Enforce restrictions on what name can be used. Needs to be real rom description.
-    #   Maybe I can check if game_name in keys of dict. Still need a way to easily create.
     def highscore_add_game_clicked(self) -> None:
         """Add a game to PB game tree. User is prompted to enter the games name. Save new game to database.
 
         If the game name entered does not match any roms description, it causes problems later.
         """
-        # game_name, ok = QInputDialog.getText(self, 'New Game', 'Please enter new game name.')
-        # if game_name and ok:
-        #     QTreeWidgetItem(self.high_score_game_tree, [game_name])
-        #
-        #     self.pb_info[game_name] = {'hs': 0,
-        #                                'distance': '',
-        #                                'splits': []}
-        #
-        #     save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
         self.tabs.removeTab(2)
         self.rom_search_popup = RomSearchWindow(self.rom_search_page, self.tabs, self.rom_search_add_game_button,
@@ -638,13 +577,11 @@ class MainWindow(QMainWindow):
             print(rom_description)
 
             item = QTreeWidgetItem(self.high_score_game_tree, [rom_description])
-            # self.pb_info[rom_description] = {'hs': 0,
-            #                                  'distance': '',
-            #                                  'splits': []}
+
             self.pb_info[rom_description] = {'hs': 0,
                                              'other_fields': None,
                                              'splits': []}
-            # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
             self.rom_search_popup.close()
             self.high_score_game_tree.setCurrentItem(item)
@@ -691,7 +628,6 @@ class MainWindow(QMainWindow):
                 del splits[row]
                 delete_split(self.db_connection, self.db_cursor, game_name, label)
                 save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
-                # save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def new_split(self) -> None:
         """Create a new, blank split item. Add it to the list widget and the in memory database representation.
@@ -703,7 +639,6 @@ class MainWindow(QMainWindow):
             highscore_tree_item = selected[0]
             rom_description = highscore_tree_item.text(0)
             game_splits = self.pb_info[rom_description]['splits']
-            print(game_splits)
             new_split = ['', 0]
             game_splits.append(new_split)
             new_item = self.create_split_item(new_split, rom_description)
@@ -805,8 +740,6 @@ class MainWindow(QMainWindow):
         print(rom_path)
         print(rom_path.is_file())
 
-        pre_launch_hs_table = None
-        new_hs_table = None
         hi2txt_compatible = has_xml(rom_name)
         if hi2txt_compatible:
             try:
@@ -817,20 +750,16 @@ class MainWindow(QMainWindow):
             except FileNotFoundError:
                 print('whoops')
 
-        # process = subprocess.Popen([mame_exe, rom_name], cwd=rf'{mame_path}')
-        # output, err = process.communicate()
-        # return_code = process.returncode
+
         self.mame_thread = MAMEThread(mame_exe, rom_name, mame_path)
         self.mame_thread.done.connect(self.rom_done)
         self.mame_thread.start()
 
         print(f'Running {rom_name}, from {action.text()}')
 
-        # return_code = process.wait()
     def rom_done(self, results):
         new_hs_table = None
-        # mame_exe = Path(self.mame_thread.mame_path) / 'mame.exe'
-        # rom_path = Path(self.mame_thread.mame_path) / 'roms' / (self.mame_thread.rom_name + '.zip')
+
         hi_path = Path(self.mame_thread.mame_path) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
         if results['return_code'] == 2:
             QMessageBox.critical(self, 'Rom Not Found', 'See console for full error message.')
@@ -1042,7 +971,6 @@ class MainWindow(QMainWindow):
         self.setEnabled(False)
         self.progress_bar = ProgressBarWidget(self)
         self.progress_bar.show()
-        # scan_for_pb(self.db_connection, self.db_cursor)
         pb_scanner = PBScannerThread()
         pb_scanner.finished.connect(self.scan_finished)
         pb_scanner.start()
