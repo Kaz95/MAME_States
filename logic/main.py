@@ -18,7 +18,6 @@ raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
                   r'C:\Users\kazac\Downloads\mame']
 
 PersonalBestDataBase = dict[str, dict[str, int | dict[str, str] | list]]
-
 """In-memory representation of the 'personal_bests' table of the database."""
 
 test_pb_info = {'DonPachi': {'hs': 900,
@@ -191,7 +190,8 @@ def delete_split(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_des
     connection.commit()
 
 
-def get_rom_info(cursor: sqlite3.Cursor):
+def get_raw_rom_info(cursor: sqlite3.Cursor) -> list:
+    """Retrieve all rom information from database and return it raw."""
     sql_statement = "SELECT * FROM roms"
     cursor.execute(sql_statement)
     results = cursor.fetchall()
@@ -220,7 +220,7 @@ def id_from_rom_name(name: str, cursor: sqlite3.Cursor) -> int:
 
 
 def new_collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> list[tuple]:
-    """Serialize personal best highscore and distance information into rows for database insertion."""
+    """Serialize personal best highscore and related information into rows for database insertion."""
     rows = []
     for key in pb_info:
         pb_dict = pb_info[key]
@@ -233,6 +233,7 @@ def new_collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -
     return rows
 
 
+# TODO Why am I not retrieving the split primary key along with split info? Would eliminate need for this.
 def get_split_pk(cursor: sqlite3.Cursor, rom_description: str, split_label: str) -> list[tuple]:
     """Retrieve a primary key from database. Rom id and split label are used as unique identifier."""
     sql_statement = "SELECT id FROM splits WHERE rom_id = ? AND label = ?"
@@ -276,17 +277,26 @@ def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str:str]:
     return descriptions_and_names
 
 
-def serialize_rom_info(cursor: sqlite3.Cursor) -> dict[str, dict[str, str]]:
+def serialize_rom_info(raw_rom_info) -> dict[str, dict[str, str]]:
+    """Format raw rom info, from database, into in-memory representation."""
     rom_info = {}
-    results = get_rom_info(cursor)
-    for row in results:
+
+    for row in raw_rom_info:
         rom_info[row[2]] = {'name': row[1], 'manufacturer': row[3], 'year': row[4], 'parent': row[5],
                             'video_info': f'{row[6]}x{row[7]}@{row[9]} - Rotate {row[8]}°', 'video_driver': row[10],
                             'sound_driver': row[11]}
     return rom_info
 
 
+def get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, dict[str, str]] :
+    """Retrieve and format raw rom info, from the database."""
+    raw_rom_info = get_raw_rom_info(cursor)
+    formatted_rom_info = serialize_rom_info(raw_rom_info)
+    return formatted_rom_info
+
+
 def has_xml(rom_name: str) -> bool:
+    """Check if a given rom has an XML file, and is therefore compatible with 'hi2txt'."""
     zip_path = r'C:\Users\kazac\Downloads\hi2txt\hi2txt.zip'
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
@@ -297,7 +307,8 @@ def has_xml(rom_name: str) -> bool:
         else:
             return False
 
-
+# TODO This is using global var for mame paths. Update to use DB mame paths.
+#   Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
 def get_games_with_hs() -> dict[str: list[Path]]:
     games_with_hi: dict[str: list[Path]] = {}
     for raw_string in raw_mame_paths:
@@ -321,6 +332,7 @@ def get_games_with_hs() -> dict[str: list[Path]]:
 
 
 def get_hs_tables(games_with_hi: dict[str: [Path]]) -> dict[str:dict[str:str]]:
+    """Retrieve raw hi2txt leaderboard table output for compatible games with .hi file."""
     hi_text_output: dict[str:dict[str:str]] = {}
     for path in games_with_hi:
         hi_text_output[path] = {}
@@ -338,6 +350,7 @@ def get_hs_tables(games_with_hi: dict[str: [Path]]) -> dict[str:dict[str:str]]:
 
 
 def split_table(tables: str) -> dict[str, list | str]:
+    """Split raw hi2txt leaderboard tables into usable python representations."""
     table = {}
     leaderboards = tables.split('\n#')
     for leaderboard in leaderboards:
@@ -359,6 +372,7 @@ def split_table(tables: str) -> dict[str, list | str]:
 
 
 def get_new_pb(old_table: str, new_table: str) -> dict[str, list | str] | None:
+    """Compare two raw hi2txt tables to look for new, possible, personal best."""
     old_table = split_table(old_table)
     new_table = split_table(new_table)
     old_columns = old_table['col']
@@ -382,7 +396,8 @@ def get_new_pb(old_table: str, new_table: str) -> dict[str, list | str] | None:
             return new_pb
 
 
-def get_new_pbs(hi_text_output: dict[str, dict[str, str]]) ->  dict[str, dict[str, str]]:
+def get_new_pbs(hi_text_output: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
+    """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
     defaults_xml = Path(r'C:\Users\kazac\Downloads\hi2txt\hi2txt_doc\hi2txt_defaults')
     new_pbs = {}
     # pprint.pp(hi_text_output)
@@ -451,6 +466,10 @@ def get_new_pbs(hi_text_output: dict[str, dict[str, str]]) ->  dict[str, dict[st
 
 
 def prepare_pb_for_db(new_pb: dict[str, str], rom: str) -> dict[str, dict[str, str]]:
+    """Convert a single new PB entry, into the format used by multiple PB insertion function.
+
+    TODO This is lazy af.
+    """
     full_dicc = {}
     some_dicc = {}
     columns = new_pb['col'].split('|')
@@ -463,6 +482,7 @@ def prepare_pb_for_db(new_pb: dict[str, str], rom: str) -> dict[str, dict[str, s
 
 
 def save_pbs(new_pbs: dict[str:dict[str:str]], connection, cursor) -> None:
+    """Insert or update new PB entries into database, if new PB has a higher score."""
     for game in new_pbs:
         pb = new_pbs[game]
         pb.pop('RANK', None)
@@ -480,7 +500,8 @@ def save_pbs(new_pbs: dict[str:dict[str:str]], connection, cursor) -> None:
     connection.commit()
 
 
-def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor)  -> None:
+def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
+    """Scan hi score tables, parse for possible PB entries and insert or update PB table in database."""
     hi_scores = get_games_with_hs()
     hi2txt_output = get_hs_tables(hi_scores)
     new_pbs = get_new_pbs(hi2txt_output)

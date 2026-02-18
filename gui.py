@@ -23,7 +23,7 @@ from custom.widgets import StageSplitListWidget, StageSplitItem, SaveStateNameIn
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, \
     delete_personal_best, delete_splits, get_all_input_files, serialize_rom_info, load_personal_bests_from_database, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
-    prepare_pb_for_db
+    prepare_pb_for_db, get_formatted_rom_info
 from logic.main import save_paths_to_database, get_descriptions_and_names, \
     delete_split
 
@@ -490,7 +490,7 @@ class MainWindow(QMainWindow):
         self.descriptions_and_names = get_descriptions_and_names(self.db_cursor)
         self.all_save_states = get_all_roms_with_saves(self.mame_paths)
         self.all_input_files = get_all_input_files(self.mame_paths)
-        self.all_rom_info = serialize_rom_info(self.db_cursor)
+        self.all_rom_info = get_formatted_rom_info(self.db_cursor)
 
     def fill_save_state_tree(self) -> None:
         """Clear, then fill and customize the Save State Tree Widget.
