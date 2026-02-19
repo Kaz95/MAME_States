@@ -1,3 +1,7 @@
+"""MAMEStates custom Pyqt6 widgets
+
+This module houses all pyqt6 widgets that have been subclassed and extended.
+"""
 import sqlite3
 import subprocess
 from pathlib import Path
@@ -7,7 +11,6 @@ from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent,
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget
 
-import logic.main
 from logic.main import save_pb_to_database, scan_for_pb, PersonalBestDataBase
 
 
