@@ -3,7 +3,6 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Reactivate file renaming eventually.
     * Consider sizing policies and size hints
     * Decide on new features to add.
 """
