@@ -3,25 +3,41 @@ import subprocess
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize
-from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
+from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent, QIcon
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
-    QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox
+    QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget
 
-from logic.main import save_pb_to_database, scan_for_pb
+import logic.main
+from logic.main import save_pb_to_database, scan_for_pb, PersonalBestDataBase
 
 
 ######################
 #   Save State Page  #
 ######################
 class MAMEThread(QThread):
+    """Subclass and extend the QThread class of the PyQt6.QtCore module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Used to spawn a MAME subprocess on a new thread. A new thread is needed to avoid blocking while waiting for return.
+    Subprocess output, errors, and return code are captured and emitted before thread dies.
+    """
     done: pyqtSignal = pyqtSignal(dict)
-    def __init__(self, mame_exe, rom_name, mame_path):
+    """Custom 'finished' signal. Emitted when 'run' method finishes."""
+
+    def __init__(self, mame_exe: Path, rom_name: str, mame_path: Path) -> None:
         super().__init__()
 
-        self.mame_exe = mame_exe
-        self.rom_name = rom_name
-        self.mame_path = mame_path
-    def run(self):
+        self.mame_exe: Path = mame_exe
+        """Path object pointing to MAME.exe file."""
+
+        self.rom_name: str = rom_name
+        """Name of the rom being run."""
+
+        self.mame_path: Path = mame_path
+        """MAME directory containing the MAME.exe that will be used to launch rom"""
+
+    def run(self) -> None:
+        """Override and extend run function to run a rom and capture/emit its stdout, stderr, and return code."""
         process = subprocess.Popen([self.mame_exe, self.rom_name], cwd=rf'{self.mame_path}')
         output, err = process.communicate()
         return_code = process.returncode
@@ -29,13 +45,19 @@ class MAMEThread(QThread):
         results = {'output': output, 'err': err, 'return_code': return_code, 'rom': self.rom_name}
         self.done.emit(results)
 
+
 class PBScannerThread(QThread):
-    def __init__(self):
+    """Subclass and extend the QThread class of the PyQt6.QtCore module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Used to scan for personal bests, on a separate thread from the GUI. Avoids blocking GUI. Finished signal emitted.
+    """
+
+    def __init__(self) -> None:
         super().__init__()
-        # finished = pyqtSignal()
 
-
-    def run(self):
+    def run(self) -> None:
+        """Override and extend run function to scan for new personal bests. Emit signal when finished."""
         with sqlite3.connect(r'C:\Users\kazac\PycharmProjects\MAME_States\mame_states.db') as connection:
             db_cursor = connection.cursor()
             scan_for_pb(connection, db_cursor)
@@ -43,32 +65,39 @@ class PBScannerThread(QThread):
 
 
 class ProgressBarWidget(QDialog):
-    def __init__(self, parent=None):
+    """Subclass and extend the QDialog class of the PyQt6.QtWidgets module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Used to display an indeterminate progress bar within a popup dialog.
+    """
+
+    def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)
 
-        # self.setWindowFlags(Qt.WindowType.FramelessWindowHint)
         self.progress = QProgressBar()
+        """An indeterminate progress bar. Pulses."""
+
         self.progress.setRange(0, 0)
         # self.progress.setMinimumWidth(400)
+
         self.label = QLabel('Scanning for new PBs...')
-        # self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        """Dialog label."""
+        self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         layout = QVBoxLayout()
-        # l_layout = QHBoxLayout()
-        # l_layout.addStretch()
-        # l_layout.addWidget(self.label)
-        # l_layout.addStretch()
+        """Top level layout."""
+
         p_layout = QHBoxLayout()
+        """Progress bar container widget."""
         p_layout.addStretch()
         p_layout.addWidget(self.progress)
         p_layout.addStretch()
+
         layout.addWidget(self.label)
         layout.addLayout(p_layout)
         self.setLayout(layout)
 
-    # def sizeHint(self):
-    #     return QSize(250, 20)
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
     """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.
@@ -106,27 +135,37 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
 #   Highscore Page  #
 #####################
 class RomSearchWindow(QWidget):
-    def __init__(self, widget, original_tab_widget, add_game_button, cancel_button):
+    """Subclass and extend the QWidget class of the PyQt6.QtWidgets module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Used to detach and display the Rom Search Page tab for use as a popup search dialog.
+    Buttons are made visible during initialization. Buttons are hidden when window closes and tab reattaches.
+    TODO I could probably move references to the buttons to the page widget and forgo the need to pass as args.
+            I probably don't need to pass the page widget either, as it can be derived from tabs widget.
+    """
+
+    def __init__(self, page: QWidget, tab_container: QTabWidget, add_game_button: QPushButton,
+                 cancel_button: QPushButton):
         super().__init__()
         self.add_game_button: QPushButton = add_game_button
         self.cancel_button: QPushButton = cancel_button
-        self.original_tab_widget = original_tab_widget
-        self.widget = widget
+        self.tab_container: QTabWidget = tab_container
+        self.page: QWidget = page
         self.add_game_button.show()
         self.cancel_button.show()
         # self.widget.setWindowFlags(Qt.WindowType.Window)
-        self.widget.show()
-        layout = QVBoxLayout()
-        layout.addWidget(self.widget)
-        self.setLayout(layout)
+        self.page.show()
+        self.layout: QVBoxLayout = QVBoxLayout()
+        self.layout.addWidget(self.page)
+        self.setLayout(self.layout)
         self.resize(800, 500)
 
     def closeEvent(self, event):
         # Reattach to tab when closed
-        self.original_tab_widget.addTab(self.widget, 'Rom Search')
+        self.tab_container.addTab(self.page, 'Rom Search')
         self.add_game_button.hide()
         self.cancel_button.hide()
-        main_window = self.original_tab_widget.parent()
+        main_window = self.tab_container.parent()
         main_window.setEnabled(True)
         event.accept()
 
@@ -146,9 +185,9 @@ class NotesWindow(QWidget):
         self.setWindowTitle("New Text Edit Window")
         self.resize(400, 300)
         self.text_edit = QTextEdit()
-        layout = QVBoxLayout()
-        layout.addWidget(self.text_edit)
-        self.setLayout(layout)
+        self.layout = QVBoxLayout()
+        self.layout.addWidget(self.text_edit)
+        self.setLayout(self.layout)
 
         self.current_game = None
         """Name of game that corresponds to this instance of NotesWindow."""
@@ -157,30 +196,31 @@ class NotesWindow(QWidget):
         """Extend closeEvent to save text edit data to notes.txt corresponding to this NotesWindow."""
         with open(Path('./notes') / self.current_game, 'w') as notes:
             notes.write(self.text_edit.toPlainText())
-        # Do I need to call super? What does close usually do?
+        # TODO Do I need to call super? What does close usually do?
         # super().closeEvent(event)
 
-class NewToggleableLabel(QWidget):
-    """Subclass and extend the QLabel class of the PyQt6.QyWidgets module.
+
+class ToggleableLabel(QWidget):
+    """Subclass and extend the QWidget class of the PyQt6.QyWidgets module.
 
     This class inherits most of its behavior from its parent class, while extending its functionality.
     A normal QLabel instance is tied to a QlineEdit instance on initialization.
     Double-clicking the label toggles the editor. Pressing enter or changing focus will toggle back to the label.
-    The current text is persisted when toggled.
+    The current text is persisted when toggled. Changes are confirmed via dialog before actually changing.
+    The text is reverted if the changes are not confirmed.
     """
 
-    def __init__(self, text, parent=None):
+    def __init__(self, text: str, parent=None):
         super().__init__(parent)
-        self.layout = QHBoxLayout(self)
+        self.layout: QHBoxLayout = QHBoxLayout(self)
         self.setMouseTracking(True)
-        self.label = QLabel(text)
+        self.label: QLabel = QLabel(text)
         self.editor: QLineEdit = QLineEdit(text)
 
         self.editor.hide()
         self.layout.addWidget(self.label)
         self.layout.addWidget(self.editor)
         self.editor.setMinimumHeight(self.sizeHint().height())
-        """The editor associated with this label"""
         self.editor.editingFinished.connect(self.toggle_labels)
 
     def mouseDoubleClickEvent(self, event):
@@ -189,14 +229,16 @@ class NewToggleableLabel(QWidget):
         super().mouseDoubleClickEvent(event)
 
     def toggle_editors(self) -> None:
-        """Show associated editor, hide label."""
+        """Show editor, hide label."""
         self.label.hide()
         self.editor.show()
         self.editor.setFocus()
 
-
     def toggle_labels(self) -> None:
-        """Show associated label, hide editor."""
+        """Show label, hide editor.
+
+        Confirms any changes made. If changes are not confirmed, text is reverted.
+        """
         new_text = self.editor.text()
 
         if new_text != self.label.text():
@@ -215,50 +257,13 @@ class NewToggleableLabel(QWidget):
         self.label.show()
 
 
-class ToggleableLabel(QLabel):
-    """Subclass and extend the QLabel class of the PyQt6.QyWidgets module.
-
-    This class inherits most of its behavior from its parent class, while extending its functionality.
-    A normal QLabel instance is tied to a QlineEdit instance on initialization.
-    Double-clicking the label toggles the editor. Pressing enter or changing focus will toggle back to the label.
-    The current text is persisted when toggled.
-    """
-
-    def __init__(self, editor: QLineEdit, parent=None):
-        super().__init__(parent)
-        self.setMouseTracking(True)
-        self.editor: QLineEdit = editor
-        """The editor associated with this label"""
-        self.editor.editingFinished.connect(self.toggle_labels)
-
-    def mouseDoubleClickEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.toggle_editors()
-        super().mouseDoubleClickEvent(event)
-
-    def toggle_editors(self) -> None:
-        """Show associated editor, hide label."""
-        self.hide()
-        self.editor.setText(self.text())
-        self.editor.show()
-        self.editor.setFocus()
-
-    def toggle_labels(self) -> None:
-        """Show associated label, hide editor."""
-        self.editor.hide()
-        text = self.editor.text()
-        self.setText(text)
-
-        self.show()
-
-
 class StageSplitItem(QWidget):
     """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
 
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used as a customer item widget on a QListWidget instance."""
 
-    def __init__(self, split: list[str | int], game_db: dict, game_name: str,
+    def __init__(self, split: list[str | int], game_db: PersonalBestDataBase, game_name: str,
                  parent_list: 'StageSplitListWidget', connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
         """ Initialize the StageSplitItem subclass
 
@@ -316,13 +321,13 @@ class StageSplitItem(QWidget):
 
         self.score_editor.setValidator(QIntValidator())
 
-        layout = QHBoxLayout()
-        layout.addWidget(self.name_label)
-        layout.addWidget(self.score_label)
-        layout.addWidget(self.name_editor)
-        layout.addWidget(self.score_editor)
+        self.layout = QHBoxLayout()
+        self.layout.addWidget(self.name_label)
+        self.layout.addWidget(self.score_label)
+        self.layout.addWidget(self.name_editor)
+        self.layout.addWidget(self.score_editor)
 
-        self.setLayout(layout)
+        self.setLayout(self.layout)
 
     def toggle_editors(self) -> None:
         """Show editors, hide labels. Text is persisted."""
@@ -333,7 +338,6 @@ class StageSplitItem(QWidget):
         name_text = self.name_label.text()
         self.text_before_editing = name_text
         name_text = name_text.strip(':')
-
 
         score_text = self.score_label.text()
 
@@ -367,10 +371,11 @@ class StageSplitItem(QWidget):
         self.score_label.show()
 
     def _update_split_db(self) -> None:
-        """Update the 'in-memory' copy of the database and save to JSON
+        """Update the 'in-memory' copy of the database and save to database.
 
         Split order is preserved by the position of the in-memory representation of this item in the game's splits list.
         Grabbing the index of the list that represents this item in memory allows you to act on the correct list.
+        Will no save empty pb label.
         """
         item_index = self.game_db[self.game_name]['splits'].index(self.split)
         print(self.game_db[self.game_name]['splits'])
@@ -384,8 +389,8 @@ class StageSplitItem(QWidget):
         self.game_db[self.game_name]['splits'][item_index][0] = self.name_editor.text()
 
         if self.name_editor.text():
-            # save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
             save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
+
 
 class StageSplitListWidget(QListWidget):
     """Subclass and extend the QListWidget class of the PyQt6.QtWidgets module.
@@ -442,12 +447,12 @@ class StageSplitListWidget(QListWidget):
             self.last_row = self.row(cur)
 
     def update_db(self, game_name: str, old_index: int, new_index: int) -> None:
-        """Mirror internal list changes to the in-memory representation. Save to JSON."""
+        """Mirror internal list changes to the in-memory representation. Save to database."""
         splits = self.game_db[game_name]['splits']
         split = splits.pop(old_index)
         splits.insert(new_index, split)
-        # save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
         save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
+
     def add_diffs(self, splits: list) -> None:
         """Calculate and display the difference between a splits score, and the previous splits score."""
         for index, split in enumerate(splits):

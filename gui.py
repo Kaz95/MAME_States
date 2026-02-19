@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QFileDialog, QMessageBox, QMenu
 
 from custom.widgets import StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
-    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, NewToggleableLabel, MAMEThread
+    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, ToggleableLabel, MAMEThread
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, \
     delete_personal_best, delete_splits, get_all_input_files, load_personal_bests_from_database, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
@@ -163,7 +163,7 @@ class MainWindow(QMainWindow):
         self.high_score_label: QLabel = QLabel('High Score:')
         """Static label describing an editors use."""
 
-        self.high_score_value_label = NewToggleableLabel('')
+        self.high_score_value_label = ToggleableLabel('')
         """Toggleable label that holds a given PBs high score value."""
 
         self.high_score_game_tree: QTreeWidget = QTreeWidget()
@@ -445,7 +445,7 @@ class MainWindow(QMainWindow):
             return
 
         for index, key in enumerate(other_fields):
-            tlabel = NewToggleableLabel(other_fields[key])
+            tlabel = ToggleableLabel(other_fields[key])
             tlabel.editor.editingFinished.connect(lambda: self.update_other_fields(label.text()))
             label = QLabel(key)
             self.temp_fields.append(label)
