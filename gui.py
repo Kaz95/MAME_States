@@ -6,6 +6,7 @@ TODO:
     * Consider sizing policies and size hints
     * Decide on new features to add.
 """
+import os
 import pprint
 import sqlite3
 import subprocess
@@ -390,7 +391,7 @@ class MainWindow(QMainWindow):
 
         self.high_score_game_tree.setHeaderLabels(['Games'])
         self.high_score_game_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.high_score_game_tree.customContextMenuRequested.connect(self.show_high_score_tree_context)
+        self.high_score_game_tree.customContextMenuRequested.connect(self.show_rom_item_context)
         self.high_score_game_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
         self.highscore_add_game_button.clicked.connect(self.highscore_add_game_clicked)
@@ -456,7 +457,7 @@ class MainWindow(QMainWindow):
     def setup_search_page(self):
         """Search Page widget customization."""
         self.rom_search_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.rom_search_tree.customContextMenuRequested.connect(self.show_high_score_tree_context)
+        self.rom_search_tree.customContextMenuRequested.connect(self.show_rom_item_context)
         self.rom_search_bar.setPlaceholderText('Search items...')
         self.rom_search_bar.textChanged.connect(self.on_text_changed)
 
@@ -813,9 +814,12 @@ class MainWindow(QMainWindow):
             launch.triggered.connect(lambda: self.run_mame(tree_item.text(0)))
             menu.addAction(launch)
         elif tree_item.text(0) == 'Input Files' or tree_item.text(0) == 'Save States':
-            open_explorer = QAction('Open in Explorer')
-            menu.addAction(open_explorer)
+            open_in_explorer = QAction('Open in Explorer')
+            menu.addAction(open_in_explorer)
+            open_in_explorer.triggered.connect(lambda: self.open_in_explorer(tree_item))
         else:
+            if tree_item.childCount() > 0: # Lazy way to ensure rom items don't spawn menu.
+                return
             delete = QAction('Delete')
             menu.addAction(delete)
             if tree_item.parent().text(0) == 'Input Files':
@@ -826,8 +830,27 @@ class MainWindow(QMainWindow):
                     sub_menu.addAction(action)
                     menu.addMenu(sub_menu)
         menu.exec(self.save_state_tree.viewport().mapToGlobal(position))
+    def delete_leaf_item(self):
+        pass
+    def open_in_explorer(self, thing_to_open):
+        root_mame_dir = Path(thing_to_open.parent().text(0))
 
-    def show_high_score_tree_context(self, position: QPoint) -> None:
+        if thing_to_open.text(0) == 'Input Files':
+            inp_dir = root_mame_dir / 'inp'
+            if inp_dir.is_dir():
+                os.startfile(inp_dir)
+            else:
+                QMessageBox.critical(self, 'Directory Not Found', f'Could Not Find Directory: {inp_dir}')
+
+        if thing_to_open.text(0) == 'Save States':
+            save_states_dir = root_mame_dir / 'sta'
+            if save_states_dir.is_dir():
+                os.startfile(save_states_dir)
+            else:
+                QMessageBox.critical(self, 'Directory Not Found', f'Could Not Find Directory: {save_states_dir}')
+
+
+    def show_rom_item_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
 
         If no item is selected, no menu is created. Menu includes 'open notes' and 'open with' functions, based on game.
