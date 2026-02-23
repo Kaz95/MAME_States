@@ -736,18 +736,26 @@ class MainWindow(QMainWindow):
         tree_item = self.save_state_tree.itemAt(position)
         if not tree_item:
             return
-        if tree_item.childCount() > 0:
-            return
-        menu = QMenu()
+        # if tree_item.childCount() > 0:
+        #     return
 
-        delete = QAction('Delete')
-        menu.addAction(delete)
-        sub_menu = QMenu('Playback with...')
-        for path in self.mame_paths:
-            action = QAction(str(path), self)
-            action.triggered.connect(lambda: print(self.sender().text()))
-            sub_menu.addAction(action)
-        menu.addMenu(sub_menu)
+        menu = QMenu()
+        if tree_item.parent() is None:
+            launch = QAction('Launch')
+            menu.addAction(launch)
+        elif tree_item.text(0) == 'Input Files' or tree_item.text(0) == 'Save States':
+            open_explorer = QAction('Open in Explorer')
+            menu.addAction(open_explorer)
+        else:
+            delete = QAction('Delete')
+            menu.addAction(delete)
+            if tree_item.parent().text(0) == 'Input Files':
+                sub_menu = QMenu('Playback with...')
+                for path in self.mame_paths:
+                    action = QAction(str(path), self)
+                    action.triggered.connect(lambda: print(self.sender().text()))
+                    sub_menu.addAction(action)
+                    menu.addMenu(sub_menu)
         menu.exec(self.save_state_tree.viewport().mapToGlobal(position))
 
     def show_high_score_tree_context(self, position: QPoint) -> None:
