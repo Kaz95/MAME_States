@@ -455,6 +455,8 @@ class MainWindow(QMainWindow):
 
     def setup_search_page(self):
         """Search Page widget customization."""
+        self.rom_search_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.rom_search_tree.customContextMenuRequested.connect(self.show_high_score_tree_context)
         self.rom_search_bar.setPlaceholderText('Search items...')
         self.rom_search_bar.textChanged.connect(self.on_text_changed)
 
@@ -820,7 +822,8 @@ class MainWindow(QMainWindow):
 
         If no item is selected, no menu is created. Menu includes 'open notes' and 'open with' functions, based on game.
         """
-        tree_item = self.high_score_game_tree.itemAt(position)
+
+        tree_item = self.sender().itemAt(position)
         if not tree_item:
             return
 
