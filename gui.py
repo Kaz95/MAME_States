@@ -232,26 +232,26 @@ class MainWindow(QMainWindow):
         # Widgets
         self.rom_search_bar: QLineEdit = QLineEdit()
         """Search bar used by rom search page."""
-        self.rom_search_bar.setPlaceholderText('Search items...')
-        self.rom_search_bar.textChanged.connect(self.on_text_changed)
+        # self.rom_search_bar.setPlaceholderText('Search items...')
+        # self.rom_search_bar.textChanged.connect(self.on_text_changed)
 
         self.debounce_timer = QTimer()
         """Timer used to delay filtering of rom list when user stops typing."""
-        self.debounce_timer.setSingleShot(True)
-        self.debounce_timer.timeout.connect(self.update_filter)
+        # self.debounce_timer.setSingleShot(True)
+        # self.debounce_timer.timeout.connect(self.update_filter)
 
         self.rom_search_tree: QTreeWidget = QTreeWidget()
         """List of all roms supported by MAME."""
-        self.rom_search_tree.setHeaderLabels(['Games'])
-        for game_name in self.descriptions_and_names.keys():
-            item = QTreeWidgetItem(self.rom_search_tree, [game_name])
-            parent = self.all_rom_info[game_name]['parent']
-            if parent is not None:
-                color = QColor(211, 211, 211, 127)
-                brush = QBrush(color)
-                # Apply to item (column 0)
-                item.setForeground(0, brush)
-            item.setToolTip(0, self.descriptions_and_names[game_name])
+        # self.rom_search_tree.setHeaderLabels(['Games'])
+        # for game_name in self.descriptions_and_names.keys():
+        #     item = QTreeWidgetItem(self.rom_search_tree, [game_name])
+        #     parent = self.all_rom_info[game_name]['parent']
+        #     if parent is not None:
+        #         color = QColor(211, 211, 211, 127)
+        #         brush = QBrush(color)
+        #         # Apply to item (column 0)
+        #         item.setForeground(0, brush)
+        #     item.setToolTip(0, self.descriptions_and_names[game_name])
 
         self.rom_search_add_game_button: QPushButton = QPushButton('Add Game')
         """Allow user to manually select a rom from list. Only appears on popup."""
@@ -259,13 +259,14 @@ class MainWindow(QMainWindow):
         self.rom_search_cancel_button: QPushButton = QPushButton('Cancel')
         """Allow user to cancel rom search. Only appears on popup."""
 
-        self.rom_search_cancel_button.clicked.connect(self.close_rom_search_window)
-        self.rom_search_add_game_button.clicked.connect(self.rom_search_add_game_clicked)
-        self.rom_search_tree.itemSelectionChanged.connect(self.rom_search_tree_selection_changed)
+        # self.rom_search_cancel_button.clicked.connect(self.close_rom_search_window)
+        # self.rom_search_add_game_button.clicked.connect(self.rom_search_add_game_clicked)
+        # self.rom_search_tree.itemSelectionChanged.connect(self.rom_search_tree_selection_changed)
 
         self.rom_description_label: QLabel = QLabel()
         """Used in full rom info display."""
-        self.rom_description_label.setWordWrap(True)
+        # self.rom_description_label.setWordWrap(True)
+
         self.rom_name_label: QLabel = QLabel()
         """Used in full rom info display."""
         self.rom_manufacturer_label: QLabel = QLabel()
@@ -299,33 +300,36 @@ class MainWindow(QMainWindow):
         self.rom_search_container = QWidget()
         """Container widget. Corresponding layout is applied."""
 
-        self.rom_search_container.setLayout(self.rom_search_panel)
-        # self.rom_search_container.setFixedWidth(800)
-        self.rom_search_panel.addWidget(self.rom_search_bar)
-        self.rom_search_panel.addWidget(self.rom_search_tree)
-        self.rom_search_buttons.addWidget(self.rom_search_add_game_button)
-        self.rom_search_buttons.addWidget(self.rom_search_cancel_button)
-        self.rom_search_panel.addLayout(self.rom_search_buttons)
-        self.rom_search_add_game_button.hide()
-        self.rom_search_cancel_button.hide()
+        # Add widgets to layout. Setup signals and slots.
+        self.setup_search_page()
 
-        self.rom_info_container.setLayout(self.rom_info_panel)
-        # self.rom_info_container.setFixedWidth(600)
-        self.rom_info_panel.addWidget(self.rom_description_label)
-        self.rom_info_panel.addWidget(self.rom_name_label)
-        self.rom_info_panel.addWidget(self.rom_manufacturer_label)
-        self.rom_info_panel.addWidget(self.rom_release_year_label)
-        self.rom_info_panel.addWidget(self.rom_parent_label)
-        self.rom_info_panel.addWidget(self.rom_video_info_label)
-        self.rom_info_panel.addWidget(self.rom_video_driver_warnings_label)
-        self.rom_info_panel.addWidget(self.rom_audio_driver_warnings_label)
-        self.rom_info_panel.addStretch()
-
-        self.rom_search_page_layout.addWidget(self.rom_search_container)
-        self.rom_search_page_layout.addWidget(self.rom_info_container)
-
-        self.rom_search_page.setLayout(self.rom_search_page_layout)
-        self.rom_search_page.setFont(self.top_level_item_font)
+        # self.rom_search_container.setLayout(self.rom_search_panel)
+        # # self.rom_search_container.setFixedWidth(800)
+        # self.rom_search_panel.addWidget(self.rom_search_bar)
+        # self.rom_search_panel.addWidget(self.rom_search_tree)
+        # self.rom_search_buttons.addWidget(self.rom_search_add_game_button)
+        # self.rom_search_buttons.addWidget(self.rom_search_cancel_button)
+        # self.rom_search_panel.addLayout(self.rom_search_buttons)
+        # self.rom_search_add_game_button.hide()
+        # self.rom_search_cancel_button.hide()
+        #
+        # self.rom_info_container.setLayout(self.rom_info_panel)
+        # # self.rom_info_container.setFixedWidth(600)
+        # self.rom_info_panel.addWidget(self.rom_description_label)
+        # self.rom_info_panel.addWidget(self.rom_name_label)
+        # self.rom_info_panel.addWidget(self.rom_manufacturer_label)
+        # self.rom_info_panel.addWidget(self.rom_release_year_label)
+        # self.rom_info_panel.addWidget(self.rom_parent_label)
+        # self.rom_info_panel.addWidget(self.rom_video_info_label)
+        # self.rom_info_panel.addWidget(self.rom_video_driver_warnings_label)
+        # self.rom_info_panel.addWidget(self.rom_audio_driver_warnings_label)
+        # self.rom_info_panel.addStretch()
+        #
+        # self.rom_search_page_layout.addWidget(self.rom_search_container)
+        # self.rom_search_page_layout.addWidget(self.rom_info_container)
+        #
+        # self.rom_search_page.setLayout(self.rom_search_page_layout)
+        # self.rom_search_page.setFont(self.top_level_item_font)
 
         # ------------------- #
         # Finalize tab setup. #
@@ -420,8 +424,61 @@ class MainWindow(QMainWindow):
         self.add_split_button.clicked.connect(self.new_split)
         self.delete_split_button.clicked.connect(self.delete_split)
 
+    def setup_search_page_layout(self):
+        self.rom_search_container.setLayout(self.rom_search_panel)
+        # self.rom_search_container.setFixedWidth(800)
+        self.rom_search_panel.addWidget(self.rom_search_bar)
+        self.rom_search_panel.addWidget(self.rom_search_tree)
+        self.rom_search_buttons.addWidget(self.rom_search_add_game_button)
+        self.rom_search_buttons.addWidget(self.rom_search_cancel_button)
+        self.rom_search_panel.addLayout(self.rom_search_buttons)
+        self.rom_search_add_game_button.hide()
+        self.rom_search_cancel_button.hide()
+
+        self.rom_info_container.setLayout(self.rom_info_panel)
+        # self.rom_info_container.setFixedWidth(600)
+        self.rom_info_panel.addWidget(self.rom_description_label)
+        self.rom_info_panel.addWidget(self.rom_name_label)
+        self.rom_info_panel.addWidget(self.rom_manufacturer_label)
+        self.rom_info_panel.addWidget(self.rom_release_year_label)
+        self.rom_info_panel.addWidget(self.rom_parent_label)
+        self.rom_info_panel.addWidget(self.rom_video_info_label)
+        self.rom_info_panel.addWidget(self.rom_video_driver_warnings_label)
+        self.rom_info_panel.addWidget(self.rom_audio_driver_warnings_label)
+        self.rom_info_panel.addStretch()
+
+        self.rom_search_page_layout.addWidget(self.rom_search_container)
+        self.rom_search_page_layout.addWidget(self.rom_info_container)
+
+        self.rom_search_page.setLayout(self.rom_search_page_layout)
+        self.rom_search_page.setFont(self.top_level_item_font)
+
     def setup_search_page(self):
         """Search Page widget customization."""
+        self.rom_search_bar.setPlaceholderText('Search items...')
+        self.rom_search_bar.textChanged.connect(self.on_text_changed)
+
+        self.debounce_timer.setSingleShot(True)
+        self.debounce_timer.timeout.connect(self.update_filter)
+
+        self.rom_search_tree.setHeaderLabels(['Games'])
+        for game_name in self.descriptions_and_names.keys():
+            item = QTreeWidgetItem(self.rom_search_tree, [game_name])
+            parent = self.all_rom_info[game_name]['parent']
+            if parent is not None:
+                color = QColor(211, 211, 211, 127)
+                brush = QBrush(color)
+                # Apply to item (column 0)
+                item.setForeground(0, brush)
+            item.setToolTip(0, self.descriptions_and_names[game_name])
+
+        self.rom_search_cancel_button.clicked.connect(self.close_rom_search_window)
+        self.rom_search_add_game_button.clicked.connect(self.rom_search_add_game_clicked)
+        self.rom_search_tree.itemSelectionChanged.connect(self.rom_search_tree_selection_changed)
+
+        self.rom_description_label.setWordWrap(True)
+
+        self.setup_search_page_layout()
         pass
 
     # ------ #
