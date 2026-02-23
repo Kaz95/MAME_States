@@ -628,7 +628,7 @@ class MainWindow(QMainWindow):
             for split in splits:
                 self.create_split_item(split, game_name)
 
-            # self.split_list.add_diffs(splits)
+            self.split_list.add_diffs(splits)
 
     def split_double_clicked(self, item: QListWidgetItem) -> None:
         """Show split item editors. Hide labels."""
@@ -762,7 +762,7 @@ class MainWindow(QMainWindow):
             game_splits.append(new_split)
             new_item = self.create_split_item(new_split, rom_description)
             self.split_list.setCurrentItem(new_item)
-            # self.split_double_clicked(new_item)
+            self.split_double_clicked(new_item)
 
     def open_notes(self) -> None:
         """Open notes widget.

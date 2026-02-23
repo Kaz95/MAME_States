@@ -124,7 +124,7 @@ def load_personal_bests_from_database(cursor: sqlite3.Cursor) -> PersonalBestDat
     pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.other_fields 
     FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
 
-    splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description 
+    splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description, splits.id
         FROM 'splits' JOIN 'roms' ON splits.rom_id = roms.id 
         ORDER BY roms.description, splits.'index'"""
 
@@ -141,7 +141,7 @@ def load_personal_bests_from_database(cursor: sqlite3.Cursor) -> PersonalBestDat
     cursor.execute(splits_query)
     splits = cursor.fetchall()
     for split in splits:
-        pb_info[split[3]]['splits'].append([split[0], split[1]])
+        pb_info[split[3]]['splits'].append([split[0], split[1], split[4]])
 
     return pb_info
 
@@ -251,12 +251,14 @@ def collate_splits(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> lis
         split = pb_dict['splits']
         for item in split:
             # Results are returned raw and may be empty.
-            split_primary_key = get_split_pk(cursor, pb, item[0])
-            if split_primary_key:
-                split_primary_key = split_primary_key[0][0]
-            else:
-                split_primary_key = None
-            row = (split_primary_key, item[0], item[1], split.index(item), id_from_description(pb, cursor))
+            # split_primary_key = get_split_pk(cursor, pb, item[0])
+            # if split_primary_key:
+            #     split_primary_key = split_primary_key[0][0]
+            # else:
+            #     split_primary_key = None
+            if len(item) < 3:
+                item.append(None)
+            row = (item[2], item[0], item[1], split.index(item), id_from_description(pb, cursor))
             splits.append(row)
     return splits
 
