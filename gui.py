@@ -813,6 +813,7 @@ class MainWindow(QMainWindow):
             launch = QAction('Launch')
             launch.triggered.connect(lambda: self.run_mame(tree_item.text(0)))
             menu.addAction(launch)
+
         elif tree_item.text(0) == 'Input Files' or tree_item.text(0) == 'Save States':
             open_in_explorer = QAction('Open in Explorer')
             menu.addAction(open_in_explorer)
@@ -822,6 +823,7 @@ class MainWindow(QMainWindow):
                 return
             delete = QAction('Delete')
             menu.addAction(delete)
+            delete.triggered.connect(lambda: self.delete_leaf_item(tree_item))
             if tree_item.parent().text(0) == 'Input Files':
                 sub_menu = QMenu('Playback with...')
                 for path in self.mame_paths:
@@ -830,8 +832,32 @@ class MainWindow(QMainWindow):
                     sub_menu.addAction(action)
                     menu.addMenu(sub_menu)
         menu.exec(self.save_state_tree.viewport().mapToGlobal(position))
-    def delete_leaf_item(self):
-        pass
+
+    # TODO Probably could use confirmation
+    def delete_leaf_item(self, thing_to_delete):
+        direct_parent = thing_to_delete.parent()
+
+        if direct_parent.text(0) == 'Input Files':
+            root_mame_dir_str = direct_parent.parent().text(0)
+            root_mame_dir = Path(root_mame_dir_str)
+            inp_dir = root_mame_dir / 'inp'
+            inp_file = inp_dir / f'{thing_to_delete.text(0)}.inp'
+            inp_file.unlink()
+
+        else:
+            rom_description = direct_parent.text(0)
+            rom_name = self.descriptions_and_names[rom_description]
+            category_item = direct_parent.parent()
+            mame_path_item = category_item.parent()
+            root_mame_dir_str = mame_path_item.text(0)
+            root_mame_dir = Path(root_mame_dir_str)
+            save_states_dir = root_mame_dir / 'sta'
+            rom_saves_dir = save_states_dir / f'{rom_name}'
+            save_state_file = rom_saves_dir / f'{thing_to_delete.text(0)}.sta'
+            save_state_file.unlink()
+
+        direct_parent.removeChild(thing_to_delete)
+
     def open_in_explorer(self, thing_to_open):
         root_mame_dir = Path(thing_to_open.parent().text(0))
 
