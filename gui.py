@@ -581,7 +581,7 @@ class MainWindow(QMainWindow):
                 input_files_container = QTreeWidgetItem(path_item, ['Input Files'])
                 input_files_container.setFont(0, self.top_level_item_font)
                 for file in input_files:
-                    item = QTreeWidgetItem(input_files_container, [file.split('.')[0]])
+                    item = QTreeWidgetItem(input_files_container, [file])
                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
                     item.setFont(0, self.sub_item_font)
 
@@ -904,7 +904,7 @@ class MainWindow(QMainWindow):
         sub_menu_two = QMenu('Open with input file...')
         for path in self.mame_paths:
             action = QAction(str(path), self)
-            action.triggered.connect(lambda: print(self.sender().text()))
+            action.triggered.connect(lambda: self.run_rom(rom_name, record_input=True))
             sub_menu_two.addAction(action)
 
         menu.addMenu(sub_menu)
@@ -912,7 +912,7 @@ class MainWindow(QMainWindow):
         menu.exec(self.high_score_game_tree.viewport().mapToGlobal(position))
 
     # TODO Take another look at this.
-    def run_rom(self, rom_name: str) -> None:
+    def run_rom(self, rom_name: str, record_input=False) -> None:
         """Attempt to run a rom, with a given MAME path.
 
         If the rom is hi2txt compatible, a snapshot is taken of current high score tables.
@@ -939,7 +939,7 @@ class MainWindow(QMainWindow):
             except FileNotFoundError:
                 print('whoops')
 
-        self.mame_thread = MAMEThread(mame_exe, rom_name, mame_path)
+        self.mame_thread = MAMEThread(mame_exe, rom_name, mame_path, record_input=record_input)
         self.mame_thread.done.connect(self.rom_done)
         self.mame_thread.start()
 

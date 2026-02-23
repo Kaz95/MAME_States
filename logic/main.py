@@ -65,7 +65,7 @@ def get_all_input_files(mame_paths: list[Path]) -> dict[str:list[str]]:
     for path in mame_paths:
         inp_folder = path / 'inp'
         if inp_folder.is_dir():
-            all_inps[path] = [item.name for item in inp_folder.iterdir()]
+            all_inps[path] = [item.stem for item in inp_folder.iterdir()]
     return all_inps
 
 

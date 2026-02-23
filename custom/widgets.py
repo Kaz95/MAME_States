@@ -4,6 +4,7 @@ This module houses all pyqt6 widgets that have been subclassed and extended.
 """
 import sqlite3
 import subprocess
+from datetime import datetime
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize
@@ -27,9 +28,9 @@ class MAMEThread(QThread):
     done: pyqtSignal = pyqtSignal(dict)
     """Custom 'finished' signal. Emitted when 'run' method finishes."""
 
-    def __init__(self, mame_exe: Path, rom_name: str, mame_path: Path) -> None:
+    def __init__(self, mame_exe: Path, rom_name: str, mame_path: Path, record_input=False) -> None:
         super().__init__()
-
+        self.record_input = record_input
         self.mame_exe: Path = mame_exe
         """Path object pointing to MAME.exe file."""
 
@@ -40,15 +41,23 @@ class MAMEThread(QThread):
         """MAME directory containing the MAME.exe that will be used to launch rom"""
 
     def run(self) -> None:
+        date_object = datetime.now()
+        date_object = date_object.strftime("%Y-%m-%d %H:%M")
+        date_str = date_object.replace(' ', '_')
+        date_str = date_str.replace(':', '-')
+        print(f'{self.rom_name}_{date_str}.inp')
+        if not self.record_input:
+            commands = [self.mame_exe, self.rom_name]
+        else:
+            commands = [self.mame_exe, self.rom_name, '-record', f'{self.rom_name}_{date_str}.inp']
         """Override and extend run function to run a rom and capture/emit its stdout, stderr, and return code."""
-        process = subprocess.Popen([self.mame_exe, self.rom_name],
+        process = subprocess.Popen(commands,
                                         cwd=rf'{self.mame_path}',
                                         stdout=subprocess.PIPE,
                                         stderr=subprocess.PIPE,
                                         text=True)
         output, err = process.communicate()
         return_code = process.returncode
-        print(return_code)
         results = {'output': output, 'err': err, 'return_code': return_code, 'rom': self.rom_name}
         self.done.emit(results)
 
