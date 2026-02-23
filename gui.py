@@ -19,7 +19,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QFileDialog, QMessageBox, QMenu
 
 from custom.widgets import StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
-    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, ToggleableLabel, MAMEThread
+    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, ToggleableLabel, MAMEThread, NewStageSplitItem
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, \
     delete_personal_best, delete_splits, get_all_input_files, load_personal_bests_from_database, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
@@ -514,9 +514,10 @@ class MainWindow(QMainWindow):
 
     def create_split_item(self, split: list[int | str], game_name: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
-        split_item = StageSplitItem(split, self.pb_info, game_name, self.split_list, self.db_connection, self.db_cursor)
+        split_item = NewStageSplitItem(split, self.pb_info, game_name, self.split_list, self.db_connection, self.db_cursor)
         list_item = QListWidgetItem(self.split_list)
         self.split_list.setItemWidget(list_item, split_item)
+        list_item.setSizeHint(split_item.sizeHint())
         return list_item
 
     def valid_path(self, mame_folder: Path) -> bool | None:
@@ -627,7 +628,7 @@ class MainWindow(QMainWindow):
             for split in splits:
                 self.create_split_item(split, game_name)
 
-            self.split_list.add_diffs(splits)
+            # self.split_list.add_diffs(splits)
 
     def split_double_clicked(self, item: QListWidgetItem) -> None:
         """Show split item editors. Hide labels."""
@@ -761,7 +762,7 @@ class MainWindow(QMainWindow):
             game_splits.append(new_split)
             new_item = self.create_split_item(new_split, rom_description)
             self.split_list.setCurrentItem(new_item)
-            self.split_double_clicked(new_item)
+            # self.split_double_clicked(new_item)
 
     def open_notes(self) -> None:
         """Open notes widget.

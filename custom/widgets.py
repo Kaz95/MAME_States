@@ -10,7 +10,7 @@ from pathlib import Path
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent, QIcon
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
-    QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget
+    QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget, QSpacerItem
 
 from logic.main import save_pb_to_database, scan_for_pb, PersonalBestDataBase, get_mame_version
 
@@ -245,7 +245,7 @@ class ToggleableLabel(QWidget):
     def __init__(self, text: str, parent=None):
         super().__init__(parent)
         self.layout: QHBoxLayout = QHBoxLayout(self)
-        self.setMouseTracking(True)
+        # self.setMouseTracking(True)
         self.label: QLabel = QLabel(text)
         self.editor: QLineEdit = QLineEdit(text)
 
@@ -255,10 +255,10 @@ class ToggleableLabel(QWidget):
         self.editor.setMinimumHeight(self.sizeHint().height())
         self.editor.editingFinished.connect(self.toggle_labels)
 
-    def mouseDoubleClickEvent(self, event):
-        if event.button() == Qt.MouseButton.LeftButton:
-            self.toggle_editors()
-        super().mouseDoubleClickEvent(event)
+    # def mouseDoubleClickEvent(self, event):
+    #     if event.button() == Qt.MouseButton.LeftButton:
+    #         self.toggle_editors()
+    #     super().mouseDoubleClickEvent(event)
 
     def toggle_editors(self) -> None:
         """Show editor, hide label."""
@@ -395,7 +395,7 @@ class StageSplitItem(QWidget):
         score_text = self.score_editor.text()
         self.score_label.setText(score_text)
 
-        self.parent_list.add_diffs(self.game_db[self.game_name]['splits'])
+        # self.parent_list.add_diffs(self.game_db[self.game_name]['splits'])
 
         self.name_label.show()
         self.score_label.show()
@@ -416,6 +416,136 @@ class StageSplitItem(QWidget):
         if self.name_editor.text():
             save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
 
+
+class NewStageSplitItem(QWidget):
+    """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Used as a customer item widget on a QListWidget instance."""
+
+    def __init__(self, split: list[str | int], game_db: PersonalBestDataBase, game_name: str,
+                 parent_list: 'StageSplitListWidget', connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
+        """ Initialize the StageSplitItem subclass
+
+        The StageSplitItem subclass inherits most of its behavior from, and extends, its parent class QWidget.
+        The initialization process creates the widgets and layouts that will make up the custom item widget.
+        """
+        super().__init__()
+        self.db_connection: sqlite3.Connection = connection
+        """Connection object that points to database connection."""
+
+        self.db_cursor: sqlite3.Cursor = cursor
+        """Cursor object used to navigate database."""
+
+        self.split = split
+        """The data that comprises a split. \n[index, stage, score]"""
+
+        self.parent_list: StageSplitListWidget = parent_list
+        """The list widget that contains this item."""
+
+        self.game_db = game_db
+        """In-memory representation of DB schema."""
+
+        self.game_name: str = game_name
+        """The name of the game which the split belongs to."""
+
+        self.stage: str = split[0]
+        self.score: int = split[1]
+
+        self.name_label: ToggleableLabel = ToggleableLabel(f'{self.stage}')
+        self.score_label: ToggleableLabel = ToggleableLabel(f'{self.score}')
+
+        self.name_label.editor.setPlaceholderText('Stage-69')
+        self.score_label.editor.setPlaceholderText('696969')
+
+        self.name_label.editor.hide()
+        self.score_label.editor.hide()
+        self.name_label.editor.editingFinished.connect(self._update_split_db)
+        self.score_label.editor.editingFinished.connect(self._update_split_db)
+        self.name_label.editor.returnPressed.connect(self.toggle_labels)
+        self.score_label.editor.returnPressed.connect(self.toggle_labels)
+        self.score_label.editor.setValidator(QIntValidator())
+        # self.name_label: QLabel = QLabel(f'{self.stage}')
+        # """Name of the stage, area, or boss that the split represents."""
+        #
+        # self.score_label: QLabel = QLabel(f'{self.score}')
+        # """The Score of this particular split."""
+
+        # self.name_editor: QLineEdit = QLineEdit()
+        # self.score_editor: QLineEdit = QLineEdit()
+        #
+        # self.name_editor.setPlaceholderText('Stage-69')
+        # self.score_editor.setPlaceholderText('696969')
+        #
+        # self.name_editor.setText(self.stage)
+        # self.score_editor.setText(str(self.score))
+        #
+        # self.name_editor.hide()
+        # self.score_editor.hide()
+        #
+        # self.name_editor.editingFinished.connect(self._update_split_db)
+        # self.score_editor.editingFinished.connect(self._update_split_db)
+        #
+        # self.name_editor.returnPressed.connect(self._update_split_db)
+        # self.score_editor.returnPressed.connect(self._update_split_db)
+        # self.name_editor.returnPressed.connect(self.toggle_labels)
+        # self.score_editor.returnPressed.connect(self.toggle_labels)
+        #
+        # self.score_editor.setValidator(QIntValidator())
+        #
+        # self.layout = QHBoxLayout()
+        # self.layout.addWidget(self.name_label)
+        # self.layout.addWidget(self.score_label)
+        # self.layout.addWidget(self.name_editor)
+        # self.layout.addWidget(self.score_editor)
+        self.layout = QHBoxLayout()
+        self.layout.addWidget(self.name_label)
+        self.layout.addWidget(self.score_label)
+
+
+        self.setLayout(self.layout)
+
+    def toggle_editors(self) -> None:
+        """Show editors, hide labels. Text is persisted."""
+        self.name_label.toggle_editors()
+        self.score_label.toggle_editors()
+
+    def toggle_labels(self):
+        """Show labels, hide editors. Text is persisted."""
+        self.name_label.toggle_labels()
+        self.score_label.toggle_labels()
+    #
+    # def toggle_labels(self) -> None:
+    #     """Show labels, hide editors. Text is persisted."""
+    #     self.name_editor.hide()
+    #     self.score_editor.hide()
+    #
+    #     name_text = self.name_editor.text()
+    #     self.name_label.setText(name_text)
+    #
+    #     score_text = self.score_editor.text()
+    #     self.score_label.setText(score_text)
+    #
+    #     self.parent_list.add_diffs(self.game_db[self.game_name]['splits'])
+    #
+    #     self.name_label.show()
+    #     self.score_label.show()
+
+    def _update_split_db(self) -> None:
+        """Update the 'in-memory' copy of the database and save to database.
+
+        Split order is preserved by the position of the in-memory representation of this item in the game's splits list.
+        Grabbing the index of the list that represents this item in memory allows you to act on the correct list.
+        Will no save empty pb label.
+        """
+        item_index = self.game_db[self.game_name]['splits'].index(self.split)
+        print(self.game_db[self.game_name]['splits'])
+
+        self.game_db[self.game_name]['splits'][item_index][1] = int(self.score_label.editor.text())
+        self.game_db[self.game_name]['splits'][item_index][0] = self.name_label.editor.text()
+
+        if self.name_label.editor.text():
+            save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
 
 class StageSplitListWidget(QListWidget):
     """Subclass and extend the QListWidget class of the PyQt6.QtWidgets module.
@@ -461,7 +591,7 @@ class StageSplitListWidget(QListWidget):
                 game_name = self.itemWidget(moved).game_name
                 self.update_db(game_name, self.last_row, self.row(moved))
                 splits = self.game_db[game_name]['splits']
-                self.add_diffs(splits)
+                # self.add_diffs(splits)
                 # print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
                 self.last_row = self.row(moved)
         return super().eventFilter(sender, event)
@@ -478,15 +608,15 @@ class StageSplitListWidget(QListWidget):
         splits.insert(new_index, split)
         save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
 
-    def add_diffs(self, splits: list) -> None:
-        """Calculate and display the difference between a splits score, and the previous splits score."""
-        for index, split in enumerate(splits):
-            if index > 0:
-                diff = split[1] - splits[index - 1][1]
-                list_item = self.item(index)
-                widget_item = self.itemWidget(list_item)
-                widget_item.score_label.setText(str(split[1]) + f'({diff:+d})')
-            else:
-                list_item = self.item(index)
-                widget_item = self.itemWidget(list_item)
-                widget_item.score_label.setText(str(split[1]))
+    # def add_diffs(self, splits: list) -> None:
+    #     """Calculate and display the difference between a splits score, and the previous splits score."""
+    #     for index, split in enumerate(splits):
+    #         if index > 0:
+    #             diff = split[1] - splits[index - 1][1]
+    #             list_item = self.item(index)
+    #             widget_item = self.itemWidget(list_item)
+    #             widget_item.score_label.label.setText(str(split[1]) + f'({diff:+d})')
+    #         else:
+    #             list_item = self.item(index)
+    #             widget_item = self.itemWidget(list_item)
+    #             widget_item.score_label.label.setText(str(split[1]))
