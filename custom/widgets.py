@@ -41,7 +41,11 @@ class MAMEThread(QThread):
 
     def run(self) -> None:
         """Override and extend run function to run a rom and capture/emit its stdout, stderr, and return code."""
-        process = subprocess.Popen([self.mame_exe, self.rom_name], cwd=rf'{self.mame_path}')
+        process = subprocess.Popen([self.mame_exe, self.rom_name],
+                                        cwd=rf'{self.mame_path}',
+                                        stdout=subprocess.PIPE,
+                                        stderr=subprocess.PIPE,
+                                        text=True)
         output, err = process.communicate()
         return_code = process.returncode
         print(return_code)
@@ -274,7 +278,6 @@ class StageSplitItem(QWidget):
         The initialization process creates the widgets and layouts that will make up the custom item widget.
         """
         super().__init__()
-        self.text_before_editing = None
         self.db_connection: sqlite3.Connection = connection
         """Connection object that points to database connection."""
 
@@ -339,7 +342,6 @@ class StageSplitItem(QWidget):
         self.score_label.hide()
 
         name_text = self.name_label.text()
-        self.text_before_editing = name_text
         name_text = name_text.strip(':')
 
         score_text = self.score_label.text()
@@ -382,12 +384,7 @@ class StageSplitItem(QWidget):
         """
         item_index = self.game_db[self.game_name]['splits'].index(self.split)
         print(self.game_db[self.game_name]['splits'])
-        for x in self.game_db[self.game_name]['splits']:
-            if self.name_editor.text() == x[0]:
-                self.blockSignals(True)
-                self.name_editor.setText(self.text_before_editing)
-                self.blockSignals(False)
-                return
+
         self.game_db[self.game_name]['splits'][item_index][1] = int(self.score_editor.text())
         self.game_db[self.game_name]['splits'][item_index][0] = self.name_editor.text()
 

@@ -827,10 +827,10 @@ class MainWindow(QMainWindow):
         new_hs_table = None
 
         hi_path = Path(self.mame_thread.mame_path) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
-        if results['return_code'] == 2:
-            QMessageBox.critical(self, 'Rom Not Found', 'See console for full error message.')
+        if results['return_code'] != 0:
+            QMessageBox.critical(self, 'Rom Not Found', f'{results['err']}')
         else:
-            QMessageBox.information(self, 'Rom Closed', f'{self.mame_thread.rom_name} closed successfully.')
+            QMessageBox.information(self, 'Rom Closed', f'{results['output']}')
             if self.pre_launch_hs_table:
                 try:
                     hi2txt_results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hi_path}'],
