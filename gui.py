@@ -825,10 +825,13 @@ class MainWindow(QMainWindow):
             menu.addAction(delete)
             delete.triggered.connect(lambda: self.delete_leaf_item(tree_item))
             if tree_item.parent().text(0) == 'Input Files':
+                inp_name = tree_item.text(0)
+                rom_name = inp_name.split('_')[0]
+                print(rom_name)
                 sub_menu = QMenu('Playback with...')
                 for path in self.mame_paths:
                     action = QAction(str(path), self)
-                    action.triggered.connect(lambda: print(self.sender().text()))
+                    action.triggered.connect(lambda: self.run_rom(rom_name, play_back_input=True, input_file_name=inp_name))
                     sub_menu.addAction(action)
                     menu.addMenu(sub_menu)
         menu.exec(self.save_state_tree.viewport().mapToGlobal(position))
@@ -912,7 +915,7 @@ class MainWindow(QMainWindow):
         menu.exec(self.high_score_game_tree.viewport().mapToGlobal(position))
 
     # TODO Take another look at this.
-    def run_rom(self, rom_name: str, record_input=False) -> None:
+    def run_rom(self, rom_name: str, record_input=False, play_back_input=False, input_file_name=None) -> None:
         """Attempt to run a rom, with a given MAME path.
 
         If the rom is hi2txt compatible, a snapshot is taken of current high score tables.
@@ -939,7 +942,7 @@ class MainWindow(QMainWindow):
             except FileNotFoundError:
                 print('whoops')
 
-        self.mame_thread = MAMEThread(mame_exe, rom_name, mame_path, record_input=record_input)
+        self.mame_thread = MAMEThread(mame_exe, rom_name, Path(mame_path), record_input=record_input, playback_input=play_back_input, input_file_name=input_file_name)
         self.mame_thread.done.connect(self.rom_done)
         self.mame_thread.start()
 

@@ -506,3 +506,15 @@ def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
     hi2txt_output = get_hs_tables(hi_scores)
     new_pbs = get_new_pbs(hi2txt_output)
     save_pbs(new_pbs, connection, cursor)
+
+# TODO Temp fix after I realized inps need version
+def get_mame_version(root_mame_dir: Path):
+    mame_exe = root_mame_dir / 'mame.exe'
+    if mame_exe.is_file():
+        results = subprocess.run([mame_exe, '-version'], cwd=root_mame_dir, capture_output=True, text=True)
+        return results.stdout
+
+# if __name__ == '__main__':
+#     for path in raw_mame_paths:
+#         results = subprocess.run([(path + r'\mame.exe'), '-version'], cwd=path, capture_output=True, text=True)
+#         print(results.stdout)

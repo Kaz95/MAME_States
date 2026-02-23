@@ -12,7 +12,7 @@ from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent,
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget
 
-from logic.main import save_pb_to_database, scan_for_pb, PersonalBestDataBase
+from logic.main import save_pb_to_database, scan_for_pb, PersonalBestDataBase, get_mame_version
 
 
 ######################
@@ -28,9 +28,12 @@ class MAMEThread(QThread):
     done: pyqtSignal = pyqtSignal(dict)
     """Custom 'finished' signal. Emitted when 'run' method finishes."""
 
-    def __init__(self, mame_exe: Path, rom_name: str, mame_path: Path, record_input=False) -> None:
+    def __init__(self, mame_exe: Path, rom_name: str, mame_path: Path, record_input=False, playback_input=False,
+                 input_file_name=None) -> None:
         super().__init__()
+        self.playback_input = playback_input
         self.record_input = record_input
+        self.input_file_name = input_file_name
         self.mame_exe: Path = mame_exe
         """Path object pointing to MAME.exe file."""
 
@@ -45,17 +48,30 @@ class MAMEThread(QThread):
         date_object = date_object.strftime("%Y-%m-%d %H:%M")
         date_str = date_object.replace(' ', '_')
         date_str = date_str.replace(':', '-')
+        full_mame_version = get_mame_version(self.mame_path)
+        short_mame_version = full_mame_version.split()[0]
+
         print(f'{self.rom_name}_{date_str}.inp')
-        if not self.record_input:
-            commands = [self.mame_exe, self.rom_name]
+        if self.record_input:
+            commands = [self.mame_exe, self.rom_name, '-record', f'{self.rom_name}_{date_str}_{short_mame_version}.inp']
+        elif self.playback_input:
+            if self.input_file_name:
+                commands = [self.mame_exe, self.rom_name, '-playback', f'{self.input_file_name}.inp']
+            else:
+                print('a warning or something.')
+                return
         else:
-            commands = [self.mame_exe, self.rom_name, '-record', f'{self.rom_name}_{date_str}.inp']
+            commands = [self.mame_exe, self.rom_name]
+        # if not self.record_input:
+        #     commands = [self.mame_exe, self.rom_name]
+        # else:
+        #     commands = [self.mame_exe, self.rom_name, '-record', f'{self.rom_name}_{date_str}.inp']
         """Override and extend run function to run a rom and capture/emit its stdout, stderr, and return code."""
         process = subprocess.Popen(commands,
-                                        cwd=rf'{self.mame_path}',
-                                        stdout=subprocess.PIPE,
-                                        stderr=subprocess.PIPE,
-                                        text=True)
+                                   cwd=rf'{self.mame_path}',
+                                   stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE,
+                                   text=True)
         output, err = process.communicate()
         return_code = process.returncode
         results = {'output': output, 'err': err, 'return_code': return_code, 'rom': self.rom_name}
