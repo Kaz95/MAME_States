@@ -369,7 +369,7 @@ class MainWindow(QMainWindow):
         self.save_state_tree.setItemDelegate(SaveStateNameInputValidator(self))
         self.save_state_tree.setTabKeyNavigation(True)
         self.save_state_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.save_state_tree.customContextMenuRequested.connect(self.show_input_file_context)
+        self.save_state_tree.customContextMenuRequested.connect(self.show_save_state_tree_context)
 
         self.fill_save_state_tree()
         self.save_state_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
@@ -787,7 +787,16 @@ class MainWindow(QMainWindow):
         self.notes_window.raise_()
         self.notes_window.setFocus()
 
-    def show_input_file_context(self, position: QPoint) -> None:
+    def run_mame(self, root_mame_dir):
+        root_mame_dir = Path(root_mame_dir)
+        mame_exe = root_mame_dir / 'mame.exe'
+        if mame_exe.is_file():
+            subprocess.Popen(mame_exe, cwd=rf'{root_mame_dir}')
+        else:
+            print(f'File {root_mame_dir} not found')
+
+
+    def show_save_state_tree_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
 
         If no item is selected, no menu is created. Menu includes test actions, based on path.
@@ -801,6 +810,7 @@ class MainWindow(QMainWindow):
         menu = QMenu()
         if tree_item.parent() is None:
             launch = QAction('Launch')
+            launch.triggered.connect(lambda: self.run_mame(tree_item.text(0)))
             menu.addAction(launch)
         elif tree_item.text(0) == 'Input Files' or tree_item.text(0) == 'Save States':
             open_explorer = QAction('Open in Explorer')
