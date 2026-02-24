@@ -12,7 +12,7 @@ import sqlite3
 import subprocess
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
+from PyQt6.QtCore import Qt, QSize, QTimer, QPoint, pyqtSlot
 from PyQt6.QtGui import QAction, QFont, QIntValidator, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
@@ -44,6 +44,7 @@ class MainWindow(QMainWindow):
         slots.
         """
         super().__init__()
+        self.hs = None
         self.progress_bar = None
         """Reference to progress bar popup window. Prevents garbage collection and allows access."""
 
@@ -53,7 +54,7 @@ class MainWindow(QMainWindow):
         self.mame_thread = None
         """Reference to thread used to launch MAME subprocess."""
 
-        self.temp_fields = []
+        self.temp_fields = {}
         """References to 'other fields' for a given rom PB. Used for deletion."""
 
         self.rom_search_popup: QWidget | None = None
@@ -521,14 +522,25 @@ class MainWindow(QMainWindow):
             self.personal_best_layout.addWidget(tlabel, (index + 1), 1)
 
     def new_update_pb_panel(self, high_score: int, other_fields: dict):
+        self.temp_fields.clear()
         self.create_pb_field_item('High Score', high_score)
+        print(self.temp_fields)
         if other_fields:
             print(other_fields)
             for key in other_fields:
                 self.create_pb_field_item(key, other_fields[key])
 
     def create_pb_field_item(self, field_name, field_value) -> QListWidgetItem:
+
         pb_field = PBField(field_name, field_value)
+        if field_name == 'High Score':
+            self.temp_fields['high score'] = pb_field
+            # self.hs = pb_field
+        else:
+            self.temp_fields[f'{field_name}'] = pb_field
+        pb_field.field_value_label.editor.editingFinished.connect(self.new_update_high_score_pb)
+        # self.temp_fields.clear()
+
         list_item = QListWidgetItem(self.pb_fields_list)
         self.pb_fields_list.setItemWidget(list_item, pb_field)
         list_item.setSizeHint(pb_field.sizeHint())
@@ -664,6 +676,19 @@ class MainWindow(QMainWindow):
             widget_item = self.split_list.itemWidget(prev)
             if widget_item:
                 widget_item.toggle_labels()
+
+    def new_update_high_score_pb(self) -> None:
+        """Update in-memory representation and saves to database"""
+        selected = self.high_score_game_tree.selectedItems()
+        if selected:
+            game_item = selected[0]
+            game_name = game_item.text(0)
+            self.pb_info[game_name]['hs'] = self.temp_fields['high score'].field_value_label.editor.text()
+            for key in self.temp_fields:
+                if key == 'high score':
+                    continue
+                self.pb_info[game_name]['other_fields'][key] = self.temp_fields[key].field_value_label.editor.text()
+            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def update_high_score_pb(self) -> None:
         """Update in-memory representation and saves to database"""
