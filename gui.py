@@ -16,10 +16,11 @@ from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
 from PyQt6.QtGui import QAction, QFont, QIntValidator, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
-    QFileDialog, QMessageBox, QMenu
+    QFileDialog, QMessageBox, QMenu, QListWidget
 
 from custom.widgets import StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
-    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, ToggleableLabel, MAMEThread, NewStageSplitItem
+    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, ToggleableLabel, MAMEThread, NewStageSplitItem, \
+    PBField
 from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, \
     delete_personal_best, delete_splits, get_all_input_files, load_personal_bests_from_database, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
@@ -181,6 +182,11 @@ class MainWindow(QMainWindow):
         self.split_list: StageSplitListWidget = StageSplitListWidget(self.pb_info, self.db_connection, self.db_cursor)
         """Contains stage splits for current PB."""
 
+        self.pb_fields_list: QListWidget = QListWidget()
+        self.new_personal_best_layout = QVBoxLayout()
+        self.new_personal_best_layout.addWidget(self.pb_fields_list)
+        self.pb_fields_list.setFont(self.sub_item_font)
+
         self.add_split_button: QPushButton = QPushButton('Add Split')
         """Allow user to, manually, add a stage split to current PB."""
 
@@ -213,7 +219,8 @@ class MainWindow(QMainWindow):
         self.setup_pb_panel()
         self.setup_split_panel()
 
-        self.info_layout.addLayout(self.personal_best_layout)
+        # self.info_layout.addLayout(self.personal_best_layout)
+        self.info_layout.addLayout(self.new_personal_best_layout, 1)
         self.info_layout.addStretch()
 
         self.info_layout.addWidget(self.split_list, 1)
@@ -403,16 +410,17 @@ class MainWindow(QMainWindow):
         self.game_list_container.addWidget(self.high_score_game_tree)
         self.game_list_container.addLayout(self.game_list_button_container)
 
-        first_item = self.high_score_game_tree.topLevelItem(0)
-        self.high_score_game_tree.setCurrentItem(first_item)
+        # first_item = self.high_score_game_tree.topLevelItem(0)
+        # self.high_score_game_tree.setCurrentItem(first_item)
 
     def setup_pb_panel(self) -> None:
         """Personal Best Panel widget customization."""
-        self.high_score_value_label.editor.setValidator(QIntValidator())
-        self.high_score_value_label.editor.editingFinished.connect(self.update_high_score_pb)
-
-        self.personal_best_layout.addWidget(self.high_score_label, 0, 0)
-        self.personal_best_layout.addWidget(self.high_score_value_label, 0, 1)
+        pass
+        # self.high_score_value_label.editor.setValidator(QIntValidator())
+        # self.high_score_value_label.editor.editingFinished.connect(self.update_high_score_pb)
+        #
+        # self.personal_best_layout.addWidget(self.high_score_label, 0, 0)
+        # self.personal_best_layout.addWidget(self.high_score_value_label, 0, 1)
 
     def setup_split_panel(self) -> None:
         """Split Panel widget customization."""
@@ -511,6 +519,20 @@ class MainWindow(QMainWindow):
             self.temp_fields.append(tlabel)
             self.personal_best_layout.addWidget(label, (index + 1), 0)
             self.personal_best_layout.addWidget(tlabel, (index + 1), 1)
+
+    def new_update_pb_panel(self, high_score: int, other_fields: dict):
+        self.create_pb_field_item('High Score', high_score)
+        if other_fields:
+            print(other_fields)
+            for key in other_fields:
+                self.create_pb_field_item(key, other_fields[key])
+
+    def create_pb_field_item(self, field_name, field_value) -> QListWidgetItem:
+        pb_field = PBField(field_name, field_value)
+        list_item = QListWidgetItem(self.pb_fields_list)
+        self.pb_fields_list.setItemWidget(list_item, pb_field)
+        list_item.setSizeHint(pb_field.sizeHint())
+        return list_item
 
     def create_split_item(self, split: list[int | str], game_name: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
@@ -613,6 +635,7 @@ class MainWindow(QMainWindow):
 
         Split diffs are calculated and displayed.
         """
+        self.pb_fields_list.clear()
         self.split_list.clear()
         selected = self.high_score_game_tree.selectedItems()
         if selected:
@@ -623,8 +646,8 @@ class MainWindow(QMainWindow):
             other_fields = info['other_fields']
             splits = info['splits']
 
-            self.update_pb_panel(hs, other_fields)
-
+            # self.update_pb_panel(hs, other_fields)
+            self.new_update_pb_panel(hs, other_fields)
             for split in splits:
                 self.create_split_item(split, game_name)
 

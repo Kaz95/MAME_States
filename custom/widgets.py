@@ -242,12 +242,12 @@ class ToggleableLabel(QWidget):
     The text is reverted if the changes are not confirmed.
     """
 
-    def __init__(self, text: str, parent=None):
+    def __init__(self, text: str | int, parent=None):
         super().__init__(parent)
         self.layout: QHBoxLayout = QHBoxLayout(self)
         # self.setMouseTracking(True)
-        self.label: QLabel = QLabel(text)
-        self.editor: QLineEdit = QLineEdit(text)
+        self.label: QLabel = QLabel(str(text))
+        self.editor: QLineEdit = QLineEdit(str(text))
 
         self.editor.hide()
         self.layout.addWidget(self.label)
@@ -425,6 +425,17 @@ class StageSplitItem(QWidget):
     #     if self.name_editor.text():
     #         save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
 
+class PBField(QWidget):
+    def __init__(self, field_name: str, field_value: str| int):
+        super().__init__()
+        self.field_name = (field_name + ':')
+        self.field_value = str(field_value)
+        self.field_name_label = QLabel(self.field_name)
+        self.field_value_label = ToggleableLabel(self.field_value)
+        self.layout = QHBoxLayout()
+        self.setLayout(self.layout)
+        self.layout.addWidget(self.field_name_label)
+        self.layout.addWidget(self.field_value_label)
 
 class NewStageSplitItem(QWidget):
     """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
