@@ -12,7 +12,7 @@ from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent,
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget, QSpacerItem
 
-from logic.main import save_pb_to_database, scan_for_pb, PersonalBestDataBase, get_mame_version
+from logic.main import save_pb_to_database, scan_for_pb, PersonalBests, get_mame_version
 
 
 ######################
@@ -443,7 +443,7 @@ class NewStageSplitItem(QWidget):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used as a customer item widget on a QListWidget instance."""
 
-    def __init__(self, split: list[str | int], game_db: PersonalBestDataBase, game_name: str,
+    def __init__(self, split: list[str | int], game_db: PersonalBests, game_name: str,
                  parent_list: 'StageSplitListWidget', connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
         """ Initialize the StageSplitItem subclass
 

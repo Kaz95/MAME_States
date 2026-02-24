@@ -17,7 +17,7 @@ raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
                   r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10',
                   r'C:\Users\kazac\Downloads\mame']
 
-PersonalBestDataBase = dict[str, dict[str, int | dict[str, str] | list]]
+PersonalBests = dict[str, dict[str, int | dict[str, str] | list]]
 """In-memory representation of the 'personal_bests' table of the database."""
 
 test_pb_info = {'DonPachi': {'hs': 900,
@@ -38,76 +38,80 @@ test_pb_info = {'DonPachi': {'hs': 900,
 ###############
 # Save States #
 ###############
-def get_roms_with_saves(mame_path: Path) -> list[str]:
+def get_roms_with_saves(mame_dir: Path) -> list[str]:
     """Create and return a list of roms that have a save folder in the given MAME file path"""
-    contents = os.listdir(mame_path / 'sta')
-    return contents
+    rom_names = os.listdir(mame_dir / 'sta')
+    return rom_names
 
 
-def get_save_names(games_with_saves: list[str], mame_folder: Path) -> dict[str, list[str]]:
+# TODO Consider using pathlib instead of os.
+#   Also, I think I'm modifying the list in place? Why though? Consider how this scales. Is a new list ok?
+def get_save_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list[str]]:
     """Return all save files, and their respective roms."""
     save_states = {}
-    for game in games_with_saves:
-        saves = os.listdir(mame_folder / "sta" / game)
+    for rom in roms_with_saves:
+        save_state_file_names = os.listdir(mame_dir / "sta" / rom)
 
-        for save in saves:
-            save_index = saves.index(save)
-            save, _ = os.path.splitext(save)
-            saves[save_index] = save
+        for name in save_state_file_names:
+            save_index = save_state_file_names.index(name)
+            name, _ = os.path.splitext(name)
+            save_state_file_names[save_index] = name
 
-        save_states[game] = saves
+        save_states[rom] = save_state_file_names
     return save_states
 
 
-def get_all_input_files(mame_paths: list[Path]) -> dict[str:list[str]]:
-    """Return a list of roms that have input files, for each path in the given list."""
-    all_inps = {}
-    for path in mame_paths:
-        inp_folder = path / 'inp'
-        if inp_folder.is_dir():
-            all_inps[path] = [item.stem for item in inp_folder.iterdir()]
-    return all_inps
+def get_all_input_files(mame_dirs: list[Path]) -> dict[str:list[str]]:
+    """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
+    all_input_files = {}
+    for mame_dir in mame_dirs:
+        input_file_dir = mame_dir / 'inp'
+        if input_file_dir.is_dir():
+            all_input_files[mame_dir] = [input_file.stem for input_file in input_file_dir.iterdir()]
+    return all_input_files
 
 
-def get_all_roms_with_saves(mame_paths: list[Path]) -> dict[str:dict[str:list[str]]]:
-    """Retrieve all save state data."""
-    all_save_states = {}
-    for path in mame_paths:
-        games_with_saves = get_roms_with_saves(path)
-        save_states = get_save_names(games_with_saves, path)
-        all_save_states[path] = save_states
-    return all_save_states
+def get_all_roms_with_saves(mame_dirs: list[Path]) -> dict[str:dict[str:list[str]]]:
+    """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
+    all_save_state_names = {}
+    for mame_dir in mame_dirs:
+        roms_with_saves = get_roms_with_saves(mame_dir)
+        save_state_names = get_save_names(roms_with_saves, mame_dir)
+        all_save_state_names[mame_dir] = save_state_names
+    return all_save_state_names
 
 
+# TODO Consider generator
 def get_real_name(description_db: dict[str, str], rom_name: str) -> str:
     """Return the full name of a given rom"""
-    for item in description_db.items():
-        if item[1] == rom_name:
-            real_name = item[0]
+    for key, value in description_db.items():
+        if value == rom_name:
+            real_name = key
             return real_name
 
 
 #########
 # Paths #
 #########
-def load_path_from_db(cursor: sqlite3.Cursor) -> list[Path]:
+def get_mame_dirs(cursor: sqlite3.Cursor) -> list[Path]:
     """Load paths as strings from database. Convert to Path objects before returning them."""
     sql_query = """SELECT * FROM paths"""
     cursor.execute(sql_query)
     raw_results = cursor.fetchall()
-    paths = []
+    mame_dirs = []
     for entry in raw_results:
-        path = Path(entry[1])
-        paths.append(path)
-    return paths
+        mame_dir = Path(entry[1])
+        mame_dirs.append(mame_dir)
+    return mame_dirs
 
 
-def save_paths_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, paths: list[Path]) -> None:
+# TODO This wipes out manually added version #s until I sort that out.
+def save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[Path]) -> None:
     """Format list of paths as rows. Insert them into database. """
     sql_statement = """INSERT OR IGNORE INTO paths VALUES (?, ?, ?, ?, ?);"""
     rows = []
-    for path in paths:
-        row = (None, str(path), path.name, None, None)
+    for mame_dir in mame_dirs:
+        row = (None, str(mame_dir), mame_dir.name, None, None)
         rows.append(row)
 
     cursor.executemany(sql_statement, rows)
@@ -117,7 +121,7 @@ def save_paths_to_database(connection: sqlite3.Connection, cursor: sqlite3.Curso
 ##################
 # Personal Bests #
 ##################
-def load_personal_bests_from_database(cursor: sqlite3.Cursor) -> PersonalBestDataBase:
+def get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     """Load and format all personal best information from the database."""
     pb_info = {}
 
@@ -146,7 +150,7 @@ def load_personal_bests_from_database(cursor: sqlite3.Cursor) -> PersonalBestDat
     return pb_info
 
 
-def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> None:
+def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info: PersonalBests) -> None:
     """Update database with provided personal best and split information.
 
        Rows are added if they do not exist, and updated otherwise.
@@ -156,17 +160,17 @@ def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, 
     splits_insert = ("INSERT INTO splits VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET label = excluded.label, "
                      "score = excluded.score, 'index' = excluded.'index'")
 
-    pb_rows = new_collate_pb_rows(cursor, pb_info)
-    splits = collate_splits(cursor, pb_info)
+    pb_rows = collate_pb_rows(cursor, pb_info)
+    split_rows = collate_split_rows(cursor, pb_info)
 
     cursor.executemany(pb_insert, pb_rows)
-    cursor.executemany(splits_insert, splits)
+    cursor.executemany(splits_insert, split_rows)
 
     connection.commit()
 
 
 def delete_personal_best(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str) -> None:
-    """Delete 'highscore' and 'distance' data from database, for a given rom."""
+    """Delete personal best data from database, for a given rom."""
     sql_statement = "DELETE FROM personal_bests WHERE rom_id = ?"
     rom_id = id_from_description(rom_description, cursor)
     cursor.execute(sql_statement, (rom_id,))
@@ -201,12 +205,12 @@ def get_raw_rom_info(cursor: sqlite3.Cursor) -> list:
 ##########
 # Helper #
 ##########
-def id_from_description(name: str, cursor: sqlite3.Cursor) -> int:
+def id_from_description(description: str, cursor: sqlite3.Cursor) -> int:
     """Retrieve the corresponding rom_id, for a given rom description, from the database."""
     sql_statement = "SELECT id FROM roms WHERE description = ?"
-    cursor.execute(sql_statement, (name,))
-    rom_id = cursor.fetchall()
-    rom_id = rom_id[0][0]
+    cursor.execute(sql_statement, (description,))
+    results = cursor.fetchall()
+    rom_id = results[0][0]
     return rom_id
 
 
@@ -214,12 +218,12 @@ def id_from_rom_name(name: str, cursor: sqlite3.Cursor) -> int:
     """Retrieve the corresponding rom_id, for a given rom name, from the database."""
     sql_statement = "SELECT id FROM roms WHERE name = ?"
     cursor.execute(sql_statement, (name,))
-    rom_id = cursor.fetchall()
-    rom_id = rom_id[0][0]
+    results = cursor.fetchall()
+    rom_id = results[0][0]
     return rom_id
 
 
-def new_collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> list[tuple]:
+def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[tuple]:
     """Serialize personal best highscore and related information into rows for database insertion."""
     rows = []
     for key in pb_info:
@@ -233,34 +237,38 @@ def new_collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -
     return rows
 
 
-# TODO Why am I not retrieving the split primary key along with split info? Would eliminate need for this.
-def get_split_pk(cursor: sqlite3.Cursor, rom_description: str, split_label: str) -> list[tuple]:
-    """Retrieve a primary key from database. Rom id and split label are used as unique identifier."""
-    sql_statement = "SELECT id FROM splits WHERE rom_id = ? AND label = ?"
-    rom_id = id_from_description(rom_description, cursor)
-    cursor.execute(sql_statement, (rom_id, split_label))
-    results = cursor.fetchall()
-    return results
+# TODO Not used.
+# def get_split_pk(cursor: sqlite3.Cursor, rom_description: str, split_label: str) -> list[tuple]:
+#     """Retrieve a primary key from database. Rom id and split label are used as unique identifier."""
+#     sql_statement = "SELECT id FROM splits WHERE rom_id = ? AND label = ?"
+#     rom_id = id_from_description(rom_description, cursor)
+#     cursor.execute(sql_statement, (rom_id, split_label))
+#     results = cursor.fetchall()
+#     return results
 
 
-def collate_splits(cursor: sqlite3.Cursor, pb_info: PersonalBestDataBase) -> list[tuple]:
-    """Serialize splits information into rows for database insertion."""
-    splits = []
+def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[tuple]:
+    """Serialize splits information into rows for database insertion.
+
+    Split order is preserved by using the splits current position in its perspective splits list.
+    """
+    rows = []
     for pb in pb_info:
         pb_dict = pb_info[pb]
-        split = pb_dict['splits']
-        for item in split:
+        splits = pb_dict['splits']
+        for split in splits:
             # Results are returned raw and may be empty.
             # split_primary_key = get_split_pk(cursor, pb, item[0])
             # if split_primary_key:
             #     split_primary_key = split_primary_key[0][0]
             # else:
             #     split_primary_key = None
-            if len(item) < 3:
-                item.append(None)
-            row = (item[2], item[0], item[1], split.index(item), id_from_description(pb, cursor))
-            splits.append(row)
-    return splits
+
+            if len(split) < 3:   # If no pk, must be new split. Give None to auto gen pk.
+                split.append(None)
+            row = (split[2], split[0], split[1], splits.index(split), id_from_description(pb, cursor))
+            rows.append(row)
+    return rows
 
 
 def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str:str]:
@@ -273,8 +281,8 @@ def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str:str]:
     cursor.execute(sql_statement)
     results = cursor.fetchall()
     descriptions_and_names = {}
-    for item in results:
-        descriptions_and_names[item[1]] = item[0]
+    for entry in results:
+        descriptions_and_names[entry[1]] = entry[0]
 
     return descriptions_and_names
 

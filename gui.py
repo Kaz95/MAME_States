@@ -21,11 +21,11 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 from custom.widgets import StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, ToggleableLabel, MAMEThread, NewStageSplitItem, \
     PBField
-from logic.main import get_real_name, load_path_from_db, get_all_roms_with_saves, \
-    delete_personal_best, delete_splits, get_all_input_files, load_personal_bests_from_database, \
+from logic.main import get_real_name, get_mame_dirs, get_all_roms_with_saves, \
+    delete_personal_best, delete_splits, get_all_input_files, get_personal_bests, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
-    prepare_pb_for_db, get_formatted_rom_info, PersonalBestDataBase
-from logic.main import save_paths_to_database, get_descriptions_and_names, \
+    prepare_pb_for_db, get_formatted_rom_info, PersonalBests
+from logic.main import save_mame_dirs, get_descriptions_and_names, \
     delete_split
 
 
@@ -84,10 +84,10 @@ class MainWindow(QMainWindow):
         # --------- #
         # Load Data #
         # --------- #
-        self.mame_paths: list[Path] = load_path_from_db(self.db_cursor)
+        self.mame_paths: list[Path] = get_mame_dirs(self.db_cursor)
         """List of all MAME directories that will be used by the application."""
 
-        self.pb_info: PersonalBestDataBase = load_personal_bests_from_database(self.db_cursor)
+        self.pb_info: PersonalBests = get_personal_bests(self.db_cursor)
         """Personal best information."""
 
         self.fill_data_structures()
@@ -1210,7 +1210,7 @@ class MainWindow(QMainWindow):
             if path not in self.mame_paths:
                 self.mame_paths.append(path)
 
-            save_paths_to_database(self.db_connection, self.db_cursor, self.mame_paths)
+            save_mame_dirs(self.db_connection, self.db_cursor, self.mame_paths)
             self.all_save_states = get_all_roms_with_saves(self.mame_paths)
             self.save_state_tree.blockSignals(True)
             self.fill_save_state_tree()
@@ -1231,7 +1231,7 @@ class MainWindow(QMainWindow):
         pb_scanner = PBScannerThread()
         pb_scanner.finished.connect(self.scan_finished)
         pb_scanner.start()
-        self.pb_info = load_personal_bests_from_database(self.db_cursor)
+        self.pb_info = get_personal_bests(self.db_cursor)
         self.fill_highscore_game_list()
 
     def scan_finished(self) -> None:
