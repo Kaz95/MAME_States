@@ -238,16 +238,6 @@ def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[tupl
     return rows
 
 
-# TODO Not used.
-# def get_split_pk(cursor: sqlite3.Cursor, rom_description: str, split_label: str) -> list[tuple]:
-#     """Retrieve a primary key from database. Rom id and split label are used as unique identifier."""
-#     sql_statement = "SELECT id FROM splits WHERE rom_id = ? AND label = ?"
-#     rom_id = id_from_description(rom_description, cursor)
-#     cursor.execute(sql_statement, (rom_id, split_label))
-#     results = cursor.fetchall()
-#     return results
-
-
 def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[tuple]:
     """Serialize splits information into rows for database insertion.
 
@@ -258,13 +248,6 @@ def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[t
         pb_dict = pb_info[pb]
         splits = pb_dict['splits']
         for split in splits:
-            # Results are returned raw and may be empty.
-            # split_primary_key = get_split_pk(cursor, pb, item[0])
-            # if split_primary_key:
-            #     split_primary_key = split_primary_key[0][0]
-            # else:
-            #     split_primary_key = None
-
             if len(split) < 3:   # If no pk, must be new split. Give None to auto gen pk.
                 split.append(None)
             row = (split[2], split[0], split[1], splits.index(split), id_from_description(pb, cursor))
@@ -408,19 +391,16 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
             return new_pb
 
 
+# FIXME Too much code reuse.
 def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
     """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
     defaults_xml = Path(r'C:\Users\kazac\Downloads\hi2txt\hi2txt_doc\hi2txt_defaults')
     new_pbs = {}
-    # pprint.pp(hi_text_output)
     for mame_dir in hi2txt_tables:
         pb_dict = hi2txt_tables[mame_dir]
-        # print(pb_dict)
-
         for rom_name in pb_dict:
             leaderboards = pb_dict[rom_name].split('\n#')
             for leaderboard in leaderboards:
-                # pprint.pp(leaderboard.splitlines())
                 leaderboard_lines = leaderboard.splitlines()
                 if leaderboard_lines[0].startswith('#') or leaderboard_lines[0].startswith(' '):
                     leaderboard_name = leaderboard_lines.pop(0).strip('# ')

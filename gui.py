@@ -7,19 +7,18 @@ TODO:
     * Decide on new features to add.
 """
 import os
-import pprint
 import sqlite3
 import subprocess
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QSize, QTimer, QPoint, pyqtSlot
-from PyQt6.QtGui import QAction, QFont, QIntValidator, QColor, QBrush
+from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
+from PyQt6.QtGui import QAction, QFont, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
     QFileDialog, QMessageBox, QMenu, QListWidget
 
 from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
-    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, ToggleableLabel, MAMEThread, NewStageSplitItem, \
+    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, MAMEThread, NewStageSplitItem, \
     PBField
 from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_with_saves, \
     delete_personal_best, delete_splits, get_all_input_files, get_personal_bests, \
@@ -214,7 +213,6 @@ class MainWindow(QMainWindow):
         # self.setup_pb_panel()
         self.setup_split_panel()
 
-        # self.info_layout.addLayout(self.personal_best_layout)
         self.info_layout.addLayout(self.new_personal_best_layout, 1)
         self.info_layout.addStretch()
 
@@ -428,10 +426,8 @@ class MainWindow(QMainWindow):
             item = QTreeWidgetItem(self.rom_search_tree, [rom_description])
             parent = self.all_rom_info[rom_description]['parent']
             if parent is not None:
-                color = QColor(211, 211, 211, 127)
-                brush = QBrush(color)
-                # Apply to item (column 0)
-                item.setForeground(0, brush)
+                self.paint_clone_rom_item(item, rom_description)
+
             item.setToolTip(0, self.descriptions_and_names[rom_description])
 
         self.rom_search_cancel_button.clicked.connect(self.close_rom_search_window)
@@ -612,29 +608,6 @@ class MainWindow(QMainWindow):
                     continue
                 self.pb_info[rom_description]['other_fields'][field_name] = self.temp_fields[field_name].field_value.editor.text()
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
-
-    # def update_high_score_pb(self) -> None:
-    #     """Update in-memory representation and saves to database"""
-    #     new_pb = int(self.high_score_value_label.editor.text())
-    #     selected = self.games_with_pb_tree.selectedItems()
-    #     if selected:
-    #         game_item = selected[0]
-    #         game_name = game_item.text(0)
-    #         self.pb_info[game_name]['hs'] = new_pb
-    #         save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
-
-    # def update_other_fields(self, label: str) -> None:
-    #     """Update in-memory representation and saves to database"""
-    #     sender = self.sender()
-    #     updated_data = sender.text()
-    #     selected = self.games_with_pb_tree.selectedItems()
-    #     if selected:
-    #         game_item = selected[0]
-    #         game_name = game_item.text(0)
-    #         print(label, ' - ', sender.text())
-    #         self.pb_info[game_name]['other_fields'][label] = updated_data
-    #         pprint.pp(self.pb_info)
-    #         save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def highscore_add_game_clicked(self) -> None:
         """Pop out Rom Search Tab and allow user to choose a rom. Main window is disabled."""
@@ -966,10 +939,9 @@ class MainWindow(QMainWindow):
         self.debounce_timer.start(300)
 
     # TODO Figure out where to put this.
-    def paint_clone_rom_item(self, item):
+    def paint_clone_rom_item(self, item, rom_description):
         color = QColor(211, 211, 211, 127)
         brush = QBrush(color)
-        # Apply to item (column 0)
         item.setForeground(0, brush)
 
     # TODO Figure out where to put this.
@@ -978,7 +950,7 @@ class MainWindow(QMainWindow):
         item.setToolTip(0, rom_name)
         parent = self.all_rom_info[rom_description]['parent']
         if parent is not None:
-            self.paint_clone_rom_item(item)
+            self.paint_clone_rom_item(item, rom_description)
 
         return item, weight
 

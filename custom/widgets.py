@@ -45,6 +45,7 @@ class MAMEThread(QThread):
         """MAME directory containing the MAME.exe that will be used to launch rom"""
 
     def run(self) -> None:
+        """Override and extend run function to run a rom and capture/emit its stdout, stderr, and return code."""
         date_object = datetime.now()
         formatted_date = date_object.strftime("%Y-%m-%d %H:%M")
         formatted_date = formatted_date.replace(' ', '_')
@@ -64,11 +65,7 @@ class MAMEThread(QThread):
                 return
         else:
             commands = [self.mame_exe, self.rom_name]
-        # if not self.record_input:
-        #     commands = [self.mame_exe, self.rom_name]
-        # else:
-        #     commands = [self.mame_exe, self.rom_name, '-record', f'{self.rom_name}_{date_str}.inp']
-        """Override and extend run function to run a rom and capture/emit its stdout, stderr, and return code."""
+
         process = subprocess.Popen(commands,
                                    cwd=rf'{self.mame_dir}',
                                    stdout=subprocess.PIPE,
