@@ -10,7 +10,8 @@ from pathlib import Path
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent, QIcon
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
-    QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget, QSpacerItem
+    QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget, QSpacerItem, \
+    QListWidgetItem
 
 from logic.main import save_pb_to_database, scan_for_pb, PersonalBests, get_mame_version
 
@@ -25,10 +26,10 @@ class MAMEThread(QThread):
     Used to spawn a MAME subprocess on a new thread. A new thread is needed to avoid blocking while waiting for return.
     Subprocess output, errors, and return code are captured and emitted before thread dies.
     """
-    done: pyqtSignal = pyqtSignal(dict)
+    mame_exited: pyqtSignal = pyqtSignal(dict)
     """Custom 'finished' signal. Emitted when 'run' method finishes."""
 
-    def __init__(self, mame_exe: Path, rom_name: str, mame_path: Path, record_input=False, playback_input=False,
+    def __init__(self, mame_exe: Path, rom_name: str, mame_dir: Path, record_input=False, playback_input=False,
                  input_file_name=None) -> None:
         super().__init__()
         self.playback_input = playback_input
@@ -40,20 +41,21 @@ class MAMEThread(QThread):
         self.rom_name: str = rom_name
         """Name of the rom being run."""
 
-        self.mame_path: Path = mame_path
+        self.mame_dir: Path = mame_dir
         """MAME directory containing the MAME.exe that will be used to launch rom"""
 
     def run(self) -> None:
         date_object = datetime.now()
-        date_object = date_object.strftime("%Y-%m-%d %H:%M")
-        date_str = date_object.replace(' ', '_')
-        date_str = date_str.replace(':', '-')
-        full_mame_version = get_mame_version(self.mame_path)
+        formatted_date = date_object.strftime("%Y-%m-%d %H:%M")
+        formatted_date = formatted_date.replace(' ', '_')
+        formatted_date = formatted_date.replace(':', '-')
+        full_mame_version = get_mame_version(self.mame_dir)
         short_mame_version = full_mame_version.split()[0]
 
-        print(f'{self.rom_name}_{date_str}.inp')
+        print(f'{self.rom_name}_{formatted_date}.inp')
         if self.record_input:
-            commands = [self.mame_exe, self.rom_name, '-record', f'{self.rom_name}_{date_str}_{short_mame_version}.inp']
+            commands = [self.mame_exe, self.rom_name, '-record',
+                        f'{self.rom_name}_{formatted_date}_{short_mame_version}.inp']
         elif self.playback_input:
             if self.input_file_name:
                 commands = [self.mame_exe, self.rom_name, '-playback', f'{self.input_file_name}.inp']
@@ -68,14 +70,14 @@ class MAMEThread(QThread):
         #     commands = [self.mame_exe, self.rom_name, '-record', f'{self.rom_name}_{date_str}.inp']
         """Override and extend run function to run a rom and capture/emit its stdout, stderr, and return code."""
         process = subprocess.Popen(commands,
-                                   cwd=rf'{self.mame_path}',
+                                   cwd=rf'{self.mame_dir}',
                                    stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE,
                                    text=True)
         output, err = process.communicate()
         return_code = process.returncode
         results = {'output': output, 'err': err, 'return_code': return_code, 'rom': self.rom_name}
-        self.done.emit(results)
+        self.mame_exited.emit(results)
 
 
 class PBScannerThread(QThread):
@@ -107,10 +109,10 @@ class ProgressBarWidget(QDialog):
         super().__init__(parent)
         self.setWindowFlag(Qt.WindowType.WindowCloseButtonHint, False)
 
-        self.progress = QProgressBar()
+        self.progress_bar = QProgressBar()
         """An indeterminate progress bar. Pulses."""
 
-        self.progress.setRange(0, 0)
+        self.progress_bar.setRange(0, 0)
         # self.progress.setMinimumWidth(400)
 
         self.label = QLabel('Scanning for new PBs...')
@@ -122,8 +124,9 @@ class ProgressBarWidget(QDialog):
 
         p_layout = QHBoxLayout()
         """Progress bar container widget."""
+
         p_layout.addStretch()
-        p_layout.addWidget(self.progress)
+        p_layout.addWidget(self.progress_bar)
         p_layout.addStretch()
 
         layout.addWidget(self.label)
@@ -176,25 +179,25 @@ class RomSearchWindow(QWidget):
             I probably don't need to pass the page widget either, as it can be derived from tabs widget.
     """
 
-    def __init__(self, page: QWidget, tab_container: QTabWidget, add_game_button: QPushButton,
+    def __init__(self, rom_search_page: QWidget, tabs_container: QTabWidget, add_game_button: QPushButton,
                  cancel_button: QPushButton):
         super().__init__()
         self.add_game_button: QPushButton = add_game_button
         self.cancel_button: QPushButton = cancel_button
-        self.tab_container: QTabWidget = tab_container
-        self.page: QWidget = page
+        self.tab_container: QTabWidget = tabs_container
+        self.rom_search_page: QWidget = rom_search_page
         self.add_game_button.show()
         self.cancel_button.show()
         # self.widget.setWindowFlags(Qt.WindowType.Window)
-        self.page.show()
+        self.rom_search_page.show()
         self.layout: QVBoxLayout = QVBoxLayout()
-        self.layout.addWidget(self.page)
+        self.layout.addWidget(self.rom_search_page)
         self.setLayout(self.layout)
         self.resize(800, 500)
 
     def closeEvent(self, event):
         # Reattach to tab when closed
-        self.tab_container.addTab(self.page, 'Rom Search')
+        self.tab_container.addTab(self.rom_search_page, 'Rom Search')
         self.add_game_button.hide()
         self.cancel_button.hide()
         main_window = self.tab_container.parent()
@@ -297,145 +300,18 @@ class ToggleableLabel(QWidget):
         self.label.show()
 
 
-class StageSplitItem(QWidget):
-    pass
-    # """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
-    #
-    # This class inherits most of its behavior from its parent class, while extending its functionality.
-    # Used as a customer item widget on a QListWidget instance."""
-    #
-    # def __init__(self, split: list[str | int], game_db: PersonalBestDataBase, game_name: str,
-    #              parent_list: 'StageSplitListWidget', connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
-    #     """ Initialize the StageSplitItem subclass
-    #
-    #     The StageSplitItem subclass inherits most of its behavior from, and extends, its parent class QWidget.
-    #     The initialization process creates the widgets and layouts that will make up the custom item widget.
-    #     """
-    #     super().__init__()
-    #     self.db_connection: sqlite3.Connection = connection
-    #     """Connection object that points to database connection."""
-    #
-    #     self.db_cursor: sqlite3.Cursor = cursor
-    #     """Cursor object used to navigate database."""
-    #
-    #     self.split = split
-    #     """The data that comprises a split. \n[index, stage, score]"""
-    #
-    #     self.parent_list: StageSplitListWidget = parent_list
-    #     """The list widget that contains this item."""
-    #
-    #     self.game_db = game_db
-    #     """In-memory representation of DB schema."""
-    #
-    #     self.game_name: str = game_name
-    #     """The name of the game which the split belongs to."""
-    #
-    #     self.stage: str = split[0]
-    #     self.score: int = split[1]
-    #
-    #     self.name_label: QLabel = QLabel(f'{self.stage}')
-    #     """Name of the stage, area, or boss that the split represents."""
-    #
-    #     self.score_label: QLabel = QLabel(f'{self.score}')
-    #     """The Score of this particular split."""
-    #
-    #     self.name_editor: QLineEdit = QLineEdit()
-    #     self.score_editor: QLineEdit = QLineEdit()
-    #
-    #     self.name_editor.setPlaceholderText('Stage-69')
-    #     self.score_editor.setPlaceholderText('696969')
-    #
-    #     self.name_editor.setText(self.stage)
-    #     self.score_editor.setText(str(self.score))
-    #
-    #     self.name_editor.hide()
-    #     self.score_editor.hide()
-    #
-    #     self.name_editor.editingFinished.connect(self._update_split_db)
-    #     self.score_editor.editingFinished.connect(self._update_split_db)
-    #
-    #     self.name_editor.returnPressed.connect(self._update_split_db)
-    #     self.score_editor.returnPressed.connect(self._update_split_db)
-    #     self.name_editor.returnPressed.connect(self.toggle_labels)
-    #     self.score_editor.returnPressed.connect(self.toggle_labels)
-    #
-    #     self.score_editor.setValidator(QIntValidator())
-    #
-    #     self.layout = QHBoxLayout()
-    #     self.layout.addWidget(self.name_label)
-    #     self.layout.addWidget(self.score_label)
-    #     self.layout.addWidget(self.name_editor)
-    #     self.layout.addWidget(self.score_editor)
-    #
-    #     self.setLayout(self.layout)
-    #
-    # def toggle_editors(self) -> None:
-    #     """Show editors, hide labels. Text is persisted."""
-    #
-    #     self.name_label.hide()
-    #     self.score_label.hide()
-    #
-    #     name_text = self.name_label.text()
-    #     name_text = name_text.strip(':')
-    #
-    #     score_text = self.score_label.text()
-    #
-    #     # Check for presence of diff text, strip if there.
-    #     if '(' in score_text:
-    #         end = score_text.index('(')
-    #         score_text = score_text[:end]
-    #
-    #     self.name_editor.setText(name_text)
-    #     self.score_editor.setText(score_text)
-    #
-    #     self.name_editor.show()
-    #     self.score_editor.show()
-    #
-    #     self.score_editor.setFocus()
-    #
-    # def toggle_labels(self) -> None:
-    #     """Show labels, hide editors. Text is persisted."""
-    #     self.name_editor.hide()
-    #     self.score_editor.hide()
-    #
-    #     name_text = self.name_editor.text()
-    #     self.name_label.setText(name_text)
-    #
-    #     score_text = self.score_editor.text()
-    #     self.score_label.setText(score_text)
-    #
-    #     # self.parent_list.add_diffs(self.game_db[self.game_name]['splits'])
-    #
-    #     self.name_label.show()
-    #     self.score_label.show()
-    #
-    # def _update_split_db(self) -> None:
-    #     """Update the 'in-memory' copy of the database and save to database.
-    #
-    #     Split order is preserved by the position of the in-memory representation of this item in the game's splits list.
-    #     Grabbing the index of the list that represents this item in memory allows you to act on the correct list.
-    #     Will no save empty pb label.
-    #     """
-    #     item_index = self.game_db[self.game_name]['splits'].index(self.split)
-    #     print(self.game_db[self.game_name]['splits'])
-    #
-    #     self.game_db[self.game_name]['splits'][item_index][1] = int(self.score_editor.text())
-    #     self.game_db[self.game_name]['splits'][item_index][0] = self.name_editor.text()
-    #
-    #     if self.name_editor.text():
-    #         save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
-
 class PBField(QWidget):
-    def __init__(self, field_name: str, field_value: str| int):
+    def __init__(self, field_name: str, field_value: str | int):
         super().__init__()
-        self.field_name = (field_name + ':')
-        self.field_value = str(field_value)
-        self.field_name_label = QLabel(self.field_name)
-        self.field_value_label = ToggleableLabel(self.field_value)
+        field_name = (field_name + ':')
+        field_value = str(field_value)
+        self.field_name = QLabel(field_name)
+        self.field_value = ToggleableLabel(field_value)
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
-        self.layout.addWidget(self.field_name_label)
-        self.layout.addWidget(self.field_value_label)
+        self.layout.addWidget(self.field_name)
+        self.layout.addWidget(self.field_value)
+
 
 class NewStageSplitItem(QWidget):
     """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
@@ -443,7 +319,7 @@ class NewStageSplitItem(QWidget):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used as a customer item widget on a QListWidget instance."""
 
-    def __init__(self, split: list[str | int], game_db: PersonalBests, game_name: str,
+    def __init__(self, split: list[str | int], pb_info: PersonalBests, rom_description: str,
                  parent_list: 'StageSplitListWidget', connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
         """ Initialize the StageSplitItem subclass
 
@@ -463,10 +339,10 @@ class NewStageSplitItem(QWidget):
         self.parent_list: StageSplitListWidget = parent_list
         """The list widget that contains this item."""
 
-        self.game_db = game_db
+        self.pb_info = pb_info
         """In-memory representation of DB schema."""
 
-        self.game_name: str = game_name
+        self.rom_description: str = rom_description
         """The name of the game which the split belongs to."""
 
         self.stage: str = split[0]
@@ -485,43 +361,10 @@ class NewStageSplitItem(QWidget):
         self.name_label.editor.returnPressed.connect(self.toggle_labels)
         self.score_label.editor.returnPressed.connect(self.toggle_labels)
         self.score_label.editor.setValidator(QIntValidator())
-        # self.name_label: QLabel = QLabel(f'{self.stage}')
-        # """Name of the stage, area, or boss that the split represents."""
-        #
-        # self.score_label: QLabel = QLabel(f'{self.score}')
-        # """The Score of this particular split."""
 
-        # self.name_editor: QLineEdit = QLineEdit()
-        # self.score_editor: QLineEdit = QLineEdit()
-        #
-        # self.name_editor.setPlaceholderText('Stage-69')
-        # self.score_editor.setPlaceholderText('696969')
-        #
-        # self.name_editor.setText(self.stage)
-        # self.score_editor.setText(str(self.score))
-        #
-        # self.name_editor.hide()
-        # self.score_editor.hide()
-        #
-        # self.name_editor.editingFinished.connect(self._update_split_db)
-        # self.score_editor.editingFinished.connect(self._update_split_db)
-        #
-        # self.name_editor.returnPressed.connect(self._update_split_db)
-        # self.score_editor.returnPressed.connect(self._update_split_db)
-        # self.name_editor.returnPressed.connect(self.toggle_labels)
-        # self.score_editor.returnPressed.connect(self.toggle_labels)
-        #
-        # self.score_editor.setValidator(QIntValidator())
-        #
-        # self.layout = QHBoxLayout()
-        # self.layout.addWidget(self.name_label)
-        # self.layout.addWidget(self.score_label)
-        # self.layout.addWidget(self.name_editor)
-        # self.layout.addWidget(self.score_editor)
         self.layout = QHBoxLayout()
         self.layout.addWidget(self.name_label)
         self.layout.addWidget(self.score_label)
-
 
         self.setLayout(self.layout)
 
@@ -534,22 +377,6 @@ class NewStageSplitItem(QWidget):
         """Show labels, hide editors. Text is persisted."""
         self.name_label.toggle_label()
         self.score_label.toggle_label()
-    #
-    # def toggle_labels(self) -> None:
-    #     """Show labels, hide editors. Text is persisted."""
-    #     self.name_editor.hide()
-    #     self.score_editor.hide()
-    #
-    #     name_text = self.name_editor.text()
-    #     self.name_label.setText(name_text)
-    #
-    #     score_text = self.score_editor.text()
-    #     self.score_label.setText(score_text)
-    #
-    #     self.parent_list.add_diffs(self.game_db[self.game_name]['splits'])
-    #
-    #     self.name_label.show()
-    #     self.score_label.show()
 
     def _update_split_db(self) -> None:
         """Update the 'in-memory' copy of the database and save to database.
@@ -558,13 +385,14 @@ class NewStageSplitItem(QWidget):
         Grabbing the index of the list that represents this item in memory allows you to act on the correct list.
         Will no save empty pb label.
         """
-        item_index = self.game_db[self.game_name]['splits'].index(self.split)
+        item_index = self.pb_info[self.rom_description]['splits'].index(self.split)
 
-        self.game_db[self.game_name]['splits'][item_index][1] = int(self.score_label.editor.text())
-        self.game_db[self.game_name]['splits'][item_index][0] = self.name_label.editor.text()
+        self.pb_info[self.rom_description]['splits'][item_index][1] = int(self.score_label.editor.text())
+        self.pb_info[self.rom_description]['splits'][item_index][0] = self.name_label.editor.text()
 
         if self.name_label.editor.text():
-            save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
+            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+
 
 class StageSplitListWidget(QListWidget):
     """Subclass and extend the QListWidget class of the PyQt6.QtWidgets module.
@@ -574,7 +402,7 @@ class StageSplitListWidget(QListWidget):
     The difference between splits is calculated and displayed.
     """
 
-    def __init__(self, game_db, connection: sqlite3.Connection, cursor: sqlite3.Cursor):
+    def __init__(self, pb_info, connection: sqlite3.Connection, cursor: sqlite3.Cursor):
         """ The StageSplitListWidget subclass inherits most of its behavior from, and extends,
         its parent class QListWidget.
 
@@ -584,7 +412,7 @@ class StageSplitListWidget(QListWidget):
         self.db_connection: sqlite3.Connection = connection
         self.db_cursor: sqlite3.Cursor = cursor
 
-        self.game_db = game_db
+        self.pb_info = pb_info
         """In-memory representation of DB schema."""
 
         self.last_row: int | None = None
@@ -604,28 +432,28 @@ class StageSplitListWidget(QListWidget):
         When an item is moved, the new order is preserved and the split differences are recalculated.
         """
         if event.type() == QEvent.Type.ChildRemoved:
-            moved = self.selectedItems()
-            if moved:
-                moved = moved[0]
-                game_name = self.itemWidget(moved).game_name
-                self.update_db(game_name, self.last_row, self.row(moved))
-                splits = self.game_db[game_name]['splits']
+            items_that_moved = self.selectedItems()
+            if items_that_moved:
+                item_that_moved = items_that_moved[0]
+                rom_description = self.itemWidget(item_that_moved).rom_description
+                self.update_db(rom_description, self.last_row, self.row(item_that_moved))
+                splits = self.pb_info[rom_description]['splits']
                 self.add_diffs(splits)
                 # print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
-                self.last_row = self.row(moved)
+                self.last_row = self.row(item_that_moved)
         return super().eventFilter(sender, event)
 
-    def selection_changed(self, cur, prev) -> None:
+    def selection_changed(self, current_item: QListWidgetItem, previous_item: QListWidgetItem) -> None:
         """Used internally to preserve split order."""
-        if cur:
-            self.last_row = self.row(cur)
+        if current_item:
+            self.last_row = self.row(current_item)
 
-    def update_db(self, game_name: str, old_index: int, new_index: int) -> None:
+    def update_db(self, rom_description: str, old_index: int, new_index: int) -> None:
         """Mirror internal list changes to the in-memory representation. Save to database."""
-        splits = self.game_db[game_name]['splits']
+        splits = self.pb_info[rom_description]['splits']
         split = splits.pop(old_index)
         splits.insert(new_index, split)
-        save_pb_to_database(self.db_connection, self.db_cursor, self.game_db)
+        save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def add_diffs(self, splits: list) -> None:
         """Calculate and display the difference between a splits score, and the previous splits score."""

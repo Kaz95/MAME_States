@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
     QFileDialog, QMessageBox, QMenu, QListWidget
 
-from custom.widgets import StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
+from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, ToggleableLabel, MAMEThread, NewStageSplitItem, \
     PBField
 from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_with_saves, \
@@ -462,7 +462,7 @@ class MainWindow(QMainWindow):
         else:
             self.temp_fields[f'{field_name}'] = pb_field
 
-        pb_field.field_value_label.editor.editingFinished.connect(self.update_high_score_pb)
+        pb_field.field_value.editor.editingFinished.connect(self.update_high_score_pb)
         list_item = QListWidgetItem(self.pb_fields_list)
         self.pb_fields_list.setItemWidget(list_item, pb_field)
         list_item.setSizeHint(pb_field.sizeHint())
@@ -606,11 +606,11 @@ class MainWindow(QMainWindow):
         if selected:
             game_item = selected[0]
             rom_description = game_item.text(0)
-            self.pb_info[rom_description]['hs'] = self.temp_fields['high score'].field_value_label.editor.text()
+            self.pb_info[rom_description]['hs'] = self.temp_fields['high score'].field_value.editor.text()
             for field_name in self.temp_fields:
                 if field_name == 'high score':
                     continue
-                self.pb_info[rom_description]['other_fields'][field_name] = self.temp_fields[field_name].field_value_label.editor.text()
+                self.pb_info[rom_description]['other_fields'][field_name] = self.temp_fields[field_name].field_value.editor.text()
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     # def update_high_score_pb(self) -> None:
@@ -918,7 +918,7 @@ class MainWindow(QMainWindow):
 
         self.mame_thread = MAMEThread(mame_exe, rom_name, Path(mame_dir), record_input=record_input,
                                       playback_input=play_back_input, input_file_name=input_file_name)
-        self.mame_thread.done.connect(self.rom_done)
+        self.mame_thread.mame_exited.connect(self.rom_done)
         self.mame_thread.start()
 
         print(f'Running {rom_name}, from {action.text()}')
@@ -931,7 +931,7 @@ class MainWindow(QMainWindow):
         """
         post_hs_table = None
 
-        hiscore_file = Path(self.mame_thread.mame_path) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
+        hiscore_file = Path(self.mame_thread.mame_dir) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
         if results['return_code'] != 0:
             QMessageBox.critical(self, 'Rom Not Found', f'{results['err']}')
         else:
