@@ -7,6 +7,7 @@ TODO:
     * Decide on new features to add.
 """
 import os
+import pprint
 import sqlite3
 import subprocess
 from pathlib import Path
@@ -15,7 +16,7 @@ from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
 from PyQt6.QtGui import QAction, QFont, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
     QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
-    QFileDialog, QMessageBox, QMenu, QListWidget
+    QFileDialog, QMessageBox, QMenu, QListWidget, QInputDialog
 
 from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, MAMEThread, NewStageSplitItem, \
@@ -201,8 +202,7 @@ class MainWindow(QMainWindow):
         self.info_layout: QVBoxLayout = QVBoxLayout()
         """Contains PB info, stage splits, and related buttons."""
 
-        self.personal_best_layout: QGridLayout = QGridLayout()
-        """Contains PB info."""
+
 
         self.splits_tree_button_container: QHBoxLayout = QHBoxLayout()
         """Contains buttons related to stage splits."""
@@ -210,7 +210,7 @@ class MainWindow(QMainWindow):
         # Add widgets to layout. Setup signals and slots.
         self.setup_save_state_page()
         self.setup_highscore_panel()
-        # self.setup_pb_panel()
+        self.setup_pb_panel()
         self.setup_split_panel()
 
         self.info_layout.addLayout(self.new_personal_best_layout, 1)
@@ -364,6 +364,8 @@ class MainWindow(QMainWindow):
 
     def setup_pb_panel(self) -> None:
         """Personal Best Panel widget customization."""
+        self.pb_fields_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.pb_fields_list.customContextMenuRequested.connect(self.show_pb_fields_context)
         pass
         # self.high_score_value_label.editor.setValidator(QIntValidator())
         # self.high_score_value_label.editor.editingFinished.connect(self.update_high_score_pb)
@@ -743,6 +745,44 @@ class MainWindow(QMainWindow):
             subprocess.Popen(mame_exe, cwd=rf'{mame_dir}')
         else:
             print(f'File {mame_exe} not found')
+
+    def delete_pb_field(self, item, rom_description):
+        row = self.pb_fields_list.row(item)
+        item_widget = self.pb_fields_list.itemWidget(item)
+        field_name = item_widget.field_name.text()
+        field_name = field_name.strip(':')
+        self.pb_fields_list.takeItem(row)
+        del self.pb_info[rom_description]['other_fields'][field_name]
+        del item
+        save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+
+    def add_pb_field(self, rom_description):
+        text, ok = QInputDialog.getText(self, 'New Personal Best Field.', 'Please enter the name of the new field:')
+        if text == 'High Score' or text in self.pb_info[rom_description]['other_fields'].keys():
+            QMessageBox.critical(self, 'Error', 'Name already in use.')
+            return
+        if ok:
+            self.create_pb_field_item(f'{text}', 0)
+            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+
+    def show_pb_fields_context(self, position: QPoint):
+        pb_field_list_item = self.pb_fields_list.itemAt(position)
+        rom_items = self.games_with_pb_tree.selectedItems()
+        if rom_items:
+            selected_rom = rom_items[0]
+            rom_description = selected_rom.text(0)
+
+        menu = QMenu()
+
+        if pb_field_list_item:
+            delete_pb_field = QAction('Delete PB Field')
+            delete_pb_field.triggered.connect(lambda: self.delete_pb_field(pb_field_list_item, rom_description))
+            menu.addAction(delete_pb_field)
+
+        add_pb_field = QAction('Add New PB Field')
+        add_pb_field.triggered.connect(lambda: self.add_pb_field(rom_description))
+        menu.addAction(add_pb_field)
+        menu.exec(self.pb_fields_list.viewport().mapToGlobal(position))
 
     def show_save_state_tree_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
