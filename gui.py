@@ -24,7 +24,7 @@ from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
 from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_with_saves, \
     delete_personal_best, delete_splits, get_all_input_files, get_personal_bests, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
-    prepare_pb_for_db, get_formatted_rom_info, PersonalBests
+    prepare_pb_for_db, get_formatted_rom_info, PersonalBests, get_mame_version
 from logic.main import save_mame_dirs, get_descriptions_and_names, \
     delete_split
 
@@ -1146,8 +1146,8 @@ class MainWindow(QMainWindow):
         if mame_dir:
             if mame_dir not in self.mame_dirs:
                 self.mame_dirs.append(mame_dir)
-
-            save_mame_dirs(self.db_connection, self.db_cursor, self.mame_dirs)
+            mame_version = get_mame_version(mame_dir)
+            save_mame_dirs(self.db_connection, self.db_cursor, self.mame_dirs, version=mame_version)
             self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
             self.save_and_input_tree.blockSignals(True)
             self.fill_save_state_tree()

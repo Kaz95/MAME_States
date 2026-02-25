@@ -107,12 +107,12 @@ def get_mame_dirs(cursor: sqlite3.Cursor) -> list[Path]:
 
 
 # TODO This wipes out manually added version #s until I sort that out.
-def save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[Path]) -> None:
+def save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[Path], version=None) -> None:
     """Format list of paths as rows. Insert them into database. """
     sql_statement = """INSERT OR IGNORE INTO paths VALUES (?, ?, ?, ?, ?);"""
     rows = []
     for mame_dir in mame_dirs:
-        row = (None, str(mame_dir), mame_dir.name, None, None)
+        row = (None, str(mame_dir), mame_dir.name, version, None)
         rows.append(row)
 
     cursor.executemany(sql_statement, rows)
