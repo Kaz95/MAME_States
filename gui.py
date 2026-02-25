@@ -21,7 +21,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 from custom.widgets import StageSplitListWidget, StageSplitItem, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, ToggleableLabel, MAMEThread, NewStageSplitItem, \
     PBField
-from logic.main import get_real_name, get_mame_dirs, get_all_roms_with_saves, \
+from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_with_saves, \
     delete_personal_best, delete_splits, get_all_input_files, get_personal_bests, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, get_formatted_rom_info, PersonalBests
@@ -44,18 +44,17 @@ class MainWindow(QMainWindow):
         slots.
         """
         super().__init__()
-        self.hs = None
         self.progress_bar = None
         """Reference to progress bar popup window. Prevents garbage collection and allows access."""
 
-        self.pre_launch_hs_table = None
+        self.pre_hs_table = None
         """Reference to a roms leaderboard prior to being launched."""
 
         self.mame_thread = None
         """Reference to thread used to launch MAME subprocess."""
 
         self.temp_fields = {}
-        """References to 'other fields' for a given rom PB. Used for deletion."""
+        """References to 'other fields' for a given rom PB. Used to avoid garbage collection of signal connections."""
 
         self.rom_search_popup: QWidget | None = None
         """Reference to rom search popup window. Prevents garbage collection and allows access."""
@@ -66,7 +65,7 @@ class MainWindow(QMainWindow):
         self.db_cursor: sqlite3.Cursor = self.db_connection.cursor()
         """Cursor object used to navigate database."""
 
-        self.text_before_editing: str | None = None
+        self.save_state_page_text_before_editing: str | None = None
         """Text of the previous selected save state item."""
 
         self.descriptions_and_names: dict[str, str] = {}
@@ -84,7 +83,7 @@ class MainWindow(QMainWindow):
         # --------- #
         # Load Data #
         # --------- #
-        self.mame_paths: list[Path] = get_mame_dirs(self.db_cursor)
+        self.mame_dirs: list[Path] = get_mame_dirs(self.db_cursor)
         """List of all MAME directories that will be used by the application."""
 
         self.pb_info: PersonalBests = get_personal_bests(self.db_cursor)
@@ -97,13 +96,13 @@ class MainWindow(QMainWindow):
         # -------------------- #
         self.setWindowTitle('MAME States')
 
-        self.top_level_item_font: QFont = QFont()
+        self.big_font: QFont = QFont()
         """Large font"""
-        self.top_level_item_font.setPointSize(26)
+        self.big_font.setPointSize(26)
 
-        self.sub_item_font: QFont = QFont()
+        self.small_font: QFont = QFont()
         """Small font"""
-        self.sub_item_font.setPointSize(20)
+        self.small_font.setPointSize(20)
 
         # --------- #
         # File Menu #
@@ -117,7 +116,7 @@ class MainWindow(QMainWindow):
         self.test_button_2_action: QAction = QAction('Test Button 2', self)
         """Used as trigger for work in progress functions."""
 
-        self.add_mame_path_action: QAction = QAction('Add MAME Path', self)
+        self.add_mame_directory_action: QAction = QAction('Add MAME Directory', self)
         self.update_pb_action: QAction = QAction('Update Personal Bests', self)
 
         self.setup_file_menu()
@@ -146,7 +145,7 @@ class MainWindow(QMainWindow):
         # ------------------ #
 
         # Widgets
-        self.save_state_tree: QTreeWidget = QTreeWidget()
+        self.save_and_input_tree: QTreeWidget = QTreeWidget()
         """Main widget of the save state tab"""
 
         # Layouts
@@ -155,20 +154,15 @@ class MainWindow(QMainWindow):
 
         self.save_state_page_layout.setContentsMargins(0, 0, 0, 0)
         self.save_state_page.setLayout(self.save_state_page_layout)
-        self.save_state_page_layout.addWidget(self.save_state_tree)
+        self.save_state_page_layout.addWidget(self.save_and_input_tree)
 
         # ------------------#
         #   Highscore Page  #
         # ------------------#
 
         # Widgets
-        self.high_score_label: QLabel = QLabel('High Score:')
-        """Static label describing an editors use."""
 
-        self.high_score_value_label = ToggleableLabel('')
-        """Toggleable label that holds a given PBs high score value."""
-
-        self.high_score_game_tree: QTreeWidget = QTreeWidget()
+        self.games_with_pb_tree: QTreeWidget = QTreeWidget()
         """Contains games with personal bests information."""
 
         self.notes_window = NotesWindow(self)
@@ -180,13 +174,13 @@ class MainWindow(QMainWindow):
         self.highscore_delete_game_button: QPushButton = QPushButton('Delete Game')
         """Allow user to, manually, remove game from highscore tree."""
 
-        self.split_list: StageSplitListWidget = StageSplitListWidget(self.pb_info, self.db_connection, self.db_cursor)
+        self.splits_list: StageSplitListWidget = StageSplitListWidget(self.pb_info, self.db_connection, self.db_cursor)
         """Contains stage splits for current PB."""
 
         self.pb_fields_list: QListWidget = QListWidget()
         self.new_personal_best_layout = QVBoxLayout()
         self.new_personal_best_layout.addWidget(self.pb_fields_list)
-        self.pb_fields_list.setFont(self.sub_item_font)
+        self.pb_fields_list.setFont(self.small_font)
 
         self.add_split_button: QPushButton = QPushButton('Add Split')
         """Allow user to, manually, add a stage split to current PB."""
@@ -217,14 +211,14 @@ class MainWindow(QMainWindow):
         # Add widgets to layout. Setup signals and slots.
         self.setup_save_state_page()
         self.setup_highscore_panel()
-        self.setup_pb_panel()
+        # self.setup_pb_panel()
         self.setup_split_panel()
 
         # self.info_layout.addLayout(self.personal_best_layout)
         self.info_layout.addLayout(self.new_personal_best_layout, 1)
         self.info_layout.addStretch()
 
-        self.info_layout.addWidget(self.split_list, 1)
+        self.info_layout.addWidget(self.splits_list, 1)
         self.info_layout.addStretch()
 
         self.info_layout.addLayout(self.splits_tree_button_container)
@@ -232,7 +226,7 @@ class MainWindow(QMainWindow):
         self.high_score_page_layout.addLayout(self.game_list_container)
         self.high_score_page_layout.addLayout(self.info_layout)
         self.high_score_page.setLayout(self.high_score_page_layout)
-        self.high_score_page.setFont(self.top_level_item_font)
+        self.high_score_page.setFont(self.big_font)
 
         # --------------- #
         # Rom Search Page #
@@ -241,26 +235,12 @@ class MainWindow(QMainWindow):
         # Widgets
         self.rom_search_bar: QLineEdit = QLineEdit()
         """Search bar used by rom search page."""
-        # self.rom_search_bar.setPlaceholderText('Search items...')
-        # self.rom_search_bar.textChanged.connect(self.on_text_changed)
 
         self.debounce_timer = QTimer()
         """Timer used to delay filtering of rom list when user stops typing."""
-        # self.debounce_timer.setSingleShot(True)
-        # self.debounce_timer.timeout.connect(self.update_filter)
 
         self.rom_search_tree: QTreeWidget = QTreeWidget()
         """List of all roms supported by MAME."""
-        # self.rom_search_tree.setHeaderLabels(['Games'])
-        # for game_name in self.descriptions_and_names.keys():
-        #     item = QTreeWidgetItem(self.rom_search_tree, [game_name])
-        #     parent = self.all_rom_info[game_name]['parent']
-        #     if parent is not None:
-        #         color = QColor(211, 211, 211, 127)
-        #         brush = QBrush(color)
-        #         # Apply to item (column 0)
-        #         item.setForeground(0, brush)
-        #     item.setToolTip(0, self.descriptions_and_names[game_name])
 
         self.rom_search_add_game_button: QPushButton = QPushButton('Add Game')
         """Allow user to manually select a rom from list. Only appears on popup."""
@@ -268,14 +248,10 @@ class MainWindow(QMainWindow):
         self.rom_search_cancel_button: QPushButton = QPushButton('Cancel')
         """Allow user to cancel rom search. Only appears on popup."""
 
-        # self.rom_search_cancel_button.clicked.connect(self.close_rom_search_window)
-        # self.rom_search_add_game_button.clicked.connect(self.rom_search_add_game_clicked)
-        # self.rom_search_tree.itemSelectionChanged.connect(self.rom_search_tree_selection_changed)
+
 
         self.rom_description_label: QLabel = QLabel()
         """Used in full rom info display."""
-        # self.rom_description_label.setWordWrap(True)
-
         self.rom_name_label: QLabel = QLabel()
         """Used in full rom info display."""
         self.rom_manufacturer_label: QLabel = QLabel()
@@ -295,8 +271,9 @@ class MainWindow(QMainWindow):
         self.rom_search_page_layout = QHBoxLayout()
         """Top level page layout."""
 
-        self.rom_info_panel = QVBoxLayout()
+        self.rom_info_layout = QVBoxLayout()
         """Contains labels describing detailed rom info."""
+
         self.rom_info_container = QWidget()
         """Container widget. Corresponding layout is applied."""
 
@@ -311,34 +288,6 @@ class MainWindow(QMainWindow):
 
         # Add widgets to layout. Setup signals and slots.
         self.setup_search_page()
-
-        # self.rom_search_container.setLayout(self.rom_search_panel)
-        # # self.rom_search_container.setFixedWidth(800)
-        # self.rom_search_panel.addWidget(self.rom_search_bar)
-        # self.rom_search_panel.addWidget(self.rom_search_tree)
-        # self.rom_search_buttons.addWidget(self.rom_search_add_game_button)
-        # self.rom_search_buttons.addWidget(self.rom_search_cancel_button)
-        # self.rom_search_panel.addLayout(self.rom_search_buttons)
-        # self.rom_search_add_game_button.hide()
-        # self.rom_search_cancel_button.hide()
-        #
-        # self.rom_info_container.setLayout(self.rom_info_panel)
-        # # self.rom_info_container.setFixedWidth(600)
-        # self.rom_info_panel.addWidget(self.rom_description_label)
-        # self.rom_info_panel.addWidget(self.rom_name_label)
-        # self.rom_info_panel.addWidget(self.rom_manufacturer_label)
-        # self.rom_info_panel.addWidget(self.rom_release_year_label)
-        # self.rom_info_panel.addWidget(self.rom_parent_label)
-        # self.rom_info_panel.addWidget(self.rom_video_info_label)
-        # self.rom_info_panel.addWidget(self.rom_video_driver_warnings_label)
-        # self.rom_info_panel.addWidget(self.rom_audio_driver_warnings_label)
-        # self.rom_info_panel.addStretch()
-        #
-        # self.rom_search_page_layout.addWidget(self.rom_search_container)
-        # self.rom_search_page_layout.addWidget(self.rom_info_container)
-        #
-        # self.rom_search_page.setLayout(self.rom_search_page_layout)
-        # self.rom_search_page.setFont(self.top_level_item_font)
 
         # ------------------- #
         # Finalize tab setup. #
@@ -362,34 +311,34 @@ class MainWindow(QMainWindow):
         """File Menu widget customization."""
         self.test_button_1_action.triggered.connect(self.menu_button_1_clicked)
         self.test_button_2_action.triggered.connect(self.menu_button_2_clicked)
-        self.add_mame_path_action.triggered.connect(self.add_path_button_clicked)
-        self.update_pb_action.triggered.connect(self.scan_for_pb)
+        self.add_mame_directory_action.triggered.connect(self.add_path_button_clicked)
+        self.update_pb_action.triggered.connect(self.scan_for_pbs)
 
         self.file_menu.addAction(self.test_button_1_action)
         self.file_menu.addAction(self.test_button_2_action)
-        self.file_menu.addAction(self.add_mame_path_action)
+        self.file_menu.addAction(self.add_mame_directory_action)
         self.file_menu.addAction(self.update_pb_action)
 
     def setup_save_state_page(self) -> None:
         """Save State Page windget customization."""
-        self.save_state_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
-        self.save_state_tree.setHeaderLabels(['MAME Folders'])
-        self.save_state_tree.setColumnWidth(0, 1000)
-        self.save_state_tree.setItemDelegate(SaveStateNameInputValidator(self))
-        self.save_state_tree.setTabKeyNavigation(True)
-        self.save_state_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.save_state_tree.customContextMenuRequested.connect(self.show_save_state_tree_context)
+        self.save_and_input_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
+        self.save_and_input_tree.setHeaderLabels(['MAME Folders'])
+        self.save_and_input_tree.setColumnWidth(0, 1000)
+        self.save_and_input_tree.setItemDelegate(SaveStateNameInputValidator(self))
+        self.save_and_input_tree.setTabKeyNavigation(True)
+        self.save_and_input_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.save_and_input_tree.customContextMenuRequested.connect(self.show_save_state_tree_context)
 
         self.fill_save_state_tree()
-        self.save_state_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
-        self.save_state_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
+        self.save_and_input_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
+        self.save_and_input_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
 
     # FIXME Move somewheres else.
     def fill_highscore_game_list(self) -> None:
         """Clear and refill High Score Game Tree, based on personal best info."""
-        self.high_score_game_tree.clear()
-        for key in self.pb_info:
-            QTreeWidgetItem(self.high_score_game_tree, [key])
+        self.games_with_pb_tree.clear()
+        for rom_description in self.pb_info:
+            QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
 
     def setup_highscore_panel(self) -> None:
         """High Score Panel widget customization"""
@@ -397,10 +346,10 @@ class MainWindow(QMainWindow):
         # Fill Game List
         self.fill_highscore_game_list()
 
-        self.high_score_game_tree.setHeaderLabels(['Games'])
-        self.high_score_game_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.high_score_game_tree.customContextMenuRequested.connect(self.show_rom_item_context)
-        self.high_score_game_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
+        self.games_with_pb_tree.setHeaderLabels(['Games'])
+        self.games_with_pb_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.games_with_pb_tree.customContextMenuRequested.connect(self.show_rom_item_context)
+        self.games_with_pb_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
         self.highscore_add_game_button.clicked.connect(self.highscore_add_game_clicked)
         self.highscore_delete_game_button.clicked.connect(self.delete_game)
@@ -408,9 +357,10 @@ class MainWindow(QMainWindow):
         self.game_list_button_container.addWidget(self.highscore_add_game_button)
         self.game_list_button_container.addWidget(self.highscore_delete_game_button)
 
-        self.game_list_container.addWidget(self.high_score_game_tree)
+        self.game_list_container.addWidget(self.games_with_pb_tree)
         self.game_list_container.addLayout(self.game_list_button_container)
 
+        # FIXME Can't focus right away. Causes incorrect size hint. Look into it.
         # first_item = self.high_score_game_tree.topLevelItem(0)
         # self.high_score_game_tree.setCurrentItem(first_item)
 
@@ -428,8 +378,8 @@ class MainWindow(QMainWindow):
         self.splits_tree_button_container.addWidget(self.add_split_button)
         self.splits_tree_button_container.addWidget(self.delete_split_button)
 
-        self.split_list.itemDoubleClicked.connect(self.split_double_clicked)
-        self.split_list.currentItemChanged.connect(self.split_current_item_changed)
+        self.splits_list.itemDoubleClicked.connect(self.split_double_clicked)
+        self.splits_list.currentItemChanged.connect(self.split_current_item_changed)
 
         self.add_split_button.clicked.connect(self.new_split)
         self.delete_split_button.clicked.connect(self.delete_split)
@@ -445,23 +395,23 @@ class MainWindow(QMainWindow):
         self.rom_search_add_game_button.hide()
         self.rom_search_cancel_button.hide()
 
-        self.rom_info_container.setLayout(self.rom_info_panel)
+        self.rom_info_container.setLayout(self.rom_info_layout)
         # self.rom_info_container.setFixedWidth(600)
-        self.rom_info_panel.addWidget(self.rom_description_label)
-        self.rom_info_panel.addWidget(self.rom_name_label)
-        self.rom_info_panel.addWidget(self.rom_manufacturer_label)
-        self.rom_info_panel.addWidget(self.rom_release_year_label)
-        self.rom_info_panel.addWidget(self.rom_parent_label)
-        self.rom_info_panel.addWidget(self.rom_video_info_label)
-        self.rom_info_panel.addWidget(self.rom_video_driver_warnings_label)
-        self.rom_info_panel.addWidget(self.rom_audio_driver_warnings_label)
-        self.rom_info_panel.addStretch()
+        self.rom_info_layout.addWidget(self.rom_description_label)
+        self.rom_info_layout.addWidget(self.rom_name_label)
+        self.rom_info_layout.addWidget(self.rom_manufacturer_label)
+        self.rom_info_layout.addWidget(self.rom_release_year_label)
+        self.rom_info_layout.addWidget(self.rom_parent_label)
+        self.rom_info_layout.addWidget(self.rom_video_info_label)
+        self.rom_info_layout.addWidget(self.rom_video_driver_warnings_label)
+        self.rom_info_layout.addWidget(self.rom_audio_driver_warnings_label)
+        self.rom_info_layout.addStretch()
 
         self.rom_search_page_layout.addWidget(self.rom_search_container)
         self.rom_search_page_layout.addWidget(self.rom_info_container)
 
         self.rom_search_page.setLayout(self.rom_search_page_layout)
-        self.rom_search_page.setFont(self.top_level_item_font)
+        self.rom_search_page.setFont(self.big_font)
 
     def setup_search_page(self):
         """Search Page widget customization."""
@@ -474,15 +424,15 @@ class MainWindow(QMainWindow):
         self.debounce_timer.timeout.connect(self.update_filter)
 
         self.rom_search_tree.setHeaderLabels(['Games'])
-        for game_name in self.descriptions_and_names.keys():
-            item = QTreeWidgetItem(self.rom_search_tree, [game_name])
-            parent = self.all_rom_info[game_name]['parent']
+        for rom_description in self.descriptions_and_names.keys():
+            item = QTreeWidgetItem(self.rom_search_tree, [rom_description])
+            parent = self.all_rom_info[rom_description]['parent']
             if parent is not None:
                 color = QColor(211, 211, 211, 127)
                 brush = QBrush(color)
                 # Apply to item (column 0)
                 item.setForeground(0, brush)
-            item.setToolTip(0, self.descriptions_and_names[game_name])
+            item.setToolTip(0, self.descriptions_and_names[rom_description])
 
         self.rom_search_cancel_button.clicked.connect(self.close_rom_search_window)
         self.rom_search_add_game_button.clicked.connect(self.rom_search_add_game_clicked)
@@ -491,37 +441,11 @@ class MainWindow(QMainWindow):
         self.rom_description_label.setWordWrap(True)
 
         self.setup_search_page_layout()
-        pass
 
     # ------ #
     # Helper #
     # ------ #
-    def update_pb_panel(self, high_score: int, other_fields: dict) -> None:
-        """Clear and update Personal Best displays."""
-        for _ in self.temp_fields:
-            self.personal_best_layout.removeWidget(_)
-            if not _.isHidden():
-                _.hide()
-            print(self.temp_fields)
-        self.temp_fields.clear()
-
-        self.high_score_value_label.editor.setText(str(high_score))
-        self.high_score_value_label.label.setText(str(high_score))
-        self.high_score_value_label.editor.hide()
-
-        if not other_fields:
-            return
-
-        for index, key in enumerate(other_fields):
-            tlabel = ToggleableLabel(other_fields[key])
-            tlabel.editor.editingFinished.connect(lambda: self.update_other_fields(label.text()))
-            label = QLabel(key)
-            self.temp_fields.append(label)
-            self.temp_fields.append(tlabel)
-            self.personal_best_layout.addWidget(label, (index + 1), 0)
-            self.personal_best_layout.addWidget(tlabel, (index + 1), 1)
-
-    def new_update_pb_panel(self, high_score: int, other_fields: dict):
+    def update_pb_panel(self, high_score: int, other_fields: dict):
         self.temp_fields.clear()
         self.create_pb_field_item('High Score', high_score)
         print(self.temp_fields)
@@ -535,31 +459,30 @@ class MainWindow(QMainWindow):
         pb_field = PBField(field_name, field_value)
         if field_name == 'High Score':
             self.temp_fields['high score'] = pb_field
-            # self.hs = pb_field
         else:
             self.temp_fields[f'{field_name}'] = pb_field
-        pb_field.field_value_label.editor.editingFinished.connect(self.new_update_high_score_pb)
-        # self.temp_fields.clear()
 
+        pb_field.field_value_label.editor.editingFinished.connect(self.update_high_score_pb)
         list_item = QListWidgetItem(self.pb_fields_list)
         self.pb_fields_list.setItemWidget(list_item, pb_field)
         list_item.setSizeHint(pb_field.sizeHint())
         return list_item
 
-    def create_split_item(self, split: list[int | str], game_name: str) -> QListWidgetItem:
+    def create_split_item(self, split: list[int | str], rom_description: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
-        split_item = NewStageSplitItem(split, self.pb_info, game_name, self.split_list, self.db_connection, self.db_cursor)
-        list_item = QListWidgetItem(self.split_list)
-        self.split_list.setItemWidget(list_item, split_item)
+        split_item = NewStageSplitItem(split, self.pb_info, rom_description, self.splits_list, self.db_connection,
+                                       self.db_cursor)
+        list_item = QListWidgetItem(self.splits_list)
+        self.splits_list.setItemWidget(list_item, split_item)
         list_item.setSizeHint(split_item.sizeHint())
         return list_item
 
-    def valid_path(self, mame_folder: Path) -> bool | None:
+    def valid_path(self, mame_dir: Path) -> bool | None:
         """Validate the given MAME path.
 
         Return True, if valid, False if 'retry', None if 'cancel'.
         """
-        mame_exe = mame_folder / 'mame.exe'
+        mame_exe = mame_dir / 'mame.exe'
         if not mame_exe.is_file():
             message_response = QMessageBox.critical(self,
                                                     'Path Invalid',
@@ -572,29 +495,29 @@ class MainWindow(QMainWindow):
         else:
             return True
 
-    def get_mame_path(self) -> Path | None:
+    def get_mame_dir(self) -> Path | None:
         """Prompt user for a MAME directory using a file dialog.
 
         Loops if invalid path and user selects 'retry'.
         """
-        mame_folder = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
+        mame_dir = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
                                                        options=QFileDialog.Option.ShowDirsOnly)
 
-        mame_folder = Path(mame_folder)
+        mame_dir = Path(mame_dir)
 
-        path_validity = self.valid_path(mame_folder)
+        path_validity = self.valid_path(mame_dir)
         if path_validity is True:
-            return mame_folder
+            return mame_dir
         if path_validity is False:
-            self.get_mame_path()
+            self.get_mame_dir()
 
         return path_validity
 
     def fill_data_structures(self) -> None:
         """Fill data structures that are used as convenient in-memory references."""
         self.descriptions_and_names = get_descriptions_and_names(self.db_cursor)
-        self.all_save_states = get_all_roms_with_saves(self.mame_paths)
-        self.all_input_files = get_all_input_files(self.mame_paths)
+        self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
+        self.all_input_files = get_all_input_files(self.mame_dirs)
         self.all_rom_info = get_formatted_rom_info(self.db_cursor)
 
     def fill_save_state_tree(self) -> None:
@@ -603,34 +526,34 @@ class MainWindow(QMainWindow):
         Font size is configured on each item. Large for parent items, small for leaf items.
         Leaf items are made editable via flags.
         """
-        self.save_state_tree.clear()
+        self.save_and_input_tree.clear()
 
         # Add path items.
-        for path in self.mame_paths:
-            path_item = QTreeWidgetItem(self.save_state_tree, [str(path)])
-            path_item.setFont(0, self.top_level_item_font)
-            saves_container_item = QTreeWidgetItem(path_item, ['Save States'])
-            saves_container_item.setFont(0, self.top_level_item_font)
-            input_files = self.all_input_files.get(path)
+        for mame_dir in self.mame_dirs:
+            mame_dir_item = QTreeWidgetItem(self.save_and_input_tree, [str(mame_dir)])
+            mame_dir_item.setFont(0, self.big_font)
+            save_states_container_item = QTreeWidgetItem(mame_dir_item, ['Save States'])
+            save_states_container_item.setFont(0, self.big_font)
+            input_files = self.all_input_files.get(mame_dir)
             if input_files:
-                input_files_container = QTreeWidgetItem(path_item, ['Input Files'])
-                input_files_container.setFont(0, self.top_level_item_font)
+                input_files_container_item = QTreeWidgetItem(mame_dir_item, ['Input Files'])
+                input_files_container_item.setFont(0, self.big_font)
                 for file in input_files:
-                    item = QTreeWidgetItem(input_files_container, [file])
+                    item = QTreeWidgetItem(input_files_container_item, [file])
                     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
-                    item.setFont(0, self.sub_item_font)
+                    item.setFont(0, self.small_font)
 
             # Add game items.
-            for key in self.all_save_states[path]:
-                game_description = get_real_name(self.descriptions_and_names, key)
-                game_item = QTreeWidgetItem(saves_container_item, [game_description])
-                game_item.setFont(0, self.top_level_item_font)
+            for rom_name in self.all_save_states[mame_dir]:
+                game_description = rom_description_from_name(self.descriptions_and_names, rom_name)
+                game_item = QTreeWidgetItem(save_states_container_item, [game_description])
+                game_item.setFont(0, self.big_font)
 
                 # Add savestate items.
-                for save_state in self.all_save_states[path][key]:
+                for save_state in self.all_save_states[mame_dir][rom_name]:
                     save_state_item = QTreeWidgetItem(game_item, [save_state])
                     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
-                    save_state_item.setFont(0, self.sub_item_font)
+                    save_state_item.setFont(0, self.small_font)
 
     #########
     # Slots #
@@ -638,6 +561,7 @@ class MainWindow(QMainWindow):
     # ------------------------- #
     # Personal Bests Page Slots #
     # ------------------------- #
+    # TODO Since there is no teardown, I could just connect .close() directly to signal.
     def close_rom_search_window(self) -> None:
         """Close rom search popup."""
         self.rom_search_popup.close()
@@ -648,70 +572,69 @@ class MainWindow(QMainWindow):
         Split diffs are calculated and displayed.
         """
         self.pb_fields_list.clear()
-        self.split_list.clear()
-        selected = self.high_score_game_tree.selectedItems()
+        self.splits_list.clear()
+        selected = self.games_with_pb_tree.selectedItems()
         if selected:
-            game_name = selected[0].text(0)
-            info = self.pb_info[game_name]
+            rom_description = selected[0].text(0)
+            info = self.pb_info[rom_description]
 
             hs = info['hs']
             other_fields = info['other_fields']
             splits = info['splits']
 
-            # self.update_pb_panel(hs, other_fields)
-            self.new_update_pb_panel(hs, other_fields)
+            self.update_pb_panel(hs, other_fields)
             for split in splits:
-                self.create_split_item(split, game_name)
+                self.create_split_item(split, rom_description)
 
-            self.split_list.add_diffs(splits)
+            self.splits_list.add_diffs(splits)
 
     def split_double_clicked(self, item: QListWidgetItem) -> None:
         """Show split item editors. Hide labels."""
-        widget_item = self.split_list.itemWidget(item)
-        widget_item.toggle_editors()
+        item_widget = self.splits_list.itemWidget(item)
+        item_widget.toggle_editors()
 
-    def split_current_item_changed(self, cur: QListWidgetItem, prev: QListWidgetItem) -> None:
+    def split_current_item_changed(self, current_selection: QListWidgetItem, previous_selection: QListWidgetItem) -> None:
         """Show split item labels. Hide editors."""
-        if prev:
-            widget_item = self.split_list.itemWidget(prev)
-            if widget_item:
-                widget_item.toggle_labels()
-
-    def new_update_high_score_pb(self) -> None:
-        """Update in-memory representation and saves to database"""
-        selected = self.high_score_game_tree.selectedItems()
-        if selected:
-            game_item = selected[0]
-            game_name = game_item.text(0)
-            self.pb_info[game_name]['hs'] = self.temp_fields['high score'].field_value_label.editor.text()
-            for key in self.temp_fields:
-                if key == 'high score':
-                    continue
-                self.pb_info[game_name]['other_fields'][key] = self.temp_fields[key].field_value_label.editor.text()
-            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+        if previous_selection:
+            item_widget = self.splits_list.itemWidget(previous_selection)
+            if item_widget:
+                item_widget.toggle_labels()
 
     def update_high_score_pb(self) -> None:
         """Update in-memory representation and saves to database"""
-        new_pb = int(self.high_score_value_label.editor.text())
-        selected = self.high_score_game_tree.selectedItems()
+        selected = self.games_with_pb_tree.selectedItems()
         if selected:
             game_item = selected[0]
-            game_name = game_item.text(0)
-            self.pb_info[game_name]['hs'] = new_pb
+            rom_description = game_item.text(0)
+            self.pb_info[rom_description]['hs'] = self.temp_fields['high score'].field_value_label.editor.text()
+            for field_name in self.temp_fields:
+                if field_name == 'high score':
+                    continue
+                self.pb_info[rom_description]['other_fields'][field_name] = self.temp_fields[field_name].field_value_label.editor.text()
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
-    def update_other_fields(self, label: str) -> None:
-        """Update in-memory representation and saves to database"""
-        sender = self.sender()
-        updated_data = sender.text()
-        selected = self.high_score_game_tree.selectedItems()
-        if selected:
-            game_item = selected[0]
-            game_name = game_item.text(0)
-            print(label, ' - ', sender.text())
-            self.pb_info[game_name]['other_fields'][label] = updated_data
-            pprint.pp(self.pb_info)
-            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+    # def update_high_score_pb(self) -> None:
+    #     """Update in-memory representation and saves to database"""
+    #     new_pb = int(self.high_score_value_label.editor.text())
+    #     selected = self.games_with_pb_tree.selectedItems()
+    #     if selected:
+    #         game_item = selected[0]
+    #         game_name = game_item.text(0)
+    #         self.pb_info[game_name]['hs'] = new_pb
+    #         save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+
+    # def update_other_fields(self, label: str) -> None:
+    #     """Update in-memory representation and saves to database"""
+    #     sender = self.sender()
+    #     updated_data = sender.text()
+    #     selected = self.games_with_pb_tree.selectedItems()
+    #     if selected:
+    #         game_item = selected[0]
+    #         game_name = game_item.text(0)
+    #         print(label, ' - ', sender.text())
+    #         self.pb_info[game_name]['other_fields'][label] = updated_data
+    #         pprint.pp(self.pb_info)
+    #         save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def highscore_add_game_clicked(self) -> None:
         """Pop out Rom Search Tab and allow user to choose a rom. Main window is disabled."""
@@ -739,7 +662,7 @@ class MainWindow(QMainWindow):
 
             print(rom_description)
 
-            item = QTreeWidgetItem(self.high_score_game_tree, [rom_description])
+            new_item = QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
 
             self.pb_info[rom_description] = {'hs': 0,
                                              'other_fields': None,
@@ -747,26 +670,26 @@ class MainWindow(QMainWindow):
 
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
             self.rom_search_popup.close()
-            self.high_score_game_tree.setCurrentItem(item)
+            self.games_with_pb_tree.setCurrentItem(new_item)
 
     def delete_game(self) -> None:
         """Delete game from Highscore Game Tree and remove all its information from database.
 
         Item selection is moved programmatically before deleting.
         """
-        selected = self.high_score_game_tree.selectedItems()
+        selected = self.games_with_pb_tree.selectedItems()
         if selected:
             game_item = selected[0]
-            previous_item = self.high_score_game_tree.itemAbove(game_item)
-            next_item = self.high_score_game_tree.itemBelow(game_item)
+            previous_item = self.games_with_pb_tree.itemAbove(game_item)
+            next_item = self.games_with_pb_tree.itemBelow(game_item)
 
             # Move selection before deleting.
             if previous_item:
-                self.high_score_game_tree.setCurrentItem(previous_item)
+                self.games_with_pb_tree.setCurrentItem(previous_item)
             elif next_item:
-                self.high_score_game_tree.setCurrentItem(next_item)
+                self.games_with_pb_tree.setCurrentItem(next_item)
             else:
-                self.high_score_game_tree.clearSelection()
+                self.games_with_pb_tree.clearSelection()
 
             rom_description = game_item.text(0)
             # Delete from in-memory database representation.
@@ -776,24 +699,24 @@ class MainWindow(QMainWindow):
             delete_splits(self.db_connection, self.db_cursor, rom_description)
 
             # Finally, remove item from Highscore Game Tree.
-            game_item_index = self.high_score_game_tree.indexFromItem(game_item)
+            game_item_index = self.games_with_pb_tree.indexFromItem(game_item)
             game_row = game_item_index.row()
-            self.high_score_game_tree.takeTopLevelItem(game_row)
+            self.games_with_pb_tree.takeTopLevelItem(game_row)
 
     # TODO Why am I not using selectedItems() on splitlist? I seem to be checking row instead.
     def delete_split(self) -> None:
         """Delete a split in the split list. Also deleted from in-memory database representation and database."""
-        selected = self.high_score_game_tree.selectedItems()
+        selected = self.games_with_pb_tree.selectedItems()
         if selected:
-            game_name = selected[0].text(0)
-            # Row becomes -1 when nothing selected.....I think.
-            row = self.split_list.currentRow()
+            rom_description = selected[0].text(0)
+            # Row becomes -1 when nothing selected...I think.
+            row = self.splits_list.currentRow()
             if row != -1:
-                self.split_list.takeItem(row)
-                splits = self.pb_info[game_name]['splits']
-                label = splits[row][0]
+                self.splits_list.takeItem(row)
+                splits = self.pb_info[rom_description]['splits']
+                split_name = splits[row][0]
                 del splits[row]
-                delete_split(self.db_connection, self.db_cursor, game_name, label)
+                delete_split(self.db_connection, self.db_cursor, rom_description, split_name)
                 save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def new_split(self) -> None:
@@ -801,16 +724,18 @@ class MainWindow(QMainWindow):
 
         The new split item has its editor toggled on, and is set as the focus.
         """
-        selected = self.high_score_game_tree.selectedItems()
+        selected = self.games_with_pb_tree.selectedItems()
         if selected:
-            highscore_tree_item = selected[0]
-            rom_description = highscore_tree_item.text(0)
+            game_item = selected[0]
+            rom_description = game_item.text(0)
             game_splits = self.pb_info[rom_description]['splits']
+            # TODO Can add None as 3rd index here to avoid checking length later.
+            #  Length check determines if new split(has pk or not).
             new_split = ['', 0]
             game_splits.append(new_split)
-            new_item = self.create_split_item(new_split, rom_description)
-            self.split_list.setCurrentItem(new_item)
-            self.split_double_clicked(new_item)
+            new_split_item = self.create_split_item(new_split, rom_description)
+            self.splits_list.setCurrentItem(new_split_item)
+            self.split_double_clicked(new_split_item)
 
     def open_notes(self) -> None:
         """Open notes widget.
@@ -819,43 +744,41 @@ class MainWindow(QMainWindow):
         If [rom_name].txt exists, copy data into the notes widget. Otherwise, create [rom_name].txt. Focus notes widget.
         A reference is held to the notes widget to avoid it being automatically deleted. Cannot open multiple notes.
         """
-        game_name = self.high_score_game_tree.selectedItems()[0].text(0)
-        rom_name = self.descriptions_and_names[game_name]
+        rom_description = self.games_with_pb_tree.selectedItems()[0].text(0)
+        rom_name = self.descriptions_and_names[rom_description]
         if self.notes_window.isHidden():
             self.notes_window.show()
 
-        note_path = Path('notes') / rom_name
+        notes_file = Path('notes') / rom_name
 
-        if not note_path.is_file():
-            note_path.touch()
+        if not notes_file.is_file():
+            notes_file.touch()
         else:
-            with open(note_path, 'r') as notes:
+            with open(notes_file, 'r') as notes:
                 text = notes.read()
                 self.notes_window.text_edit.setText(text)
         self.notes_window.current_game = rom_name
-        self.notes_window.setWindowTitle(f'{rom_name} - Notes')
+        self.notes_window.setWindowTitle(f'{rom_description} - Notes')
         self.notes_window.raise_()
         self.notes_window.setFocus()
 
-    def run_mame(self, root_mame_dir):
-        root_mame_dir = Path(root_mame_dir)
-        mame_exe = root_mame_dir / 'mame.exe'
+    # TODO Consider moving to main.py
+    def run_mame(self, mame_dir):
+        mame_dir = Path(mame_dir)
+        mame_exe = mame_dir / 'mame.exe'
         if mame_exe.is_file():
-            subprocess.Popen(mame_exe, cwd=rf'{root_mame_dir}')
+            subprocess.Popen(mame_exe, cwd=rf'{mame_dir}')
         else:
-            print(f'File {root_mame_dir} not found')
-
+            print(f'File {mame_exe} not found')
 
     def show_save_state_tree_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
 
         If no item is selected, no menu is created. Menu includes test actions, based on path.
         """
-        tree_item = self.save_state_tree.itemAt(position)
+        tree_item = self.save_and_input_tree.itemAt(position)
         if not tree_item:
             return
-        # if tree_item.childCount() > 0:
-        #     return
 
         menu = QMenu()
         if tree_item.parent() is None:
@@ -865,68 +788,70 @@ class MainWindow(QMainWindow):
 
         elif tree_item.text(0) == 'Input Files' or tree_item.text(0) == 'Save States':
             open_in_explorer = QAction('Open in Explorer')
-            menu.addAction(open_in_explorer)
             open_in_explorer.triggered.connect(lambda: self.open_in_explorer(tree_item))
+            menu.addAction(open_in_explorer)
+
         else:
-            if tree_item.childCount() > 0: # Lazy way to ensure rom items don't spawn menu.
+            if tree_item.childCount() > 0:  # Lazy way to ensure rom items don't spawn menu.
                 return
             delete = QAction('Delete')
-            menu.addAction(delete)
             delete.triggered.connect(lambda: self.delete_leaf_item(tree_item))
+            menu.addAction(delete)
+
             if tree_item.parent().text(0) == 'Input Files':
-                inp_name = tree_item.text(0)
-                rom_name = inp_name.split('_')[0]
-                print(rom_name)
+                input_file_name = tree_item.text(0)
+                rom_name = input_file_name.split('_')[0] # inp files created by program will have rom name at start.
+
                 sub_menu = QMenu('Playback with...')
-                for path in self.mame_paths:
-                    action = QAction(str(path), self)
-                    action.triggered.connect(lambda: self.run_rom(rom_name, play_back_input=True, input_file_name=inp_name))
-                    sub_menu.addAction(action)
+                for mame_dir in self.mame_dirs:
+                    run = QAction(str(mame_dir), self)
+                    run.triggered.connect(
+                        lambda: self.run_rom(rom_name, play_back_input=True, input_file_name=input_file_name))
+                    sub_menu.addAction(run)
                     menu.addMenu(sub_menu)
-        menu.exec(self.save_state_tree.viewport().mapToGlobal(position))
+        menu.exec(self.save_and_input_tree.viewport().mapToGlobal(position))
 
     # TODO Probably could use confirmation
-    def delete_leaf_item(self, thing_to_delete):
-        direct_parent = thing_to_delete.parent()
+    def delete_leaf_item(self, leaf_item: QTreeWidgetItem):
+        direct_parent = leaf_item.parent()
 
         if direct_parent.text(0) == 'Input Files':
-            root_mame_dir_str = direct_parent.parent().text(0)
-            root_mame_dir = Path(root_mame_dir_str)
-            inp_dir = root_mame_dir / 'inp'
-            inp_file = inp_dir / f'{thing_to_delete.text(0)}.inp'
-            inp_file.unlink()
+            mame_dir_str = direct_parent.parent().text(0)
+            mame_dir = Path(mame_dir_str)
+            input_file_dir = mame_dir / 'inp'
+            input_file = input_file_dir / f'{leaf_item.text(0)}.inp'
+            input_file.unlink()
 
         else:
             rom_description = direct_parent.text(0)
             rom_name = self.descriptions_and_names[rom_description]
             category_item = direct_parent.parent()
             mame_path_item = category_item.parent()
-            root_mame_dir_str = mame_path_item.text(0)
-            root_mame_dir = Path(root_mame_dir_str)
-            save_states_dir = root_mame_dir / 'sta'
+            mame_dir_str = mame_path_item.text(0)
+            mame_dir = Path(mame_dir_str)
+            save_states_dir = mame_dir / 'sta'
             rom_saves_dir = save_states_dir / f'{rom_name}'
-            save_state_file = rom_saves_dir / f'{thing_to_delete.text(0)}.sta'
+            save_state_file = rom_saves_dir / f'{leaf_item.text(0)}.sta'
             save_state_file.unlink()
 
-        direct_parent.removeChild(thing_to_delete)
+        direct_parent.removeChild(leaf_item)
 
-    def open_in_explorer(self, thing_to_open):
-        root_mame_dir = Path(thing_to_open.parent().text(0))
+    def open_in_explorer(self, category_item: QTreeWidgetItem):
+        mame_dir = Path(category_item.parent().text(0))
 
-        if thing_to_open.text(0) == 'Input Files':
-            inp_dir = root_mame_dir / 'inp'
-            if inp_dir.is_dir():
-                os.startfile(inp_dir)
+        if category_item.text(0) == 'Input Files':
+            input_file_dir = mame_dir / 'inp'
+            if input_file_dir.is_dir():
+                os.startfile(input_file_dir)
             else:
-                QMessageBox.critical(self, 'Directory Not Found', f'Could Not Find Directory: {inp_dir}')
+                QMessageBox.critical(self, 'Directory Not Found', f'Could Not Find Directory: {input_file_dir}')
 
-        if thing_to_open.text(0) == 'Save States':
-            save_states_dir = root_mame_dir / 'sta'
+        if category_item.text(0) == 'Save States':
+            save_states_dir = mame_dir / 'sta'
             if save_states_dir.is_dir():
                 os.startfile(save_states_dir)
             else:
                 QMessageBox.critical(self, 'Directory Not Found', f'Could Not Find Directory: {save_states_dir}')
-
 
     def show_rom_item_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
@@ -938,8 +863,8 @@ class MainWindow(QMainWindow):
         if not tree_item:
             return
 
-        item_name = tree_item.text(0)
-        rom_name = self.descriptions_and_names[item_name]
+        rom_description = tree_item.text(0)
+        rom_name = self.descriptions_and_names[rom_description]
 
         menu = QMenu()
 
@@ -947,21 +872,21 @@ class MainWindow(QMainWindow):
         open_notes.triggered.connect(self.open_notes)
         menu.addAction(open_notes)
 
-        sub_menu = QMenu('Open with...')
-        for path in self.mame_paths:
-            action = QAction(str(path), self)
-            action.triggered.connect(lambda: self.run_rom(rom_name))
-            sub_menu.addAction(action)
+        open_with_submenu = QMenu('Open with...')
+        for mame_dir in self.mame_dirs:
+            run = QAction(str(mame_dir), self)
+            run.triggered.connect(lambda: self.run_rom(rom_name))
+            open_with_submenu.addAction(run)
 
-        sub_menu_two = QMenu('Open with input file...')
-        for path in self.mame_paths:
-            action = QAction(str(path), self)
-            action.triggered.connect(lambda: self.run_rom(rom_name, record_input=True))
-            sub_menu_two.addAction(action)
+        open_with_inp_submenu = QMenu('Open with input file...')
+        for mame_dir in self.mame_dirs:
+            run_and_record_inp = QAction(str(mame_dir), self)
+            run_and_record_inp.triggered.connect(lambda: self.run_rom(rom_name, record_input=True))
+            open_with_inp_submenu.addAction(run_and_record_inp)
 
-        menu.addMenu(sub_menu)
-        menu.addMenu(sub_menu_two)
-        menu.exec(self.high_score_game_tree.viewport().mapToGlobal(position))
+        menu.addMenu(open_with_submenu)
+        menu.addMenu(open_with_inp_submenu)
+        menu.exec(self.games_with_pb_tree.viewport().mapToGlobal(position))
 
     # TODO Take another look at this.
     def run_rom(self, rom_name: str, record_input=False, play_back_input=False, input_file_name=None) -> None:
@@ -973,25 +898,26 @@ class MainWindow(QMainWindow):
         """
         # The action that triggered this function call. Its label has the correct MAME path.
         action = self.sender()
-        mame_path = action.text()
-        mame_exe = Path(mame_path) / 'mame.exe'
-        rom_path = Path(mame_path) / 'roms' / (rom_name + '.zip')
-        hi_path = Path(mame_path) / 'hiscore' / (rom_name + '.hi')
+        mame_dir = action.text()
+        mame_exe = Path(mame_dir) / 'mame.exe'
+        rom = Path(mame_dir) / 'roms' / (rom_name + '.zip')
+        hiscore_file = Path(mame_dir) / 'hiscore' / (rom_name + '.hi')
 
-        print(rom_path)
-        print(rom_path.is_file())
+        print(rom)
+        print(rom.is_file())
 
         hi2txt_compatible = has_xml(rom_name)
         if hi2txt_compatible:
             try:
-                results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hi_path}'],
+                hi2txt_results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
                                          cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
                                          check=True, encoding='utf-8')
-                self.pre_launch_hs_table = results.stdout
+                self.pre_hs_table = hi2txt_results.stdout
             except FileNotFoundError:
                 print('whoops')
 
-        self.mame_thread = MAMEThread(mame_exe, rom_name, Path(mame_path), record_input=record_input, playback_input=play_back_input, input_file_name=input_file_name)
+        self.mame_thread = MAMEThread(mame_exe, rom_name, Path(mame_dir), record_input=record_input,
+                                      playback_input=play_back_input, input_file_name=input_file_name)
         self.mame_thread.done.connect(self.rom_done)
         self.mame_thread.start()
 
@@ -1003,24 +929,24 @@ class MainWindow(QMainWindow):
         If rom is hi2txt compatible, a new snapshot is taken of roms highscore tables. Tables are compared to find PB.
         If new PB is found, user is prompted to add or discard new PB.
         """
-        new_hs_table = None
+        post_hs_table = None
 
-        hi_path = Path(self.mame_thread.mame_path) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
+        hiscore_file = Path(self.mame_thread.mame_path) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
         if results['return_code'] != 0:
             QMessageBox.critical(self, 'Rom Not Found', f'{results['err']}')
         else:
             QMessageBox.information(self, 'Rom Closed', f'{results['output']}')
-            if self.pre_launch_hs_table:
+            if self.pre_hs_table:
                 try:
-                    hi2txt_results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hi_path}'],
+                    hi2txt_results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
                                                     cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True,
                                                     text=True,
                                                     check=True, encoding='utf-8')
-                    new_hs_table = hi2txt_results.stdout
+                    post_hs_table = hi2txt_results.stdout
                 except FileNotFoundError:
                     print('whoops')
 
-                new_pb = get_new_pb(self.pre_launch_hs_table, new_hs_table)
+                new_pb = get_new_pb(self.pre_hs_table, post_hs_table)
                 if new_pb:
                     response = QMessageBox.question(self, 'New PB Detected!',
                                                     f'A new personal best has been detected\n{new_pb['col']}\n{new_pb['row']}\nWould you like to add new PB?')
@@ -1039,6 +965,23 @@ class MainWindow(QMainWindow):
         """Start a timer used to delay rom search filtering."""
         self.debounce_timer.start(300)
 
+    # TODO Figure out where to put this.
+    def paint_clone_rom_item(self, item):
+        color = QColor(211, 211, 211, 127)
+        brush = QBrush(color)
+        # Apply to item (column 0)
+        item.setForeground(0, brush)
+
+    # TODO Figure out where to put this.
+    def create_rom_search_item(self, rom_description, rom_name, weight=3) -> tuple[QTreeWidgetItem, int]:
+        item = QTreeWidgetItem([rom_description])
+        item.setToolTip(0, rom_name)
+        parent = self.all_rom_info[rom_description]['parent']
+        if parent is not None:
+            self.paint_clone_rom_item(item)
+
+        return item, weight
+
     def update_filter(self) -> None:
         """Filter the rom search list based on searchbar text.
 
@@ -1051,45 +994,25 @@ class MainWindow(QMainWindow):
         items = []
         for rom_description, rom_name in self.descriptions_and_names.items():
             if search_text == rom_name.lower() or search_text == rom_description.lower():
-                item = QTreeWidgetItem([rom_description])
-                item.setToolTip(0, rom_name)
-                parent = self.all_rom_info[rom_description]['parent']
-                if parent is not None:
-                    color = QColor(211, 211, 211, 127)
-                    brush = QBrush(color)
-                    # Apply to item (column 0)
-                    item.setForeground(0, brush)
-                item = (item, 1)
+                weight = 1
+                item = self.create_rom_search_item(rom_description, rom_name, weight)
                 items.append(item)
 
             elif rom_name.lower().startswith(search_text) or rom_description.lower().startswith(search_text):
-                item = QTreeWidgetItem([rom_description])
-                item.setToolTip(0, rom_name)
-                parent = self.all_rom_info[rom_description]['parent']
-                if parent is not None:
-                    color = QColor(211, 211, 211, 127)
-                    brush = QBrush(color)
-                    # Apply to item (column 0)
-                    item.setForeground(0, brush)
-                item = (item, 2)
+                weight = 2
+                item = self.create_rom_search_item(rom_description, rom_name, weight)
                 items.append(item)
 
             elif search_text in rom_name.lower() or search_text in rom_description.lower():
-                item = QTreeWidgetItem([rom_description])
-                item.setToolTip(0, rom_name)
-                parent = self.all_rom_info[rom_description]['parent']
-                if parent is not None:
-                    color = QColor(211, 211, 211, 127)
-                    brush = QBrush(color)
-                    # Apply to item (column 0)
-                    item.setForeground(0, brush)
-                item = (item, 3)
+                weight = 3
+                item = self.create_rom_search_item(rom_description, rom_name, weight)
                 items.append(item)
 
         items.sort(key=lambda x: (x[1], x[0].text(0)))
 
         for item in items:
             self.rom_search_tree.addTopLevelItem(item[0])
+
 
     def rom_search_tree_selection_changed(self) -> None:
         """Clear and attempt to refill Rom Search Info Panel based on selected item.
@@ -1125,26 +1048,27 @@ class MainWindow(QMainWindow):
     # --------------------- #
     def save_state_tree_selection_changed(self, current_item: QTreeWidgetItem) -> None:
         """Used internally for renaming."""
-        self.text_before_editing = current_item.text(0)
+        self.save_state_page_text_before_editing = current_item.text(0)
 
     def save_state_tree_leaf_item_changed(self, leaf_item: QTreeWidgetItem) -> None:
         """Rename save state or input file corresponding to leaf item in tree.
 
         If file name already in use, item has its text reverted and file is not renamed.
         """
+        # FIXME Pretty sure I can avoid toggling the signal by using a different signal. TextEdited or something...
         if not leaf_item.text(0):
-            self.save_state_tree.blockSignals(True)
-            leaf_item.setText(0, self.text_before_editing)
-            self.save_state_tree.blockSignals(False)
+            self.save_and_input_tree.blockSignals(True)
+            leaf_item.setText(0, self.save_state_page_text_before_editing)
+            self.save_and_input_tree.blockSignals(False)
             return
 
         if leaf_item.childCount() == 0 and leaf_item.parent().text(0) == 'Input Files':
-            input_file = leaf_item.text(0)
-            mame_path_item = leaf_item.parent().parent()
-            mame_path = mame_path_item.text(0)
-            mame_path = Path(mame_path)
-            old_input_file_path = mame_path / 'inp' / f'{self.text_before_editing}.inp'
-            new_input_file_path = old_input_file_path.with_stem(input_file)
+            input_file_name = leaf_item.text(0)
+            mame_dir_item = leaf_item.parent().parent()
+            mame_dir_str = mame_dir_item.text(0)
+            mame_dir = Path(mame_dir_str)
+            old_input_file_path = mame_dir / 'inp' / f'{self.save_state_page_text_before_editing}.inp'
+            new_input_file_path = old_input_file_path.with_stem(input_file_name)
 
             response = QMessageBox.question(self, 'Rename Input File', 'Are you sure you would like to rename file?')
             if response == QMessageBox.StandardButton.Yes:
@@ -1152,51 +1076,52 @@ class MainWindow(QMainWindow):
                     old_input_file_path.rename(new_input_file_path)
                 except FileExistsError:
                     QMessageBox.critical(self, 'Error', 'Sorry, that name is already in use.')
-                    self.save_state_tree.blockSignals(True)
-                    leaf_item.setText(0, self.text_before_editing)
-                    self.save_state_tree.blockSignals(False)
+                    self.save_and_input_tree.blockSignals(True)
+                    leaf_item.setText(0, self.save_state_page_text_before_editing)
+                    self.save_and_input_tree.blockSignals(False)
                     return
             else:
-                self.save_state_tree.blockSignals(True)
-                leaf_item.setText(0, self.text_before_editing)
-                self.save_state_tree.blockSignals(False)
+                self.save_and_input_tree.blockSignals(True)
+                leaf_item.setText(0, self.save_state_page_text_before_editing)
+                self.save_and_input_tree.blockSignals(False)
                 return
 
         if leaf_item.childCount() == 0 and leaf_item.parent().parent().text(0) == 'Save States':
             save_state_name = leaf_item.text(0)
-            game_item = leaf_item.parent()
-            game_name = game_item.text(0)
+            rom_item = leaf_item.parent()
+            rom_description = rom_item.text(0)
 
-            rom_name = self.descriptions_and_names[game_name]
+            rom_name = self.descriptions_and_names[rom_description]
 
-            mame_path_item = game_item.parent().parent()
-            mame_path = mame_path_item.text(0)
+            mame_dir_item = rom_item.parent().parent()
+            mame_dir_str = mame_dir_item.text(0)
 
-            mame_path = Path(mame_path)
-            save_folder = mame_path / 'sta' / rom_name
-            old_save_state_path = save_folder / (self.text_before_editing + '.sta')
+            mame_dir = Path(mame_dir_str)
+            save_state_dir = mame_dir / 'sta' / rom_name
+            old_save_state_path = save_state_dir / (self.save_state_page_text_before_editing + '.sta')
             new_save_state_path = old_save_state_path.with_stem(save_state_name)
 
             try:
                 old_save_state_path.rename(new_save_state_path)
             except FileExistsError:
                 QMessageBox.critical(self, 'Error', 'Sorry, that name is already in use.')
-                self.save_state_tree.blockSignals(True)
-                leaf_item.setText(0, self.text_before_editing)
-                self.save_state_tree.blockSignals(False)
+                self.save_and_input_tree.blockSignals(True)
+                leaf_item.setText(0, self.save_state_page_text_before_editing)
+                self.save_and_input_tree.blockSignals(False)
                 return
             # Have to set this to new save_state_name so multiple renames can take place without reselection.
-            self.text_before_editing = save_state_name
+            self.save_state_page_text_before_editing = save_state_name
 
     # --------------- #
     # File Menu Slots #
     # --------------- #
     def menu_button_1_clicked(self) -> None:
         """Temporary, easily accessible, trigger for prototype methods."""
-        self.save_state_tree.hide()
+        self.save_and_input_tree.hide()
+
     def menu_button_2_clicked(self) -> None:
         """Temporary, easily accessible, trigger for prototype methods."""
-        self.save_state_tree.show()
+        self.save_and_input_tree.show()
 
     def add_path_button_clicked(self) -> None:
         """Prompt user for new MAME path and then, clear and refill save state tree.
@@ -1205,21 +1130,21 @@ class MainWindow(QMainWindow):
         Path is saved to database and in-memory representation. Slots are disconnected before refilling tree.
         This avoids the incidental signals emitted when adding objects.
         """
-        path = self.get_mame_path()
-        if path:
-            if path not in self.mame_paths:
-                self.mame_paths.append(path)
+        mame_dir = self.get_mame_dir()
+        if mame_dir:
+            if mame_dir not in self.mame_dirs:
+                self.mame_dirs.append(mame_dir)
 
-            save_mame_dirs(self.db_connection, self.db_cursor, self.mame_paths)
-            self.all_save_states = get_all_roms_with_saves(self.mame_paths)
-            self.save_state_tree.blockSignals(True)
+            save_mame_dirs(self.db_connection, self.db_cursor, self.mame_dirs)
+            self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
+            self.save_and_input_tree.blockSignals(True)
             self.fill_save_state_tree()
-            self.save_state_tree.blockSignals(False)
+            self.save_and_input_tree.blockSignals(False)
             # print(f'New MAME path: {path}')
         # else:
         #     print('Cancel chosen')
 
-    def scan_for_pb(self) -> None:
+    def scan_for_pbs(self) -> None:
         """Scan for new personal bests and insert, or update, them into database.
 
         An indeterminate progress bar is displayed while scanner runs. It runs on its own thread to avoid blocking.

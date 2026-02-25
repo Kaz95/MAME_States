@@ -61,7 +61,7 @@ def get_save_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list
     return save_states
 
 
-def get_all_input_files(mame_dirs: list[Path]) -> dict[str,list[str]]:
+def get_all_input_files(mame_dirs: list[Path]) -> dict[Path,list[str]]:
     """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
     all_input_files = {}
     for mame_dir in mame_dirs:
@@ -71,23 +71,24 @@ def get_all_input_files(mame_dirs: list[Path]) -> dict[str,list[str]]:
     return all_input_files
 
 
-def get_all_roms_with_saves(mame_dirs: list[Path]) -> dict[str,dict[str,list[str]]]:
+def get_all_roms_with_saves(mame_dirs: list[Path]) -> dict[Path,dict[str,list[str]]]:
     """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
     all_save_state_names = {}
     for mame_dir in mame_dirs:
         roms_with_saves = get_roms_with_saves(mame_dir)
         save_state_names = get_save_names(roms_with_saves, mame_dir)
         all_save_state_names[mame_dir] = save_state_names
+
     return all_save_state_names
 
 
 # TODO Consider generator
-def get_real_name(description_db: dict[str, str], rom_name: str) -> str:
+def rom_description_from_name(description_db: dict[str, str], rom_name: str) -> str:
     """Return the full name of a given rom"""
     for key, value in description_db.items():
         if value == rom_name:
-            real_name = key
-            return real_name
+            rom_description = key
+            return rom_description
 
 
 #########
@@ -122,7 +123,7 @@ def save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_
 # Personal Bests #
 ##################
 def get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
-    """Load and format all personal best information from the database."""
+    """Load and format all personal best information from the database. Keyed to rom description."""
     pb_info = {}
 
     pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.other_fields 
