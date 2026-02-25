@@ -61,7 +61,7 @@ def get_save_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list
     return save_states
 
 
-def get_all_input_files(mame_dirs: list[Path]) -> dict[str:list[str]]:
+def get_all_input_files(mame_dirs: list[Path]) -> dict[str,list[str]]:
     """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
     all_input_files = {}
     for mame_dir in mame_dirs:
@@ -71,7 +71,7 @@ def get_all_input_files(mame_dirs: list[Path]) -> dict[str:list[str]]:
     return all_input_files
 
 
-def get_all_roms_with_saves(mame_dirs: list[Path]) -> dict[str:dict[str:list[str]]]:
+def get_all_roms_with_saves(mame_dirs: list[Path]) -> dict[str,dict[str,list[str]]]:
     """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
     all_save_state_names = {}
     for mame_dir in mame_dirs:
@@ -194,7 +194,7 @@ def delete_split(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_des
     connection.commit()
 
 
-def get_raw_rom_info(cursor: sqlite3.Cursor) -> list:
+def get_raw_rom_info(cursor: sqlite3.Cursor) -> list[tuple]:
     """Retrieve all rom information from database and return it raw."""
     sql_statement = "SELECT * FROM roms"
     cursor.execute(sql_statement)
@@ -271,7 +271,7 @@ def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[t
     return rows
 
 
-def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str:str]:
+def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str,str]:
     """Construct {rom_description:rom_name} dictionary.
 
     This dictionary is used as a quick in-memory reference that binds a roms description, to its name.
@@ -287,18 +287,18 @@ def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str:str]:
     return descriptions_and_names
 
 
-def serialize_rom_info(raw_rom_info) -> dict[str, dict[str, str]]:
+def serialize_rom_info(raw_rom_info: list[tuple]) -> dict[str, dict[str, str]]:
     """Format raw rom info, from database, into in-memory representation."""
-    rom_info = {}
+    formatted_rom_info = {}
 
     for row in raw_rom_info:
-        rom_info[row[2]] = {'name': row[1], 'manufacturer': row[3], 'year': row[4], 'parent': row[5],
+        formatted_rom_info[row[2]] = {'name': row[1], 'manufacturer': row[3], 'year': row[4], 'parent': row[5],
                             'video_info': f'{row[6]}x{row[7]}@{row[9]} - Rotate {row[8]}°', 'video_driver': row[10],
                             'sound_driver': row[11]}
-    return rom_info
+    return formatted_rom_info
 
 
-def get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, dict[str, str]] :
+def get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, dict[str, str]]:
     """Retrieve and format raw rom info, from the database."""
     raw_rom_info = get_raw_rom_info(cursor)
     formatted_rom_info = serialize_rom_info(raw_rom_info)
@@ -310,8 +310,8 @@ def has_xml(rom_name: str) -> bool:
     zip_path = r'C:\Users\kazac\Downloads\hi2txt\hi2txt.zip'
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
-        xml_paths = [Path(x) for x in xml_strings]
-        xml_names = [x.stem for x in xml_paths]
+        xml_paths = [Path(file_name) for file_name in xml_strings]
+        xml_names = [file_name.stem for file_name in xml_paths]
         if rom_name in xml_names:
             return True
         else:
@@ -319,72 +319,72 @@ def has_xml(rom_name: str) -> bool:
 
 # TODO This is using global var for mame paths. Update to use DB mame paths.
 #   Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
-def get_games_with_hs() -> dict[str: list[Path]]:
-    games_with_hi: dict[str: list[Path]] = {}
+def get_games_with_hs() -> dict[str, list[Path]]:
+    hi2txt_compatible_hi_scores: dict[str, list[Path]] = {}
     for raw_string in raw_mame_paths:
-        path = Path(raw_string)
-        hi_path = path / 'hiscore'
-        hi_file_paths = list(hi_path.glob('*.hi'))
-        games_with_hi[str(path)] = hi_file_paths
+        mame_dir = Path(raw_string)
+        hiscore_dir = mame_dir / 'hiscore'
+        hiscore_files = list(hiscore_dir.glob('*.hi'))
+        hi2txt_compatible_hi_scores[str(mame_dir)] = hiscore_files
 
     zip_path = r'C:\Users\kazac\Downloads\hi2txt\hi2txt.zip'
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
-        xml_paths = [Path(x) for x in xml_strings]
-        xml_names = [x.stem for x in xml_paths]
+        xml_paths = [Path(file_name) for file_name in xml_strings]
+        xml_names = [file.stem for file in xml_paths]
 
-    for path in games_with_hi:
-        hi = games_with_hi[path]
-        hi_with_xml = [x for x in hi if x.stem in xml_names]
-        games_with_hi[path] = hi_with_xml
+    for mame_directory in hi2txt_compatible_hi_scores:
+        hiscore_files = hi2txt_compatible_hi_scores[mame_directory]
+        hi2txt_compatible_hiscore_files = [file for file in hiscore_files if file.stem in xml_names]
+        hi2txt_compatible_hi_scores[mame_directory] = hi2txt_compatible_hiscore_files
 
-    return games_with_hi
+    return hi2txt_compatible_hi_scores
 
 
-def get_hs_tables(games_with_hi: dict[str: [Path]]) -> dict[str:dict[str:str]]:
+def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[str,dict[str,str]]:
     """Retrieve raw hi2txt leaderboard table output for compatible games with .hi file."""
-    hi_text_output: dict[str:dict[str:str]] = {}
-    for path in games_with_hi:
-        hi_text_output[path] = {}
-        scores = games_with_hi[path]
-        for score in scores:
-            print(f'Score is: {score}')
+    hi2txt_tables: dict[str,dict[str,str]] = {}
+    for mame_dir in hi2txt_compatible_hi_scores:
+        hi2txt_tables[mame_dir] = {}
+        hiscore_files = hi2txt_compatible_hi_scores[mame_dir]
+        for file in hiscore_files:
+            print(f'Score is: {file}')
             try:
-                results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{score}'],
+                results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{file}'],
                                          cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
                                          check=True, encoding='utf-8')
-                hi_text_output[path][f'{score.stem}'] = results.stdout
+                hi2txt_tables[mame_dir][f'{file.stem}'] = results.stdout
             except FileNotFoundError:
                 print('whoops')
-    return hi_text_output
+    return hi2txt_tables
 
 
-def split_table(tables: str) -> dict[str, list | str]:
+def format_table(raw_hi2txt_table: str) -> dict[str, list | str]:
     """Split raw hi2txt leaderboard tables into usable python representations."""
     table = {}
-    leaderboards = tables.split('\n#')
+    leaderboards = raw_hi2txt_table.split('\n#')
     for leaderboard in leaderboards:
         # pprint.pp(leaderboard.splitlines())
-        leaderboard = leaderboard.splitlines()
-        leaderboard = [x for x in leaderboard if x]
-        if leaderboard[0].startswith('#') or leaderboard[0].startswith(' '):
-            leaderboard_name = leaderboard.pop(0).strip('# ')
-            columns = leaderboard.pop(0)
+        leaderboard_lines = leaderboard.splitlines()
+        leaderboard_lines = [line for line in leaderboard_lines if line]
+        if leaderboard_lines[0].startswith('#') or leaderboard_lines[0].startswith(' '):
+            leaderboard_name = leaderboard_lines.pop(0).strip('# ')
+            columns = leaderboard_lines.pop(0)
             table['col'] = columns
             table['name'] = leaderboard_name
-            table['rows'] = leaderboard
+            table['rows'] = leaderboard_lines
             return table
         else:
-            columns = leaderboard.pop(0)
+            columns = leaderboard_lines.pop(0)
             table['col'] = columns
-            table['rows'] = leaderboard
+            table['rows'] = leaderboard_lines
             return table
 
 
-def get_new_pb(old_table: str, new_table: str) -> dict[str, list | str] | None:
+def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
     """Compare two raw hi2txt tables to look for new, possible, personal best."""
-    old_table = split_table(old_table)
-    new_table = split_table(new_table)
+    old_table = format_table(old_raw_table)
+    new_table = format_table(new_raw_table)
     old_columns = old_table['col']
     new_columns = new_table['col']
     old_leaderboard = old_table.get('name')
@@ -393,6 +393,7 @@ def get_new_pb(old_table: str, new_table: str) -> dict[str, list | str] | None:
     new_rows = new_table['rows']
     new_pb = {}
 
+    # TODO Move print downstream at usage and make messagebox.
     if old_columns != new_columns or old_leaderboard != new_leaderboard:
         print('Incompatible table schemas.')
         return
@@ -406,95 +407,95 @@ def get_new_pb(old_table: str, new_table: str) -> dict[str, list | str] | None:
             return new_pb
 
 
-def get_new_pbs(hi_text_output: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
+def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
     """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
     defaults_xml = Path(r'C:\Users\kazac\Downloads\hi2txt\hi2txt_doc\hi2txt_defaults')
     new_pbs = {}
     # pprint.pp(hi_text_output)
-    for path in hi_text_output:
-        pb_dict = hi_text_output[path]
+    for mame_dir in hi2txt_tables:
+        pb_dict = hi2txt_tables[mame_dir]
         # print(pb_dict)
 
-        for game in pb_dict:
-            leaderboards = pb_dict[game].split('\n#')
+        for rom_name in pb_dict:
+            leaderboards = pb_dict[rom_name].split('\n#')
             for leaderboard in leaderboards:
                 # pprint.pp(leaderboard.splitlines())
-                leaderboard = leaderboard.splitlines()
-                if leaderboard[0].startswith('#') or leaderboard[0].startswith(' '):
-                    leaderboard_name = leaderboard.pop(0).strip('# ')
-                    columns = leaderboard.pop(0)
-                    with open(defaults_xml / f'{game}.xml', 'r') as xml_file:
+                leaderboard_lines = leaderboard.splitlines()
+                if leaderboard_lines[0].startswith('#') or leaderboard_lines[0].startswith(' '):
+                    leaderboard_name = leaderboard_lines.pop(0).strip('# ')
+                    columns = leaderboard_lines.pop(0)
+                    with open(defaults_xml / f'{rom_name}.xml', 'r') as xml_file:
                         xml_data = xml_file.read()
                         data_dict = xmltodict.parse(xml_data)
                         tables = data_dict['hi2txt']['table']
                         for table in tables:
                             if table['@id'] == leaderboard_name:
                                 default_table = table
-                                leaderboard = [x for x in leaderboard if x]
-                                for index, line in enumerate(leaderboard):
+                                leaderboard_lines = [line for line in leaderboard_lines if line]
+                                for index, line in enumerate(leaderboard_lines):
                                     if line.split('|') != default_table['row'][index]['cell']:
-                                        print(f'New PB detected - {game} - {leaderboard_name}')
+                                        print(f'New PB detected - {rom_name} - {leaderboard_name}')
                                         print(f'{default_table['row'][index]['cell']} --> \n{columns}\n{line}')
                                         some_dic = {}
                                         for i, section in enumerate(line.split('|')):
                                             some_dic[columns.split('|')[i]] = section
 
-                                        new_pbs[game] = some_dic
+                                        new_pbs[rom_name] = some_dic
                                         pprint.pp(some_dic)
                                         break
                 else:
-                    columns = leaderboard.pop(0)
-                    with open(defaults_xml / f'{game}.xml', 'r') as xml_file:
+                    columns = leaderboard_lines.pop(0)
+                    with open(defaults_xml / f'{rom_name}.xml', 'r') as xml_file:
                         xml_data = xml_file.read()
                         data_dict = xmltodict.parse(xml_data)
                         default_table = data_dict['hi2txt']['table']
-                        leaderboard = [x for x in leaderboard if x]
-                        for index, line in enumerate(leaderboard):
+                        leaderboard_lines = [line for line in leaderboard_lines if line]
+                        for index, line in enumerate(leaderboard_lines):
                             if isinstance(default_table['row'], list) is True:
                                 if line.split('|') != default_table['row'][index]['cell']:
-                                    print(f'New PB detected - {game}')
+                                    print(f'New PB detected - {rom_name}')
                                     print(f'{default_table['row'][index]['cell']} --> \n{columns}\n{line}')
                                     some_dic = {}
                                     for i, section in enumerate(line.split('|')):
                                         some_dic[columns.split('|')[i]] = section
 
                                     pprint.pp(some_dic)
-                                    new_pbs[game] = some_dic
+                                    new_pbs[rom_name] = some_dic
                                     break
                             else:
                                 if line.split('|') != default_table['row']['cell']:
-                                    print(f'New PB detected - {game}')
+                                    print(f'New PB detected - {rom_name}')
                                     print(f'{default_table['row']['cell']} --> \n{columns}\n{line}')
                                     some_dic = {}
                                     for i, section in enumerate(line.split('|')):
                                         some_dic[columns.split('|')[i]] = section
 
-                                    new_pbs[game] = some_dic
+                                    new_pbs[rom_name] = some_dic
                                     pprint.pp(some_dic)
                                     break
     return new_pbs
 
 
-def prepare_pb_for_db(new_pb: dict[str, str], rom: str) -> dict[str, dict[str, str]]:
+def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str) -> dict[str, dict[str, str]]:
     """Convert a single new PB entry, into the format used by multiple PB insertion function.
 
     TODO This is lazy af.
     """
-    full_dicc = {}
-    some_dicc = {}
+    all_pbs = {}
+    pb = {}
     columns = new_pb['col'].split('|')
     row = new_pb['row'].split('|')
-    for i, section in enumerate(row):
-        some_dicc[columns[i]] = section
+    for index, section in enumerate(row):
+        pb[columns[index]] = section
 
-    full_dicc[rom] = some_dicc
-    return full_dicc
+    all_pbs[rom_name] = pb
+    return all_pbs
 
 
-def save_pbs(new_pbs: dict[str:dict[str:str]], connection, cursor) -> None:
+def save_pbs(new_pbs: dict[str:dict[str:str]], connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
     """Insert or update new PB entries into database, if new PB has a higher score."""
-    for game in new_pbs:
-        pb = new_pbs[game]
+    for rom_name in new_pbs:
+        pb = new_pbs[rom_name]
         pb.pop('RANK', None)
         pb.pop('NAME', None)
 
@@ -503,25 +504,25 @@ def save_pbs(new_pbs: dict[str:dict[str:str]], connection, cursor) -> None:
             other_fields = None
         else:
             other_fields = json.dumps(pb)
-        row = (None, score, other_fields, id_from_rom_name(game, cursor))
-        sql = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
+        row = (None, score, other_fields, id_from_rom_name(rom_name, cursor))
+        sql_statement = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
                "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
-        cursor.execute(sql, row)
+        cursor.execute(sql_statement, row)
     connection.commit()
 
 
 def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
     """Scan hi score tables, parse for possible PB entries and insert or update PB table in database."""
     hi_scores = get_games_with_hs()
-    hi2txt_output = get_hs_tables(hi_scores)
-    new_pbs = get_new_pbs(hi2txt_output)
+    hi2txt_tables = get_hs_tables(hi_scores)
+    new_pbs = get_new_pbs(hi2txt_tables)
     save_pbs(new_pbs, connection, cursor)
 
-# TODO Temp fix after I realized inps need version
-def get_mame_version(root_mame_dir: Path):
-    mame_exe = root_mame_dir / 'mame.exe'
+# TODO Temp fix after I realized inps need version in name.
+def get_mame_version(mame_dir: Path):
+    mame_exe = mame_dir / 'mame.exe'
     if mame_exe.is_file():
-        results = subprocess.run([mame_exe, '-version'], cwd=root_mame_dir, capture_output=True, text=True)
+        results = subprocess.run([mame_exe, '-version'], cwd=mame_dir, capture_output=True, text=True)
         return results.stdout
 
 # if __name__ == '__main__':
