@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 
 from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, MAMEThread, NewStageSplitItem, \
-    PBField
+    PBField, RomSearchDialog
 from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_with_saves, \
     delete_personal_best, delete_splits, get_all_input_files, get_personal_bests, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
@@ -386,7 +386,8 @@ class MainWindow(QMainWindow):
 
     def setup_search_page_layout(self):
         self.rom_search_container.setLayout(self.rom_search_panel)
-        # self.rom_search_container.setFixedWidth(800)
+
+        # self.rom_search_container.setFixedWidth(600)
         self.rom_search_panel.addWidget(self.rom_search_bar)
         self.rom_search_panel.addWidget(self.rom_search_tree)
         self.rom_search_buttons.addWidget(self.rom_search_add_game_button)
@@ -397,6 +398,7 @@ class MainWindow(QMainWindow):
 
         self.rom_info_container.setLayout(self.rom_info_layout)
         # self.rom_info_container.setFixedWidth(600)
+        self.rom_info_container.setFont(self.small_font)
         self.rom_info_layout.addWidget(self.rom_description_label)
         self.rom_info_layout.addWidget(self.rom_name_label)
         self.rom_info_layout.addWidget(self.rom_manufacturer_label)
@@ -407,8 +409,8 @@ class MainWindow(QMainWindow):
         self.rom_info_layout.addWidget(self.rom_audio_driver_warnings_label)
         self.rom_info_layout.addStretch()
 
-        self.rom_search_page_layout.addWidget(self.rom_search_container)
-        self.rom_search_page_layout.addWidget(self.rom_info_container)
+        self.rom_search_page_layout.addWidget(self.rom_search_container, 0)
+        self.rom_search_page_layout.addWidget(self.rom_info_container, 1)
 
         self.rom_search_page.setLayout(self.rom_search_page_layout)
         self.rom_search_page.setFont(self.big_font)
@@ -1129,7 +1131,13 @@ class MainWindow(QMainWindow):
     # --------------- #
     def menu_button_1_clicked(self) -> None:
         """Temporary, easily accessible, trigger for prototype methods."""
-        self.save_and_input_tree.hide()
+        self.tabs.removeTab(2)
+        self.rom_info_container.hide()
+        dlg = RomSearchDialog(RomSearchWindow(self.rom_search_page, self.tabs), self.rom_search_tree, parent=self)
+        dlg.exec()
+        self.rom_info_container.show()
+        self.tabs.addTab(dlg.rom_search_popup, 'Rom Search')
+        # self.save_and_input_tree.hide()
 
     def menu_button_2_clicked(self) -> None:
         """Temporary, easily accessible, trigger for prototype methods."""

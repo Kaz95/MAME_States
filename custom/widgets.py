@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QS
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent, QIcon
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget, QSpacerItem, \
-    QListWidgetItem
+    QListWidgetItem, QDialogButtonBox, QTreeWidget
 
 from logic.main import save_pb_to_database, scan_for_pb, PersonalBests, get_mame_version
 
@@ -176,15 +176,16 @@ class RomSearchWindow(QWidget):
             I probably don't need to pass the page widget either, as it can be derived from tabs widget.
     """
 
-    def __init__(self, rom_search_page: QWidget, tabs_container: QTabWidget, add_game_button: QPushButton,
-                 cancel_button: QPushButton):
+    def __init__(self, rom_search_page: QWidget, tabs_container: QTabWidget, add_game_button: QPushButton | None = None,
+                 cancel_button: QPushButton | None = None):
         super().__init__()
         self.add_game_button: QPushButton = add_game_button
         self.cancel_button: QPushButton = cancel_button
         self.tab_container: QTabWidget = tabs_container
         self.rom_search_page: QWidget = rom_search_page
-        self.add_game_button.show()
-        self.cancel_button.show()
+        if self.add_game_button and self.cancel_button:
+            self.add_game_button.show()
+            self.cancel_button.show()
         # self.widget.setWindowFlags(Qt.WindowType.Window)
         self.rom_search_page.show()
         self.layout: QVBoxLayout = QVBoxLayout()
@@ -195,11 +196,40 @@ class RomSearchWindow(QWidget):
     def closeEvent(self, event):
         # Reattach to tab when closed
         self.tab_container.addTab(self.rom_search_page, 'Rom Search')
-        self.add_game_button.hide()
-        self.cancel_button.hide()
+        if self.add_game_button and self.cancel_button:
+            self.add_game_button.hide()
+            self.cancel_button.hide()
         main_window = self.tab_container.parent()
         main_window.setEnabled(True)
         event.accept()
+
+
+class RomSearchDialog(QDialog):
+    def __init__(self, rom_search_popup: RomSearchWindow, rom_search_tree: QTreeWidget, parent=None):
+        super().__init__(parent)
+        self.rom_search_tree = rom_search_tree
+        self.rom_search_popup = rom_search_popup
+        self.button_box = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Open | QDialogButtonBox.StandardButton.Cancel)
+        self.button_box.accepted.connect(self.select_rom)
+        self.button_box.accepted.connect(self.accept)
+        self.button_box.rejected.connect(self.reject)
+        layout = QVBoxLayout()
+        layout.addWidget(self.rom_search_popup)
+        layout.addWidget(self.button_box)
+        self.setLayout(layout)
+        self.rom_description_for_inp = None
+
+
+    def select_rom(self):
+        selected = self.rom_search_tree.selectedItems()
+        if selected:
+            rom_item = selected[0]
+            rom_description = rom_item.text(0)
+            self.rom_description_for_inp = rom_description
+
+    def sizeHint(self):
+        return QSize(800,800)
 
 
 class NotesWindow(QWidget):
