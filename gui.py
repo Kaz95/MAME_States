@@ -315,7 +315,7 @@ class MainWindow(QMainWindow):
 
     def setup_save_state_page(self) -> None:
         """Save State Page windget customization."""
-        self.save_and_input_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed)
+        self.save_and_input_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed | QTreeWidget.EditTrigger.DoubleClicked)
         self.save_and_input_tree.setHeaderLabels(['MAME Folders'])
         self.save_and_input_tree.setColumnWidth(0, 1000)
         self.save_and_input_tree.setItemDelegate(SaveStateNameInputValidator(self))
@@ -405,8 +405,8 @@ class MainWindow(QMainWindow):
         self.rom_info_layout.addWidget(self.rom_audio_driver_warnings_label)
         self.rom_info_layout.addStretch()
 
-        self.rom_search_page_layout.addWidget(self.rom_search_container, 0)
-        self.rom_search_page_layout.addWidget(self.rom_info_container, 1)
+        self.rom_search_page_layout.addWidget(self.rom_search_container)
+        self.rom_search_page_layout.addWidget(self.rom_info_container)
 
         self.rom_search_page.setLayout(self.rom_search_page_layout)
         self.rom_search_page.setFont(self.big_font)
