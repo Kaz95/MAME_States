@@ -202,8 +202,6 @@ class MainWindow(QMainWindow):
         self.info_layout: QVBoxLayout = QVBoxLayout()
         """Contains PB info, stage splits, and related buttons."""
 
-
-
         self.splits_tree_button_container: QHBoxLayout = QHBoxLayout()
         """Contains buttons related to stage splits."""
 
@@ -245,8 +243,6 @@ class MainWindow(QMainWindow):
 
         self.rom_search_cancel_button: QPushButton = QPushButton('Cancel')
         """Allow user to cancel rom search. Only appears on popup."""
-
-
 
         self.rom_description_label: QLabel = QLabel()
         """Used in full rom info display."""
@@ -501,7 +497,7 @@ class MainWindow(QMainWindow):
         Loops if invalid path and user selects 'retry'.
         """
         mame_dir = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
-                                                       options=QFileDialog.Option.ShowDirsOnly)
+                                                    options=QFileDialog.Option.ShowDirsOnly)
 
         mame_dir = Path(mame_dir)
 
@@ -593,7 +589,8 @@ class MainWindow(QMainWindow):
         item_widget = self.splits_list.itemWidget(item)
         item_widget.toggle_editors()
 
-    def split_current_item_changed(self, current_selection: QListWidgetItem, previous_selection: QListWidgetItem) -> None:
+    def split_current_item_changed(self, current_selection: QListWidgetItem,
+                                   previous_selection: QListWidgetItem) -> None:
         """Show split item labels. Hide editors."""
         if previous_selection:
             item_widget = self.splits_list.itemWidget(previous_selection)
@@ -610,7 +607,8 @@ class MainWindow(QMainWindow):
             for field_name in self.temp_fields:
                 if field_name == 'high score':
                     continue
-                self.pb_info[rom_description]['other_fields'][field_name] = self.temp_fields[field_name].field_value.editor.text()
+                self.pb_info[rom_description]['other_fields'][field_name] = self.temp_fields[
+                    field_name].field_value.editor.text()
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def highscore_add_game_clicked(self) -> None:
@@ -815,7 +813,7 @@ class MainWindow(QMainWindow):
 
             if tree_item.parent().text(0) == 'Input Files':
                 input_file_name = tree_item.text(0)
-                rom_name = input_file_name.split('_')[0] # inp files created by program will have rom name at start.
+                rom_name = input_file_name.split('_')[0]  # inp files created by program will have rom name at start.
 
                 sub_menu = QMenu('Playback with...')
                 for mame_dir in self.mame_dirs:
@@ -903,6 +901,15 @@ class MainWindow(QMainWindow):
         menu.addMenu(open_with_inp_submenu)
         menu.exec(self.games_with_pb_tree.viewport().mapToGlobal(position))
 
+    def open_rom_for_inp_search(self):
+        self.tabs.removeTab(2)
+        self.rom_info_container.hide()
+        dlg = RomSearchDialog(RomSearchWindow(self.rom_search_page, self.tabs), self.rom_search_tree, parent=self)
+        dlg.exec()
+        self.rom_info_container.show()
+        print(dlg.rom_description_for_inp)
+        self.tabs.addTab(dlg.rom_search_popup, 'Rom Search')
+        return dlg.rom_description_for_inp
     # TODO Take another look at this.
     def run_rom(self, rom_name: str, record_input=False, play_back_input=False, input_file_name=None) -> None:
         """Attempt to run a rom, with a given MAME path.
@@ -924,13 +931,22 @@ class MainWindow(QMainWindow):
         hi2txt_compatible = has_xml(rom_name)
         if hi2txt_compatible:
             try:
-                hi2txt_results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
-                                         cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
-                                         check=True, encoding='utf-8')
+                hi2txt_results = subprocess.run(
+                    [r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
+                    cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
+                    check=True, encoding='utf-8')
                 self.pre_hs_table = hi2txt_results.stdout
             except FileNotFoundError:
                 print('whoops')
 
+        if rom_name not in list(self.descriptions_and_names.values()):
+        # if not rom.is_file():
+            rom_description = self.open_rom_for_inp_search()
+            if rom_description:
+                rom_name = self.descriptions_and_names[rom_description]
+            else:
+                QMessageBox.critical(self, 'Error', 'Input File cannot be played back without a valid rom.')
+                return
         self.mame_thread = MAMEThread(mame_exe, rom_name, Path(mame_dir), record_input=record_input,
                                       playback_input=play_back_input, input_file_name=input_file_name)
         self.mame_thread.mame_exited.connect(self.rom_done)
@@ -953,10 +969,11 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, 'Rom Closed', f'{results['output']}')
             if self.pre_hs_table:
                 try:
-                    hi2txt_results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
-                                                    cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True,
-                                                    text=True,
-                                                    check=True, encoding='utf-8')
+                    hi2txt_results = subprocess.run(
+                        [r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
+                        cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True,
+                        text=True,
+                        check=True, encoding='utf-8')
                     post_hs_table = hi2txt_results.stdout
                 except FileNotFoundError:
                     print('whoops')
@@ -1026,7 +1043,6 @@ class MainWindow(QMainWindow):
 
         for item in items:
             self.rom_search_tree.addTopLevelItem(item[0])
-
 
     def rom_search_tree_selection_changed(self) -> None:
         """Clear and attempt to refill Rom Search Info Panel based on selected item.
@@ -1136,6 +1152,7 @@ class MainWindow(QMainWindow):
         dlg = RomSearchDialog(RomSearchWindow(self.rom_search_page, self.tabs), self.rom_search_tree, parent=self)
         dlg.exec()
         self.rom_info_container.show()
+        print(dlg.rom_description_for_inp)
         self.tabs.addTab(dlg.rom_search_popup, 'Rom Search')
         # self.save_and_input_tree.hide()
 
