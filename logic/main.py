@@ -7,7 +7,7 @@ import os
 import pprint
 import sqlite3
 import subprocess
-from dataclasses import dataclass
+from dataclasses import dataclass, asdict
 
 from pathlib import Path
 import zipfile
@@ -35,7 +35,7 @@ test_pb_info = {'DonPachi': {'hs': 900,
                                   'splits': [['Stage-1', 10000], ['Stage-2', 15069], ['Stage-3', 25069],
                                              ['Stage-4', 38069], ['Stage-5', 50069]]}}
 
-@dataclass
+@dataclass(frozen=True)
 class MAMEDir:
     path: Path
     version: str
@@ -75,6 +75,15 @@ def get_all_input_files(mame_dirs: list[Path]) -> dict[Path,list[str]]:
             all_input_files[mame_dir] = [input_file.stem for input_file in input_file_dir.iterdir()]
     return all_input_files
 
+def new_get_all_input_files(mame_dirs: list[MAMEDir]) -> dict[MAMEDir,list[str]]:
+    """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
+    all_input_files = {}
+    for mame_dir in mame_dirs:
+        input_file_dir = mame_dir.path / 'inp'
+        if input_file_dir.is_dir():
+            all_input_files[mame_dir] = [input_file.stem for input_file in input_file_dir.iterdir()]
+    return all_input_files
+
 
 def get_all_roms_with_saves(mame_dirs: list[Path]) -> dict[Path,dict[str,list[str]]]:
     """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
@@ -82,6 +91,16 @@ def get_all_roms_with_saves(mame_dirs: list[Path]) -> dict[Path,dict[str,list[st
     for mame_dir in mame_dirs:
         roms_with_saves = get_roms_with_saves(mame_dir)
         save_state_names = get_save_names(roms_with_saves, mame_dir)
+        all_save_state_names[mame_dir] = save_state_names
+
+    return all_save_state_names
+
+def new_get_all_roms_with_saves(mame_dirs: list[MAMEDir]) -> dict[MAMEDir,dict[str,list[str]]]:
+    """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
+    all_save_state_names = {}
+    for mame_dir in mame_dirs:
+        roms_with_saves = get_roms_with_saves(mame_dir.path)
+        save_state_names = get_save_names(roms_with_saves, mame_dir.path)
         all_save_state_names[mame_dir] = save_state_names
 
     return all_save_state_names
@@ -131,6 +150,21 @@ def save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_
     rows = []
     for mame_dir in mame_dirs:
         row = (None, str(mame_dir), mame_dir.name, version, None)
+        rows.append(row)
+
+    cursor.executemany(sql_statement, rows)
+    connection.commit()
+
+# TODO This wipes out manually added version #s until I sort that out.
+def new_save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[MAMEDir], version=None) -> None:
+    """Format list of paths as rows. Insert them into database. """
+    sql_statement = """INSERT OR IGNORE INTO paths (path, version) VALUES (:path, :version);"""
+    rows = []
+    for mame_dir in mame_dirs:
+        row = asdict(mame_dir)
+        # Change Path to str before inserting.
+        row['path'] = str(row['path'])
+        print(row)
         rows.append(row)
 
     cursor.executemany(sql_statement, rows)
