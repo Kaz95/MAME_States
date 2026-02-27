@@ -7,6 +7,7 @@ import os
 import pprint
 import sqlite3
 import subprocess
+from dataclasses import dataclass
 
 from pathlib import Path
 import zipfile
@@ -34,6 +35,10 @@ test_pb_info = {'DonPachi': {'hs': 900,
                                   'splits': [['Stage-1', 10000], ['Stage-2', 15069], ['Stage-3', 25069],
                                              ['Stage-4', 38069], ['Stage-5', 50069]]}}
 
+@dataclass
+class MAMEDir:
+    path: Path
+    version: str
 
 ###############
 # Save States #
@@ -102,6 +107,19 @@ def get_mame_dirs(cursor: sqlite3.Cursor) -> list[Path]:
     mame_dirs = []
     for entry in raw_results:
         mame_dir = Path(entry[1])
+        mame_dirs.append(mame_dir)
+    return mame_dirs
+
+def new_get_mame_dirs(cursor: sqlite3.Cursor) -> list[MAMEDir]:
+    """Load paths as strings from database. Convert to Path objects before returning them."""
+    sql_query = """SELECT * FROM paths"""
+    cursor.execute(sql_query)
+    raw_results = cursor.fetchall()
+    mame_dirs = []
+    for entry in raw_results:
+        mame_path = Path(entry['path'])
+        mame_version = entry['version']
+        mame_dir = MAMEDir(mame_path, mame_version)
         mame_dirs.append(mame_dir)
     return mame_dirs
 

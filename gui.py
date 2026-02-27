@@ -24,7 +24,7 @@ from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
 from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_with_saves, \
     delete_personal_best, delete_splits, get_all_input_files, get_personal_bests, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
-    prepare_pb_for_db, get_formatted_rom_info, PersonalBests, get_mame_version
+    prepare_pb_for_db, get_formatted_rom_info, PersonalBests, get_mame_version, MAMEDir, new_get_mame_dirs
 from logic.main import save_mame_dirs, get_descriptions_and_names, \
     delete_split
 
@@ -44,6 +44,7 @@ class MainWindow(QMainWindow):
         slots.
         """
         super().__init__()
+
         self.progress_bar = None
         """Reference to progress bar popup window. Prevents garbage collection and allows access."""
 
@@ -61,6 +62,9 @@ class MainWindow(QMainWindow):
 
         self.db_connection: sqlite3.Connection = db_connection
         """Connection object that points to database connection."""
+
+        self.new_db_cursor = self.db_connection.cursor()
+        self.new_db_cursor.row_factory = sqlite3.Row
 
         self.db_cursor: sqlite3.Cursor = self.db_connection.cursor()
         """Cursor object used to navigate database."""
@@ -85,6 +89,9 @@ class MainWindow(QMainWindow):
         # --------- #
         self.mame_dirs: list[Path] = get_mame_dirs(self.db_cursor)
         """List of all MAME directories that will be used by the application."""
+
+        self.new_mame_dirs: list[MAMEDir] = new_get_mame_dirs(self.new_db_cursor)
+        pprint.pp(self.new_mame_dirs)
 
         self.pb_info: PersonalBests = get_personal_bests(self.db_cursor)
         """Personal best information."""
