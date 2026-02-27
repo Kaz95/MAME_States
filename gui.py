@@ -794,10 +794,12 @@ class MainWindow(QMainWindow):
 
         if not notes_file.is_file():
             notes_file.touch()
-        else:
-            with open(notes_file, 'r') as notes:
-                text = notes.read()
-                self.notes_window.text_edit.setText(text)
+
+        with open(notes_file, 'r') as notes:
+            text = notes.read()
+            if not text:
+                text = ''
+            self.notes_window.text_edit.setText(text)
         self.notes_window.current_game = rom_name
         self.notes_window.setWindowTitle(f'{rom_description} - Notes')
         self.notes_window.raise_()
