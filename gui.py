@@ -25,7 +25,8 @@ from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_wi
     delete_personal_best, delete_splits, get_all_input_files, get_personal_bests, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, get_formatted_rom_info, PersonalBests, get_mame_version, MAMEDir, new_get_mame_dirs, \
-    new_get_all_roms_with_saves, new_get_all_input_files, new_save_mame_dirs, new_get_formatted_rom_info
+    new_get_all_roms_with_saves, new_get_all_input_files, new_save_mame_dirs, new_get_formatted_rom_info, \
+    new_get_personal_bests
 from logic.main import save_mame_dirs, get_descriptions_and_names, \
     delete_split
 
@@ -95,7 +96,7 @@ class MainWindow(QMainWindow):
         self.new_mame_dirs: list[MAMEDir] = new_get_mame_dirs(self.new_db_cursor)
         pprint.pp(self.new_mame_dirs)
 
-        self.pb_info: PersonalBests = get_personal_bests(self.db_cursor)
+        self.pb_info: PersonalBests = new_get_personal_bests(self.new_db_cursor)
         """Personal best information."""
 
         self.fill_data_structures()

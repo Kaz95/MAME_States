@@ -225,6 +225,35 @@ def get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     return pb_info
 
 
+def new_get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
+    """Load and format all personal best information from the database. Keyed to rom description."""
+    pb_info = {}
+
+    pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.other_fields 
+    FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
+
+    splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description, splits.id
+        FROM 'splits' JOIN 'roms' ON splits.rom_id = roms.id 
+        ORDER BY roms.description, splits.'index'"""
+
+    cursor.execute(pb_query)
+    personal_bests = cursor.fetchall()
+
+    for pb in personal_bests:
+        if pb[2]:
+            other_fields = json.loads(pb[2])
+        else:
+            other_fields = None
+        pb_info[pb[0]] = {'hs': pb[1], 'other_fields': other_fields, 'splits': []}
+
+    cursor.execute(splits_query)
+    splits = cursor.fetchall()
+    for row in splits:
+        pb_info[row[3]]['splits'].append([row[0], row[1], row[4]])
+
+    return pb_info
+
+
 def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info: PersonalBests) -> None:
     """Update database with provided personal best and split information.
 
