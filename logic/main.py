@@ -232,7 +232,7 @@ def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, 
        """
     pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
                  "excluded.highscore, other_fields = excluded.other_fields")
-    splits_insert = ("INSERT INTO splits VALUES (?, ?, ?, ?, ?) ON CONFLICT(id) DO UPDATE SET label = excluded.label, "
+    splits_insert = ("INSERT INTO splits VALUES (?, ?, ?, ?, ?) ON CONFLICT(label) DO UPDATE SET label = excluded.label, "
                      "score = excluded.score, 'index' = excluded.'index'")
 
     pb_rows = collate_pb_rows(cursor, pb_info)
@@ -322,8 +322,10 @@ def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[t
         pb_dict = pb_info[pb]
         splits = pb_dict['splits']
         for split in splits:
+
             if len(split) < 3:  # If no pk, must be new split. Give None to auto gen pk.
                 split.append(None)
+            print(split)
             row = (split[2], split[0], split[1], splits.index(split), id_from_description(pb, cursor))
             rows.append(row)
     return rows

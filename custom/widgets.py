@@ -319,7 +319,7 @@ class ToggleableLabel(QWidget):
                 if isinstance(self.parent(), NewStageSplitItem):
                     widget = self.parent()
                     widget._update_split_db()
-                    widget.parent_list.add_diffs(widget.game_db[widget.game_name]['splits'])
+                    widget.parent_list.add_diffs(widget.pb_info[widget.rom_description]['splits'])
             else:
                 self.editor.setText(self.label.text())  # Revert
 
@@ -458,7 +458,7 @@ class StageSplitListWidget(QListWidget):
 
         When an item is moved, the new order is preserved and the split differences are recalculated.
         """
-        if event.type() == QEvent.Type.ChildRemoved:
+        if event.type() == QEvent.Type.ChildRemoved: # Child removed includes item deletion as well as movement.
             items_that_moved = self.selectedItems()
             if items_that_moved:
                 item_that_moved = items_that_moved[0]
@@ -478,8 +478,9 @@ class StageSplitListWidget(QListWidget):
     def update_db(self, rom_description: str, old_index: int, new_index: int) -> None:
         """Mirror internal list changes to the in-memory representation. Save to database."""
         splits = self.pb_info[rom_description]['splits']
-        split = splits.pop(old_index)
-        splits.insert(new_index, split)
+        if not (len(splits) - 1) < old_index:
+            split = splits.pop(old_index)
+            splits.insert(new_index, split)
         save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def add_diffs(self, splits: list) -> None:
