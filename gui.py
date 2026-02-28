@@ -25,7 +25,7 @@ from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_wi
     delete_personal_best, delete_splits, get_all_input_files, get_personal_bests, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, get_formatted_rom_info, PersonalBests, get_mame_version, MAMEDir, new_get_mame_dirs, \
-    new_get_all_roms_with_saves, new_get_all_input_files, new_save_mame_dirs
+    new_get_all_roms_with_saves, new_get_all_input_files, new_save_mame_dirs, new_get_formatted_rom_info
 from logic.main import save_mame_dirs, get_descriptions_and_names, \
     delete_split
 
@@ -46,6 +46,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
+        self.new_all_rom_info = None
         self.progress_bar = None
         """Reference to progress bar popup window. Prevents garbage collection and allows access."""
 
@@ -434,7 +435,8 @@ class MainWindow(QMainWindow):
         self.rom_search_tree.setHeaderLabels(['Games'])
         for rom_description in self.descriptions_and_names.keys():
             item = QTreeWidgetItem(self.rom_search_tree, [rom_description])
-            parent = self.all_rom_info[rom_description]['parent']
+            # parent = self.all_rom_info[rom_description]['parent']
+            parent = self.new_all_rom_info[rom_description].parent
             if parent is not None:
                 self.paint_clone_rom_item(item, rom_description)
 
@@ -547,6 +549,8 @@ class MainWindow(QMainWindow):
         self.all_save_states = new_get_all_roms_with_saves(self.new_mame_dirs)
         self.all_input_files = new_get_all_input_files(self.new_mame_dirs)
         self.all_rom_info = get_formatted_rom_info(self.db_cursor)
+        self.new_all_rom_info = new_get_formatted_rom_info(self.new_db_cursor)
+
 
     # def fill_save_state_tree(self) -> None:
     #     """Clear, then fill and customize the Save State Tree Widget.
@@ -1075,7 +1079,8 @@ class MainWindow(QMainWindow):
     def create_rom_search_item(self, rom_description, rom_name, weight=3) -> tuple[QTreeWidgetItem, int]:
         item = QTreeWidgetItem([rom_description])
         item.setToolTip(0, rom_name)
-        parent = self.all_rom_info[rom_description]['parent']
+        # parent = self.all_rom_info[rom_description]['parent']
+        parent = self.new_all_rom_info[rom_description].parent
         if parent is not None:
             self.paint_clone_rom_item(item, rom_description)
 
@@ -1131,16 +1136,24 @@ class MainWindow(QMainWindow):
         selected = self.rom_search_tree.selectedItems()
         if selected:
             game_description = selected[0].text(0)
-            rom_info = self.all_rom_info[game_description]
-            self.rom_description_label.setText(f'Game: {game_description}')
-            self.rom_name_label.setText(f'Rom Name: {rom_info['name']}')
-            self.rom_manufacturer_label.setText(f'Manufacturer: {rom_info['manufacturer']}')
-            self.rom_release_year_label.setText(f'Year: {str(rom_info['year'])}')
-            self.rom_parent_label.setText(f'Parent: {rom_info['parent']}')
-            self.rom_video_info_label.setText(f'Video Info: {rom_info['video_info']}')
-            self.rom_video_driver_warnings_label.setText(f'Video Driver: {rom_info['video_driver']}')
-            self.rom_audio_driver_warnings_label.setText(f'Sound Driver: {rom_info['sound_driver']}')
+            rom_info = self.new_all_rom_info[game_description]
+            # self.rom_description_label.setText(f'Game: {game_description}')
+            # self.rom_name_label.setText(f'Rom Name: {rom_info['name']}')
+            # self.rom_manufacturer_label.setText(f'Manufacturer: {rom_info['manufacturer']}')
+            # self.rom_release_year_label.setText(f'Year: {str(rom_info['year'])}')
+            # self.rom_parent_label.setText(f'Parent: {rom_info['parent']}')
+            # self.rom_video_info_label.setText(f'Video Info: {rom_info['video_info']}')
+            # self.rom_video_driver_warnings_label.setText(f'Video Driver: {rom_info['video_driver']}')
+            # self.rom_audio_driver_warnings_label.setText(f'Sound Driver: {rom_info['sound_driver']}')
 
+            self.rom_description_label.setText(f'Game: {game_description}')
+            self.rom_name_label.setText(f'Rom Name: {rom_info.name}')
+            self.rom_manufacturer_label.setText(f'Manufacturer: {rom_info.manufacturer}')
+            self.rom_release_year_label.setText(f'Year: {rom_info.year}')
+            self.rom_parent_label.setText(f'Parent: {rom_info.parent}')
+            self.rom_video_info_label.setText(f'Video Info: {rom_info.hres}x{rom_info.vres}@{rom_info.refresh} - {rom_info.rotate}°')
+            self.rom_video_driver_warnings_label.setText(f'Video Driver: {rom_info.video}')
+            self.rom_audio_driver_warnings_label.setText(f'Sound Driver: {rom_info.sound}')
     # --------------------- #
     # Save State Page Slots #
     # --------------------- #

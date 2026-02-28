@@ -35,10 +35,27 @@ test_pb_info = {'DonPachi': {'hs': 900,
                                   'splits': [['Stage-1', 10000], ['Stage-2', 15069], ['Stage-3', 25069],
                                              ['Stage-4', 38069], ['Stage-5', 50069]]}}
 
+
 @dataclass(frozen=True)
 class MAMEDir:
     path: Path
     version: str
+
+
+@dataclass(frozen=True)
+class RomInfo:
+    name: str
+    description: str
+    manufacturer: str
+    year: str
+    parent: str
+    hres: int
+    vres: int
+    rotate: int
+    refresh: float
+    video: str
+    sound: str
+
 
 ###############
 # Save States #
@@ -66,7 +83,7 @@ def get_save_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list
     return save_states
 
 
-def get_all_input_files(mame_dirs: list[Path]) -> dict[Path,list[str]]:
+def get_all_input_files(mame_dirs: list[Path]) -> dict[Path, list[str]]:
     """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
     all_input_files = {}
     for mame_dir in mame_dirs:
@@ -75,7 +92,8 @@ def get_all_input_files(mame_dirs: list[Path]) -> dict[Path,list[str]]:
             all_input_files[mame_dir] = [input_file.stem for input_file in input_file_dir.iterdir()]
     return all_input_files
 
-def new_get_all_input_files(mame_dirs: list[MAMEDir]) -> dict[MAMEDir,list[str]]:
+
+def new_get_all_input_files(mame_dirs: list[MAMEDir]) -> dict[MAMEDir, list[str]]:
     """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
     all_input_files = {}
     for mame_dir in mame_dirs:
@@ -85,7 +103,7 @@ def new_get_all_input_files(mame_dirs: list[MAMEDir]) -> dict[MAMEDir,list[str]]
     return all_input_files
 
 
-def get_all_roms_with_saves(mame_dirs: list[Path]) -> dict[Path,dict[str,list[str]]]:
+def get_all_roms_with_saves(mame_dirs: list[Path]) -> dict[Path, dict[str, list[str]]]:
     """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
     all_save_state_names = {}
     for mame_dir in mame_dirs:
@@ -95,7 +113,8 @@ def get_all_roms_with_saves(mame_dirs: list[Path]) -> dict[Path,dict[str,list[st
 
     return all_save_state_names
 
-def new_get_all_roms_with_saves(mame_dirs: list[MAMEDir]) -> dict[MAMEDir,dict[str,list[str]]]:
+
+def new_get_all_roms_with_saves(mame_dirs: list[MAMEDir]) -> dict[MAMEDir, dict[str, list[str]]]:
     """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
     all_save_state_names = {}
     for mame_dir in mame_dirs:
@@ -129,6 +148,7 @@ def get_mame_dirs(cursor: sqlite3.Cursor) -> list[Path]:
         mame_dirs.append(mame_dir)
     return mame_dirs
 
+
 def new_get_mame_dirs(cursor: sqlite3.Cursor) -> list[MAMEDir]:
     """Load paths as strings from database. Convert to Path objects before returning them."""
     sql_query = """SELECT * FROM paths"""
@@ -155,8 +175,10 @@ def save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_
     cursor.executemany(sql_statement, rows)
     connection.commit()
 
+
 # TODO This wipes out manually added version #s until I sort that out.
-def new_save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[MAMEDir], version=None) -> None:
+def new_save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[MAMEDir],
+                       version=None) -> None:
     """Format list of paths as rows. Insert them into database. """
     sql_statement = """INSERT OR IGNORE INTO paths (path, version) VALUES (:path, :version);"""
     rows = []
@@ -300,14 +322,14 @@ def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[t
         pb_dict = pb_info[pb]
         splits = pb_dict['splits']
         for split in splits:
-            if len(split) < 3:   # If no pk, must be new split. Give None to auto gen pk.
+            if len(split) < 3:  # If no pk, must be new split. Give None to auto gen pk.
                 split.append(None)
             row = (split[2], split[0], split[1], splits.index(split), id_from_description(pb, cursor))
             rows.append(row)
     return rows
 
 
-def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str,str]:
+def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str, str]:
     """Construct {rom_description:rom_name} dictionary.
 
     This dictionary is used as a quick in-memory reference that binds a roms description, to its name.
@@ -329,8 +351,30 @@ def serialize_rom_info(raw_rom_info: list[tuple]) -> dict[str, dict[str, str]]:
 
     for row in raw_rom_info:
         formatted_rom_info[row[2]] = {'name': row[1], 'manufacturer': row[3], 'year': row[4], 'parent': row[5],
-                            'video_info': f'{row[6]}x{row[7]}@{row[9]} - Rotate {row[8]}°', 'video_driver': row[10],
-                            'sound_driver': row[11]}
+                                      'video_info': f'{row[6]}x{row[7]}@{row[9]} - Rotate {row[8]}°',
+                                      'video_driver': row[10],
+                                      'sound_driver': row[11]}
+    return formatted_rom_info
+
+
+def new_serialize_rom_info(raw_rom_info: sqlite3.Row) -> dict[str, RomInfo]:
+    """Format raw rom info, from database, into in-memory representation."""
+    formatted_rom_info = {}
+
+    for row in raw_rom_info:
+       rom_info = RomInfo(row['name'],
+                     row['description'],
+                     row['manufacturer'],
+                     row['year'],
+                     row['parent'],
+                     row['hres'],
+                     row['vres'],
+                     row['rotate'],
+                     row['refresh'],
+                     row['video'],
+                     row['sound'])
+       formatted_rom_info[rom_info.description] = rom_info
+
     return formatted_rom_info
 
 
@@ -340,6 +384,11 @@ def get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, dict[str, str]]:
     formatted_rom_info = serialize_rom_info(raw_rom_info)
     return formatted_rom_info
 
+def new_get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, dict[str, str]]:
+    """Retrieve and format raw rom info, from the database."""
+    raw_rom_info = get_raw_rom_info(cursor)
+    formatted_rom_info = new_serialize_rom_info(raw_rom_info)
+    return formatted_rom_info
 
 def has_xml(rom_name: str) -> bool:
     """Check if a given rom has an XML file, and is therefore compatible with 'hi2txt'."""
@@ -352,6 +401,7 @@ def has_xml(rom_name: str) -> bool:
             return True
         else:
             return False
+
 
 # TODO This is using global var for mame paths. Update to use DB mame paths.
 #   Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
@@ -377,9 +427,9 @@ def get_games_with_hs() -> dict[str, list[Path]]:
     return hi2txt_compatible_hi_scores
 
 
-def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[str,dict[str,str]]:
+def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[str, dict[str, str]]:
     """Retrieve raw hi2txt leaderboard table output for compatible games with .hi file."""
-    hi2txt_tables: dict[str,dict[str,str]] = {}
+    hi2txt_tables: dict[str, dict[str, str]] = {}
     for mame_dir in hi2txt_compatible_hi_scores:
         hi2txt_tables[mame_dir] = {}
         hiscore_files = hi2txt_compatible_hi_scores[mame_dir]
@@ -539,7 +589,7 @@ def save_pbs(new_pbs: dict[str:dict[str:str]], connection: sqlite3.Connection, c
             other_fields = json.dumps(pb)
         row = (None, score, other_fields, id_from_rom_name(rom_name, cursor))
         sql_statement = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
-               "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
+                         "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
         cursor.execute(sql_statement, row)
     connection.commit()
 
@@ -550,6 +600,7 @@ def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
     hi2txt_tables = get_hs_tables(hi_scores)
     new_pbs = get_new_pbs(hi2txt_tables)
     save_pbs(new_pbs, connection, cursor)
+
 
 # TODO Temp fix after I realized inps need version in name.
 def get_mame_version(mame_dir: Path):
