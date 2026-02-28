@@ -203,7 +203,7 @@ def get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.other_fields 
     FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
 
-    splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description, splits.id
+    splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description
         FROM 'splits' JOIN 'roms' ON splits.rom_id = roms.id 
         ORDER BY roms.description, splits.'index'"""
 
@@ -220,7 +220,7 @@ def get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     cursor.execute(splits_query)
     splits = cursor.fetchall()
     for split in splits:
-        pb_info[split[3]]['splits'].append([split[0], split[1], split[4]])
+        pb_info[split[3]]['splits'].append([split[0], split[1]])
 
     return pb_info
 
@@ -232,7 +232,7 @@ def new_get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.other_fields 
     FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
 
-    splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description, splits.id
+    splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description
         FROM 'splits' JOIN 'roms' ON splits.rom_id = roms.id 
         ORDER BY roms.description, splits.'index'"""
 
@@ -249,7 +249,7 @@ def new_get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     cursor.execute(splits_query)
     splits = cursor.fetchall()
     for row in splits:
-        pb_info[row[3]]['splits'].append([row[0], row[1], row[4]])
+        pb_info[row[3]]['splits'].append([row[0], row[1]])
 
     return pb_info
 
@@ -354,7 +354,6 @@ def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[t
 
             if len(split) < 3:  # If no pk, must be new split. Give None to auto gen pk.
                 split.append(None)
-            print(split)
             row = (split[2], split[0], split[1], splits.index(split), id_from_description(pb, cursor))
             rows.append(row)
     return rows
