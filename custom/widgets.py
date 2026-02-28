@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget, QSpacerItem, \
     QListWidgetItem, QDialogButtonBox, QTreeWidget
 
-from logic.main import save_pb_to_database, scan_for_pb, PersonalBests, get_mame_version
+from logic.main import save_pb_to_database, scan_for_pb, PersonalBests, get_mame_version, Split, delete_split
 
 
 ######################
@@ -346,7 +346,7 @@ class NewStageSplitItem(QWidget):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used as a customer item widget on a QListWidget instance."""
 
-    def __init__(self, split: list[str | int], pb_info: PersonalBests, rom_description: str,
+    def __init__(self, split: Split, pb_info: PersonalBests, rom_description: str,
                  parent_list: 'StageSplitListWidget', connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
         """ Initialize the StageSplitItem subclass
 
@@ -372,8 +372,8 @@ class NewStageSplitItem(QWidget):
         self.rom_description: str = rom_description
         """The name of the game which the split belongs to."""
 
-        self.stage: str = split[0]
-        self.score: int = split[1]
+        self.stage: str = split.label
+        self.score: int = split.score
 
         self.name_label: ToggleableLabel = ToggleableLabel(f'{self.stage}')
         self.score_label: ToggleableLabel = ToggleableLabel(f'{self.score}')
@@ -413,11 +413,13 @@ class NewStageSplitItem(QWidget):
         Will no save empty pb label.
         """
         item_index = self.pb_info[self.rom_description]['splits'].index(self.split)
-
-        self.pb_info[self.rom_description]['splits'][item_index][1] = int(self.score_label.editor.text())
-        self.pb_info[self.rom_description]['splits'][item_index][0] = self.name_label.editor.text()
+        old_label = self.pb_info[self.rom_description]['splits'][item_index].label
+        self.pb_info[self.rom_description]['splits'][item_index].score = int(self.score_label.editor.text())
+        self.pb_info[self.rom_description]['splits'][item_index].label = self.name_label.editor.text()
+        print(f'here: {old_label}')
 
         if self.name_label.editor.text():
+            delete_split(self.db_connection, self.db_cursor, self.rom_description,old_label)
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
 
@@ -483,15 +485,15 @@ class StageSplitListWidget(QListWidget):
             splits.insert(new_index, split)
         save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
-    def add_diffs(self, splits: list) -> None:
+    def add_diffs(self, splits: list[Split]) -> None:
         """Calculate and display the difference between a splits score, and the previous splits score."""
         for index, split in enumerate(splits):
             if index > 0:
-                diff = split[1] - splits[index - 1][1]
+                diff = split.score - splits[index - 1].score
                 list_item = self.item(index)
                 widget_item = self.itemWidget(list_item)
-                widget_item.score_label.label.setText(str(split[1]) + f'({diff:+d})')
+                widget_item.score_label.label.setText(str(split.score) + f'({diff:+d})')
             else:
                 list_item = self.item(index)
                 widget_item = self.itemWidget(list_item)
-                widget_item.score_label.label.setText(str(split[1]))
+                widget_item.score_label.label.setText(str(split.score))

@@ -56,6 +56,10 @@ class RomInfo:
     video: str
     sound: str
 
+@dataclass
+class Split:
+    label: str
+    score: int
 
 ###############
 # Save States #
@@ -249,8 +253,8 @@ def new_get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     cursor.execute(splits_query)
     splits = cursor.fetchall()
     for row in splits:
-        print(row.keys())
-        pb_info[row['description']]['splits'].append([row['label'], row['score']])
+        some_split = Split(row['label'], row['score'])
+        pb_info[row['description']]['splits'].append(some_split)
 
     return pb_info
 
@@ -262,7 +266,7 @@ def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, 
        """
     pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
                  "excluded.highscore, other_fields = excluded.other_fields")
-    splits_insert = ("INSERT INTO splits VALUES (?, ?, ?, ?, ?) ON CONFLICT(label) DO UPDATE SET label = excluded.label, "
+    splits_insert = ("INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT(label) DO UPDATE SET label = excluded.label, "
                      "score = excluded.score, 'index' = excluded.'index'")
 
     pb_rows = collate_pb_rows(cursor, pb_info)
@@ -342,7 +346,7 @@ def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[tupl
     return rows
 
 
-def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[tuple]:
+def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list:
     """Serialize splits information into rows for database insertion.
 
     Split order is preserved by using the splits current position in its perspective splits list.
@@ -352,11 +356,13 @@ def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[t
         pb_dict = pb_info[pb]
         splits = pb_dict['splits']
         for split in splits:
+            index = splits.index(split)
+            split = asdict(split)
+            split['index'] = index
+            split['rom_id'] = id_from_description(pb, cursor)
+            # row = (split[2], split[0], split[1], splits.index(split), id_from_description(pb, cursor))
+            rows.append(split)
 
-            if len(split) < 3:  # If no pk, must be new split. Give None to auto gen pk.
-                split.append(None)
-            row = (split[2], split[0], split[1], splits.index(split), id_from_description(pb, cursor))
-            rows.append(row)
     return rows
 
 

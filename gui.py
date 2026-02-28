@@ -26,7 +26,7 @@ from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_wi
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, get_formatted_rom_info, PersonalBests, get_mame_version, MAMEDir, new_get_mame_dirs, \
     new_get_all_roms_with_saves, new_get_all_input_files, new_save_mame_dirs, new_get_formatted_rom_info, \
-    new_get_personal_bests
+    new_get_personal_bests, Split
 from logic.main import save_mame_dirs, get_descriptions_and_names, \
     delete_split
 
@@ -66,10 +66,11 @@ class MainWindow(QMainWindow):
         self.db_connection: sqlite3.Connection = db_connection
         """Connection object that points to database connection."""
 
-        self.new_db_cursor = self.db_connection.cursor()
-        self.new_db_cursor.row_factory = sqlite3.Row
+        # self.new_db_cursor = self.db_connection.cursor()
+        # self.new_db_cursor.row_factory = sqlite3.Row
 
         self.db_cursor: sqlite3.Cursor = self.db_connection.cursor()
+        self.db_cursor.row_factory = sqlite3.Row
         """Cursor object used to navigate database."""
 
         self.save_state_page_text_before_editing: str | None = None
@@ -93,10 +94,10 @@ class MainWindow(QMainWindow):
         self.mame_dirs: list[Path] = get_mame_dirs(self.db_cursor)
         """List of all MAME directories that will be used by the application."""
 
-        self.new_mame_dirs: list[MAMEDir] = new_get_mame_dirs(self.new_db_cursor)
+        self.new_mame_dirs: list[MAMEDir] = new_get_mame_dirs(self.db_cursor)
         pprint.pp(self.new_mame_dirs)
 
-        self.pb_info: PersonalBests = new_get_personal_bests(self.new_db_cursor)
+        self.pb_info: PersonalBests = new_get_personal_bests(self.db_cursor)
         """Personal best information."""
 
         self.fill_data_structures()
@@ -477,7 +478,7 @@ class MainWindow(QMainWindow):
         list_item.setSizeHint(pb_field.sizeHint())
         return list_item
 
-    def create_split_item(self, split: list[int | str], rom_description: str) -> QListWidgetItem:
+    def create_split_item(self, split: Split, rom_description: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
         split_item = NewStageSplitItem(split, self.pb_info, rom_description, self.splits_list, self.db_connection,
                                        self.db_cursor)
@@ -550,7 +551,7 @@ class MainWindow(QMainWindow):
         self.all_save_states = new_get_all_roms_with_saves(self.new_mame_dirs)
         self.all_input_files = new_get_all_input_files(self.new_mame_dirs)
         self.all_rom_info = get_formatted_rom_info(self.db_cursor)
-        self.new_all_rom_info = new_get_formatted_rom_info(self.new_db_cursor)
+        self.new_all_rom_info = new_get_formatted_rom_info(self.db_cursor)
 
 
     # def fill_save_state_tree(self) -> None:
@@ -760,7 +761,7 @@ class MainWindow(QMainWindow):
             if row != -1:
                 self.splits_list.takeItem(row)
                 splits = self.pb_info[rom_description]['splits']
-                split_name = splits[row][0]
+                split_name = splits[row].label
                 del splits[row]
                 delete_split(self.db_connection, self.db_cursor, rom_description, split_name)
                 save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
@@ -777,7 +778,7 @@ class MainWindow(QMainWindow):
             game_splits = self.pb_info[rom_description]['splits']
             # TODO Can add None as 3rd index here to avoid checking length later.
             #  Length check determines if new split(has pk or not).
-            new_split = ['', 0]
+            new_split = Split('', 0)
             game_splits.append(new_split)
             new_split_item = self.create_split_item(new_split, rom_description)
             self.splits_list.setCurrentItem(new_split_item)
