@@ -220,7 +220,7 @@ def get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     cursor.execute(splits_query)
     splits = cursor.fetchall()
     for split in splits:
-        pb_info[split[3]]['splits'].append([split[0], split[1]])
+        pb_info[split['description']]['splits'].append([split[0], split[1]])
 
     return pb_info
 
@@ -249,7 +249,8 @@ def new_get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     cursor.execute(splits_query)
     splits = cursor.fetchall()
     for row in splits:
-        pb_info[row[3]]['splits'].append([row[0], row[1]])
+        print(row.keys())
+        pb_info[row['description']]['splits'].append([row['label'], row['score']])
 
     return pb_info
 
