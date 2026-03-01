@@ -1012,8 +1012,8 @@ class MainWindow(QMainWindow):
             try:
                 # FIXME Hardcoded slop
                 hi2txt_results = subprocess.run(
-                    [r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
-                    cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
+                    [r'.\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
+                    cwd=r'.\hi2txt', capture_output=True, text=True,
                     check=True, encoding='utf-8')
                 self.pre_hs_table = hi2txt_results.stdout
             except FileNotFoundError:
@@ -1051,8 +1051,8 @@ class MainWindow(QMainWindow):
                 try:
                     # FIXME Hardcoded slop
                     hi2txt_results = subprocess.run(
-                        [r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
-                        cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True,
+                        [r'.\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
+                        cwd=r'.\hi2txt', capture_output=True,
                         text=True,
                         check=True, encoding='utf-8')
                     post_hs_table = hi2txt_results.stdout
@@ -1302,7 +1302,7 @@ class MainWindow(QMainWindow):
         pb_scanner = PBScannerThread(self.new_mame_dirs)
         pb_scanner.finished.connect(self.scan_finished)
         pb_scanner.start()
-        self.pb_info = get_personal_bests(self.db_cursor)
+        self.pb_info = new_get_personal_bests(self.db_cursor)
         self.fill_highscore_game_list()
 
     def scan_finished(self) -> None:

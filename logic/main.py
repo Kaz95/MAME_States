@@ -417,10 +417,10 @@ def new_get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, RomInfo]:
     formatted_rom_info = new_serialize_rom_info(raw_rom_info)
     return formatted_rom_info
 
-# FIXME Hardcoded slop
+
 def has_xml(rom_name: str) -> bool:
     """Check if a given rom has an XML file, and is therefore compatible with 'hi2txt'."""
-    zip_path = r'C:\Users\kazac\Downloads\hi2txt\hi2txt.zip'
+    zip_path = r'.\hi2txt\hi2txt.zip'
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
         xml_paths = [Path(file_name) for file_name in xml_strings]
@@ -431,8 +431,8 @@ def has_xml(rom_name: str) -> bool:
             return False
 
 
-# FIXME This is using global var for mame paths. Update to use DB mame paths.
-#   Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
+
+# TODO Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
 def get_games_with_hs(mame_dirs: list[MAMEDir]) -> dict[str, list[Path]]:
     hi2txt_compatible_hi_scores: dict[str, list[Path]] = {}
     for mame_dir in mame_dirs:
@@ -441,7 +441,7 @@ def get_games_with_hs(mame_dirs: list[MAMEDir]) -> dict[str, list[Path]]:
         hiscore_files = list(hiscore_dir.glob('*.hi'))
         hi2txt_compatible_hi_scores[str(mame_dir)] = hiscore_files
 
-    zip_path = r'C:\Users\kazac\Downloads\hi2txt\hi2txt.zip'
+    zip_path = r'.\hi2txt\hi2txt.zip'
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
         xml_paths = [Path(file_name) for file_name in xml_strings]
@@ -454,7 +454,7 @@ def get_games_with_hs(mame_dirs: list[MAMEDir]) -> dict[str, list[Path]]:
 
     return hi2txt_compatible_hi_scores
 
-# FIXME Hardcoded slop
+
 def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[str, dict[str, str]]:
     """Retrieve raw hi2txt leaderboard table output for compatible games with .hi file."""
     hi2txt_tables: dict[str, dict[str, str]] = {}
@@ -464,8 +464,8 @@ def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[st
         for file in hiscore_files:
             print(f'Score is: {file}')
             try:
-                results = subprocess.run([r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{file}'],
-                                         cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
+                results = subprocess.run([r'.\hi2txt\hi2txt.exe', '-r', f'{file}'],
+                                         cwd=r'.\hi2txt', capture_output=True, text=True,
                                          check=True, encoding='utf-8')
                 hi2txt_tables[mame_dir][f'{file.stem}'] = results.stdout
             except FileNotFoundError:
@@ -522,11 +522,11 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
                 new_pb['name'] = new_leaderboard
             return new_pb
 
-# FIXME Hardcoded slop
+
 # FIXME Too much code reuse.
 def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> PersonalBests:
     """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
-    defaults_xml = Path(r'C:\Users\kazac\Downloads\hi2txt\hi2txt_doc\hi2txt_defaults')
+    defaults_xml = Path(r'.\hi2txt\hi2txt_doc\hi2txt_defaults')
     new_pbs = {}
     for mame_dir in hi2txt_tables:
         pb_dict = hi2txt_tables[mame_dir]
