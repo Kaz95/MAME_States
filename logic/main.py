@@ -244,11 +244,11 @@ def new_get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     personal_bests = cursor.fetchall()
 
     for pb in personal_bests:
-        if pb[2]:
+        if pb['other_fields']:
             other_fields = json.loads(pb[2])
         else:
             other_fields = None
-        pb_info[pb[0]] = {'hs': pb[1], 'other_fields': other_fields, 'splits': []}
+        pb_info[pb['description']] = {'hs': pb['highscore'], 'other_fields': other_fields, 'splits': []}
 
     cursor.execute(splits_query)
     splits = cursor.fetchall()
