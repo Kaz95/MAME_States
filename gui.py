@@ -774,8 +774,6 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             rom_description = game_item.text(0)
             game_splits = self.pb_info[rom_description].splits
-            # TODO Can add None as 3rd index here to avoid checking length later.
-            #  Length check determines if new split(has pk or not).
             new_split = Split('', 0)
             game_splits.append(new_split)
             new_split_item = self.create_split_item(new_split, rom_description)
@@ -1012,6 +1010,7 @@ class MainWindow(QMainWindow):
         hi2txt_compatible = has_xml(rom_name)
         if hi2txt_compatible:
             try:
+                # FIXME Hardcoded slop
                 hi2txt_results = subprocess.run(
                     [r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
                     cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True, text=True,
@@ -1050,6 +1049,7 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, 'Rom Closed', f'{results['output']}')
             if self.pre_hs_table:
                 try:
+                    # FIXME Hardcoded slop
                     hi2txt_results = subprocess.run(
                         [r'C:\Users\kazac\Downloads\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
                         cwd=r'C:\Users\kazac\Downloads\hi2txt', capture_output=True,
@@ -1058,7 +1058,7 @@ class MainWindow(QMainWindow):
                     post_hs_table = hi2txt_results.stdout
                 except FileNotFoundError:
                     print('whoops')
-                print('THE THING ACTUALLY HAPPENED')
+
                 new_pb = get_new_pb(self.pre_hs_table, post_hs_table)
                 if new_pb:
                     response = QMessageBox.question(self, 'New PB Detected!',

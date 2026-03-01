@@ -14,12 +14,14 @@ import zipfile
 
 import xmltodict
 
+# FIXME Anything that uses these hard coded paths has to go.
 raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
                   r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10',
                   r'C:\Users\kazac\Downloads\mame']
 
 
 
+# FIXME Probably time to move on from this, it's no longer needed.
 test_pb_info = {'DonPachi': {'hs': 900,
                              'distance': 'Stage 6',
                              'splits': [['Stage-1', 110], ['Stage-2', 200], ['Stage-3', 340],
@@ -87,7 +89,7 @@ def get_save_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list
     """Return all save files, and their respective roms."""
     save_states = {}
     for rom in roms_with_saves:
-        save_state_file_names = os.listdir(mame_dir / "sta" / rom)
+        save_state_file_names = os.listdir(mame_dir / 'sta' / rom)
 
         for name in save_state_file_names:
             save_index = save_state_file_names.index(name)
@@ -314,7 +316,7 @@ def delete_split(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_des
     connection.commit()
 
 
-def get_raw_rom_info(cursor: sqlite3.Cursor) -> list[tuple]:
+def get_raw_rom_info(cursor: sqlite3.Cursor) -> list[sqlite3.Row]:
     """Retrieve all rom information from database and return it raw."""
     sql_statement = "SELECT * FROM roms"
     cursor.execute(sql_statement)
@@ -405,7 +407,7 @@ def serialize_rom_info(raw_rom_info: list[tuple]) -> dict[str, dict[str, str]]:
     return formatted_rom_info
 
 
-def new_serialize_rom_info(raw_rom_info: sqlite3.Row) -> dict[str, RomInfo]:
+def new_serialize_rom_info(raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo]:
     """Format raw rom info, from database, into in-memory representation."""
     formatted_rom_info = {}
 
@@ -432,12 +434,13 @@ def get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, dict[str, str]]:
     formatted_rom_info = serialize_rom_info(raw_rom_info)
     return formatted_rom_info
 
-def new_get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, dict[str, str]]:
+def new_get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, RomInfo]:
     """Retrieve and format raw rom info, from the database."""
     raw_rom_info = get_raw_rom_info(cursor)
     formatted_rom_info = new_serialize_rom_info(raw_rom_info)
     return formatted_rom_info
 
+# FIXME Hardcoded slop
 def has_xml(rom_name: str) -> bool:
     """Check if a given rom has an XML file, and is therefore compatible with 'hi2txt'."""
     zip_path = r'C:\Users\kazac\Downloads\hi2txt\hi2txt.zip'
@@ -451,7 +454,7 @@ def has_xml(rom_name: str) -> bool:
             return False
 
 
-# TODO This is using global var for mame paths. Update to use DB mame paths.
+# FIXME This is using global var for mame paths. Update to use DB mame paths.
 #   Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
 def get_games_with_hs() -> dict[str, list[Path]]:
     hi2txt_compatible_hi_scores: dict[str, list[Path]] = {}
@@ -474,7 +477,7 @@ def get_games_with_hs() -> dict[str, list[Path]]:
 
     return hi2txt_compatible_hi_scores
 
-
+# FIXME Hardcoded slop
 def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[str, dict[str, str]]:
     """Retrieve raw hi2txt leaderboard table output for compatible games with .hi file."""
     hi2txt_tables: dict[str, dict[str, str]] = {}
@@ -542,7 +545,7 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
                 new_pb['name'] = new_leaderboard
             return new_pb
 
-
+# FIXME Hardcoded slop
 # FIXME Too much code reuse.
 def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> PersonalBests:
     """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
