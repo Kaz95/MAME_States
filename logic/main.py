@@ -14,22 +14,6 @@ import zipfile
 
 import xmltodict
 
-# FIXME Probably time to move on from this, it's no longer needed.
-test_pb_info = {'DonPachi': {'hs': 900,
-                             'distance': 'Stage 6',
-                             'splits': [['Stage-1', 110], ['Stage-2', 200], ['Stage-3', 340],
-                                        ['Stage-4', 420], ['Stage-5', 670], ['Stage-6', 900]]},
-
-                'Galaga': {'hs': 2000,
-                           'distance': 'Stage 3',
-                           'splits': [['Stage-1', 550], ['Stage-2', 1620], ['Stage-3', 2000]]},
-
-                'Libble Rabble': {'hs': 50069,
-                                  'distance': 'Stage 5',
-                                  'splits': [['Stage-1', 10000], ['Stage-2', 15069], ['Stage-3', 25069],
-                                             ['Stage-4', 38069], ['Stage-5', 50069]]}}
-
-
 @dataclass(frozen=True)
 class MAMEDir:
     path: Path
