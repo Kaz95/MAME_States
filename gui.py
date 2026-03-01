@@ -26,7 +26,7 @@ from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_wi
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, get_formatted_rom_info, PersonalBests, get_mame_version, MAMEDir, new_get_mame_dirs, \
     new_get_all_roms_with_saves, new_get_all_input_files, new_save_mame_dirs, new_get_formatted_rom_info, \
-    new_get_personal_bests, Split
+    new_get_personal_bests, Split, PersonalBest
 from logic.main import save_mame_dirs, get_descriptions_and_names, \
     delete_split
 
@@ -644,11 +644,11 @@ class MainWindow(QMainWindow):
         selected = self.games_with_pb_tree.selectedItems()
         if selected:
             rom_description = selected[0].text(0)
-            info = self.pb_info[rom_description]
+            pb = self.pb_info[rom_description]
 
-            hs = info['hs']
-            other_fields = info['other_fields']
-            splits = info['splits']
+            hs = pb.score
+            other_fields = pb.other_fields
+            splits = pb.splits
 
             self.update_pb_panel(hs, other_fields)
             for split in splits:
@@ -675,11 +675,11 @@ class MainWindow(QMainWindow):
         if selected:
             game_item = selected[0]
             rom_description = game_item.text(0)
-            self.pb_info[rom_description]['hs'] = self.temp_fields['high score'].field_value.editor.text()
+            self.pb_info[rom_description].score = self.temp_fields['high score'].field_value.editor.text()
             for field_name in self.temp_fields:
                 if field_name == 'high score':
                     continue
-                self.pb_info[rom_description]['other_fields'][field_name] = self.temp_fields[
+                self.pb_info[rom_description].other_fields[field_name] = self.temp_fields[
                     field_name].field_value.editor.text()
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
@@ -711,9 +711,7 @@ class MainWindow(QMainWindow):
 
             new_item = QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
 
-            self.pb_info[rom_description] = {'hs': 0,
-                                             'other_fields': None,
-                                             'splits': []}
+            self.pb_info[rom_description] = PersonalBest(0)
 
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
             self.rom_search_popup.close()
@@ -825,18 +823,27 @@ class MainWindow(QMainWindow):
         item_widget = self.pb_fields_list.itemWidget(item)
         field_name = item_widget.field_name.text()
         field_name = field_name.strip(':')
+        if field_name == 'High Score':
+            QMessageBox.critical(self, 'Error', 'Field required.')
+            return
+
         self.pb_fields_list.takeItem(row)
-        del self.pb_info[rom_description]['other_fields'][field_name]
+        del self.pb_info[rom_description].other_fields[field_name]
         del item
         save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def add_pb_field(self, rom_description):
         text, ok = QInputDialog.getText(self, 'New Personal Best Field.', 'Please enter the name of the new field:')
-        if text == 'High Score' or text in self.pb_info[rom_description]['other_fields'].keys():
+        if text == 'High Score':
             QMessageBox.critical(self, 'Error', 'Name already in use.')
             return
+        if self.pb_info[rom_description].other_fields:
+            if text in self.pb_info[rom_description].other_fields.keys():
+                QMessageBox.critical(self, 'Error', 'Name already in use.')
+                return
         if ok:
             self.create_pb_field_item(f'{text}', 0)
+            self.pb_info[rom_description].other_fields[text] = 0
             save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
 
     def show_pb_fields_context(self, position: QPoint):
@@ -1051,7 +1058,7 @@ class MainWindow(QMainWindow):
                     post_hs_table = hi2txt_results.stdout
                 except FileNotFoundError:
                     print('whoops')
-
+                print('THE THING ACTUALLY HAPPENED')
                 new_pb = get_new_pb(self.pre_hs_table, post_hs_table)
                 if new_pb:
                     response = QMessageBox.question(self, 'New PB Detected!',

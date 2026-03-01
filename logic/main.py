@@ -7,7 +7,8 @@ import os
 import pprint
 import sqlite3
 import subprocess
-from dataclasses import dataclass, asdict
+from dataclasses import dataclass, asdict, field
+from email.policy import default
 
 from pathlib import Path
 import zipfile
@@ -18,7 +19,7 @@ raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
                   r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10',
                   r'C:\Users\kazac\Downloads\mame']
 
-PersonalBests = dict[str, dict[str, int | dict[str, str] | list]]
+
 """In-memory representation of the 'personal_bests' table of the database."""
 
 test_pb_info = {'DonPachi': {'hs': 900,
@@ -60,6 +61,17 @@ class RomInfo:
 class Split:
     label: str
     score: int
+
+@dataclass
+class PersonalBest:
+    # description: str
+    score: int
+    other_fields: dict[str,str | int] = field(default_factory=dict)
+    splits: list = field(default_factory=list)
+
+
+PersonalBests = dict[str, PersonalBest]
+
 
 ###############
 # Save States #
@@ -246,15 +258,15 @@ def new_get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     for pb in personal_bests:
         if pb['other_fields']:
             other_fields = json.loads(pb[2])
+            pb_info[pb['description']] = PersonalBest(pb['highscore'], other_fields)
         else:
-            other_fields = None
-        pb_info[pb['description']] = {'hs': pb['highscore'], 'other_fields': other_fields, 'splits': []}
+            pb_info[pb['description']] = PersonalBest(pb['highscore'])
 
     cursor.execute(splits_query)
     splits = cursor.fetchall()
     for row in splits:
         some_split = Split(row['label'], row['score'])
-        pb_info[row['description']]['splits'].append(some_split)
+        pb_info[row['description']].splits.append(some_split)
 
     return pb_info
 
@@ -335,11 +347,11 @@ def id_from_rom_name(name: str, cursor: sqlite3.Cursor) -> int:
 def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[tuple]:
     """Serialize personal best highscore and related information into rows for database insertion."""
     rows = []
-    for key in pb_info:
-        pb_dict = pb_info[key]
-        rom_id = id_from_description(key, cursor)
-        highscore = pb_dict['hs']
-        other_fields = pb_dict['other_fields']
+    for mame_dir in pb_info:
+        pb = pb_info[mame_dir]
+        rom_id = id_from_description(mame_dir, cursor)
+        highscore = pb.score
+        other_fields = pb.other_fields
         other_fields = json.dumps(other_fields)
         row = (None, highscore, other_fields, rom_id)
         rows.append(row)
@@ -354,7 +366,7 @@ def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list:
     rows = []
     for pb in pb_info:
         pb_dict = pb_info[pb]
-        splits = pb_dict['splits']
+        splits = pb_dict.splits
         for split in splits:
             index = splits.index(split)
             split = asdict(split)
@@ -508,6 +520,8 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
     """Compare two raw hi2txt tables to look for new, possible, personal best."""
     old_table = format_table(old_raw_table)
     new_table = format_table(new_raw_table)
+    pprint.pp(old_table)
+    pprint.pp(new_table)
     old_columns = old_table['col']
     new_columns = new_table['col']
     old_leaderboard = old_table.get('name')
@@ -531,7 +545,7 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
 
 
 # FIXME Too much code reuse.
-def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> dict[str, dict[str, str]]:
+def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> PersonalBests:
     """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
     defaults_xml = Path(r'C:\Users\kazac\Downloads\hi2txt\hi2txt_doc\hi2txt_defaults')
     new_pbs = {}
@@ -554,13 +568,16 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> dict[str, dict[str,
                                 leaderboard_lines = [line for line in leaderboard_lines if line]
                                 for index, line in enumerate(leaderboard_lines):
                                     if line.split('|') != default_table['row'][index]['cell']:
-                                        print(f'New PB detected - {rom_name} - {leaderboard_name}')
-                                        print(f'{default_table['row'][index]['cell']} --> \n{columns}\n{line}')
+                                        # print(f'New PB detected - {rom_name} - {leaderboard_name}')
+                                        # print(f'{default_table['row'][index]['cell']} --> \n{columns}\n{line}')
                                         some_dic = {}
                                         for i, section in enumerate(line.split('|')):
                                             some_dic[columns.split('|')[i]] = section
+                                        some_dic.pop('NAME', None)
+                                        some_dic.pop('RANK', None)
+                                        pb = PersonalBest(int(some_dic.pop('SCORE')), some_dic)
+                                        new_pbs[rom_name] = pb
 
-                                        new_pbs[rom_name] = some_dic
                                         pprint.pp(some_dic)
                                         break
                 else:
@@ -573,30 +590,36 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> dict[str, dict[str,
                         for index, line in enumerate(leaderboard_lines):
                             if isinstance(default_table['row'], list) is True:
                                 if line.split('|') != default_table['row'][index]['cell']:
-                                    print(f'New PB detected - {rom_name}')
-                                    print(f'{default_table['row'][index]['cell']} --> \n{columns}\n{line}')
+                                    # print(f'New PB detected - {rom_name}')
+                                    # print(f'{default_table['row'][index]['cell']} --> \n{columns}\n{line}')
                                     some_dic = {}
                                     for i, section in enumerate(line.split('|')):
                                         some_dic[columns.split('|')[i]] = section
+                                    some_dic.pop('NAME', None)
+                                    some_dic.pop('RANK', None)
+                                    pb = PersonalBest(int(some_dic.pop('SCORE')), some_dic)
+                                    new_pbs[rom_name] = pb
 
                                     pprint.pp(some_dic)
-                                    new_pbs[rom_name] = some_dic
                                     break
                             else:
                                 if line.split('|') != default_table['row']['cell']:
-                                    print(f'New PB detected - {rom_name}')
-                                    print(f'{default_table['row']['cell']} --> \n{columns}\n{line}')
+                                    # print(f'New PB detected - {rom_name}')
+                                    # print(f'{default_table['row']['cell']} --> \n{columns}\n{line}')
                                     some_dic = {}
                                     for i, section in enumerate(line.split('|')):
                                         some_dic[columns.split('|')[i]] = section
+                                    some_dic.pop('NAME', None)
+                                    some_dic.pop('RANK', None)
+                                    pb = PersonalBest(int(some_dic.pop('SCORE')), some_dic)
+                                    new_pbs[rom_name] = pb
 
-                                    new_pbs[rom_name] = some_dic
                                     pprint.pp(some_dic)
                                     break
     return new_pbs
 
 
-def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str) -> dict[str, dict[str, str]]:
+def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str) -> PersonalBests:
     """Convert a single new PB entry, into the format used by multiple PB insertion function.
 
     TODO This is lazy af.
@@ -607,25 +630,25 @@ def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str) -> dict[str, dict[s
     row = new_pb['row'].split('|')
     for index, section in enumerate(row):
         pb[columns[index]] = section
-
-    all_pbs[rom_name] = pb
+    pb.pop('NAME', None)
+    pb.pop('RANK', None)
+    new_pb = PersonalBest(int(pb.pop('SCORE')), pb)
+    pprint.pp(pb)
+    all_pbs[rom_name] = new_pb
     return all_pbs
 
 
-def save_pbs(new_pbs: dict[str:dict[str:str]], connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
+def save_pbs(new_pbs: PersonalBests, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
     """Insert or update new PB entries into database, if new PB has a higher score."""
     for rom_name in new_pbs:
         pb = new_pbs[rom_name]
-        pb.pop('RANK', None)
-        pb.pop('NAME', None)
+        score = pb.score
+        other_fields = json.dumps(pb.other_fields)
+        print(f'here: {rom_name}')
+        rom_id = id_from_rom_name(rom_name, cursor)
 
-        score = pb.pop('SCORE')
-        if not pb:
-            other_fields = None
-        else:
-            other_fields = json.dumps(pb)
-        row = (None, score, other_fields, id_from_rom_name(rom_name, cursor))
-        sql_statement = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
+        row = (score, other_fields, rom_id)
+        sql_statement = ("INSERT INTO personal_bests (highscore, other_fields, rom_id) VALUES (?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
                          "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
         cursor.execute(sql_statement, row)
     connection.commit()
