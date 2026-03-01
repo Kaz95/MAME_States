@@ -266,7 +266,7 @@ def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, 
        """
     pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
                  "excluded.highscore, other_fields = excluded.other_fields")
-    splits_insert = ("INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT(label) DO UPDATE SET label = excluded.label, "
+    splits_insert = ("INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT(label, rom_id) DO UPDATE SET label = excluded.label, "
                      "score = excluded.score, 'index' = excluded.'index'")
 
     pb_rows = collate_pb_rows(cursor, pb_info)
