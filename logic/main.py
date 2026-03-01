@@ -14,13 +14,6 @@ import zipfile
 
 import xmltodict
 
-# FIXME Anything that uses these hard coded paths has to go.
-raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
-                  r'C:\Users\kazac\Downloads\groovymame_0273.221d_win-7-8-10',
-                  r'C:\Users\kazac\Downloads\mame']
-
-
-
 # FIXME Probably time to move on from this, it's no longer needed.
 test_pb_info = {'DonPachi': {'hs': 900,
                              'distance': 'Stage 6',
