@@ -758,7 +758,7 @@ class MainWindow(QMainWindow):
             row = self.splits_list.currentRow()
             if row != -1:
                 self.splits_list.takeItem(row)
-                splits = self.pb_info[rom_description]['splits']
+                splits = self.pb_info[rom_description].splits
                 split_name = splits[row].label
                 del splits[row]
                 delete_split(self.db_connection, self.db_cursor, rom_description, split_name)
@@ -773,7 +773,7 @@ class MainWindow(QMainWindow):
         if selected:
             game_item = selected[0]
             rom_description = game_item.text(0)
-            game_splits = self.pb_info[rom_description]['splits']
+            game_splits = self.pb_info[rom_description].splits
             # TODO Can add None as 3rd index here to avoid checking length later.
             #  Length check determines if new split(has pk or not).
             new_split = Split('', 0)

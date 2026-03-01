@@ -319,7 +319,7 @@ class ToggleableLabel(QWidget):
                 if isinstance(self.parent(), NewStageSplitItem):
                     widget = self.parent()
                     widget._update_split_db()
-                    widget.parent_list.add_diffs(widget.pb_info[widget.rom_description]['splits'])
+                    widget.parent_list.add_diffs(widget.pb_info[widget.rom_description].splits)
             else:
                 self.editor.setText(self.label.text())  # Revert
 
@@ -412,10 +412,10 @@ class NewStageSplitItem(QWidget):
         Grabbing the index of the list that represents this item in memory allows you to act on the correct list.
         Will no save empty pb label.
         """
-        item_index = self.pb_info[self.rom_description]['splits'].index(self.split)
-        old_label = self.pb_info[self.rom_description]['splits'][item_index].label
-        self.pb_info[self.rom_description]['splits'][item_index].score = int(self.score_label.editor.text())
-        self.pb_info[self.rom_description]['splits'][item_index].label = self.name_label.editor.text()
+        item_index = self.pb_info[self.rom_description].splits.index(self.split)
+        old_label = self.pb_info[self.rom_description].splits[item_index].label
+        self.pb_info[self.rom_description].splits[item_index].score = int(self.score_label.editor.text())
+        self.pb_info[self.rom_description].splits[item_index].label = self.name_label.editor.text()
         print(f'here: {old_label}')
 
         if self.name_label.editor.text():
@@ -466,7 +466,7 @@ class StageSplitListWidget(QListWidget):
                 item_that_moved = items_that_moved[0]
                 rom_description = self.itemWidget(item_that_moved).rom_description
                 self.update_db(rom_description, self.last_row, self.row(item_that_moved))
-                splits = self.pb_info[rom_description]['splits']
+                splits = self.pb_info[rom_description].splits
                 self.add_diffs(splits)
                 # print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
                 self.last_row = self.row(item_that_moved)
@@ -479,7 +479,7 @@ class StageSplitListWidget(QListWidget):
 
     def update_db(self, rom_description: str, old_index: int, new_index: int) -> None:
         """Mirror internal list changes to the in-memory representation. Save to database."""
-        splits = self.pb_info[rom_description]['splits']
+        splits = self.pb_info[rom_description].splits
         if not (len(splits) - 1) < old_index:
             split = splits.pop(old_index)
             splits.insert(new_index, split)
