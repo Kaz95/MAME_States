@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget, QSpacerItem, \
     QListWidgetItem, QDialogButtonBox, QTreeWidget
 
-from logic.main import save_pb_to_database, scan_for_pb, PersonalBests, get_mame_version, Split, delete_split
+from logic.main import save_pb_to_database, scan_for_pb, PersonalBests, get_mame_version, Split, delete_split, MAMEDir
 
 
 ######################
@@ -84,14 +84,16 @@ class PBScannerThread(QThread):
     Used to scan for personal bests, on a separate thread from the GUI. Avoids blocking GUI. Finished signal emitted.
     """
 
-    def __init__(self) -> None:
+    def __init__(self, mame_dirs: list[MAMEDir]) -> None:
         super().__init__()
+        self.mame_dirs = mame_dirs
+        print(self.mame_dirs)
 
     def run(self) -> None:
         """Override and extend run function to scan for new personal bests. Emit signal when finished."""
         with sqlite3.connect(r'C:\Users\kazac\PycharmProjects\MAME_States\mame_states.db') as connection:
             db_cursor = connection.cursor()
-            scan_for_pb(connection, db_cursor)
+            scan_for_pb(connection, db_cursor, self.mame_dirs)
             self.finished.emit()
 
 

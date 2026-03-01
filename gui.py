@@ -1299,7 +1299,7 @@ class MainWindow(QMainWindow):
         self.setEnabled(False)
         self.progress_bar = ProgressBarWidget(self)
         self.progress_bar.show()
-        pb_scanner = PBScannerThread()
+        pb_scanner = PBScannerThread(self.new_mame_dirs)
         pb_scanner.finished.connect(self.scan_finished)
         pb_scanner.start()
         self.pb_info = get_personal_bests(self.db_cursor)

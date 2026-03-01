@@ -456,11 +456,11 @@ def has_xml(rom_name: str) -> bool:
 
 # FIXME This is using global var for mame paths. Update to use DB mame paths.
 #   Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
-def get_games_with_hs() -> dict[str, list[Path]]:
+def get_games_with_hs(mame_dirs: list[MAMEDir]) -> dict[str, list[Path]]:
     hi2txt_compatible_hi_scores: dict[str, list[Path]] = {}
-    for raw_string in raw_mame_paths:
-        mame_dir = Path(raw_string)
-        hiscore_dir = mame_dir / 'hiscore'
+    for mame_dir in mame_dirs:
+        # mame_dir = Path(raw_string)
+        hiscore_dir = mame_dir.path / 'hiscore'
         hiscore_files = list(hiscore_dir.glob('*.hi'))
         hi2txt_compatible_hi_scores[str(mame_dir)] = hiscore_files
 
@@ -656,9 +656,9 @@ def save_pbs(new_pbs: PersonalBests, connection: sqlite3.Connection, cursor: sql
     connection.commit()
 
 
-def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
+def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[MAMEDir]) -> None:
     """Scan hi score tables, parse for possible PB entries and insert or update PB table in database."""
-    hi_scores = get_games_with_hs()
+    hi_scores = get_games_with_hs(mame_dirs)
     hi2txt_tables = get_hs_tables(hi_scores)
     new_pbs = get_new_pbs(hi2txt_tables)
     save_pbs(new_pbs, connection, cursor)
