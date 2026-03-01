@@ -8,7 +8,6 @@ import pprint
 import sqlite3
 import subprocess
 from dataclasses import dataclass, asdict, field
-from email.policy import default
 
 from pathlib import Path
 import zipfile
@@ -20,7 +19,6 @@ raw_mame_paths = [r'C:\Users\kazac\Downloads\wolfmame-0273',
                   r'C:\Users\kazac\Downloads\mame']
 
 
-"""In-memory representation of the 'personal_bests' table of the database."""
 
 test_pb_info = {'DonPachi': {'hs': 900,
                              'distance': 'Stage 6',
@@ -71,6 +69,7 @@ class PersonalBest:
 
 
 PersonalBests = dict[str, PersonalBest]
+"""In-memory representation of the 'personal_bests' table of the database."""
 
 
 ###############
