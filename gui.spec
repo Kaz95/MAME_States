@@ -21,7 +21,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='MAMEStates',
+    name='gui',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
