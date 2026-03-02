@@ -254,6 +254,9 @@ class NotesWindow(QWidget):
         self.layout.addWidget(self.text_edit)
         self.setLayout(self.layout)
 
+        notes_dir = Path(r'./notes')
+        notes_dir.mkdir(exist_ok=True)
+
         self.current_game = None
         """Name of game that corresponds to this instance of NotesWindow."""
 
