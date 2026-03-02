@@ -26,7 +26,7 @@ from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_wi
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, get_formatted_rom_info, PersonalBests, get_mame_version, MAMEDir, new_get_mame_dirs, \
     new_get_all_roms_with_saves, new_get_all_input_files, new_save_mame_dirs, new_get_formatted_rom_info, \
-    new_get_personal_bests, Split, PersonalBest
+    new_get_personal_bests, Split, PersonalBest, resource_path
 from logic.main import save_mame_dirs, get_descriptions_and_names, \
     delete_split
 
@@ -792,7 +792,8 @@ class MainWindow(QMainWindow):
         if self.notes_window.isHidden():
             self.notes_window.show()
 
-        notes_file = Path('notes') / rom_name
+        notes_file = Path('notes') / (rom_name + '.txt')
+        notes_file = resource_path(notes_file)
 
         if not notes_file.is_file():
             notes_file.touch()
@@ -1012,8 +1013,8 @@ class MainWindow(QMainWindow):
             try:
                 # FIXME Hardcoded slop
                 hi2txt_results = subprocess.run(
-                    [r'.\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
-                    cwd=r'.\hi2txt', capture_output=True, text=True,
+                    [resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{hiscore_file}'],
+                    cwd=resource_path(r'.\hi2txt'), capture_output=True, text=True,
                     check=True, encoding='utf-8')
                 self.pre_hs_table = hi2txt_results.stdout
             except FileNotFoundError:
@@ -1051,8 +1052,8 @@ class MainWindow(QMainWindow):
                 try:
                     # FIXME Hardcoded slop
                     hi2txt_results = subprocess.run(
-                        [r'.\hi2txt\hi2txt.exe', '-r', f'{hiscore_file}'],
-                        cwd=r'.\hi2txt', capture_output=True,
+                        [resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{hiscore_file}'],
+                        cwd=resource_path(r'.\hi2txt'), capture_output=True,
                         text=True,
                         check=True, encoding='utf-8')
                     post_hs_table = hi2txt_results.stdout
@@ -1317,22 +1318,26 @@ def main() -> None:
     This function allows me to create DB connects with context manager. If the program ends early, rollback occurs.
     Alternative would be creating db connection with context inside MainWindow _init_, which seems not ideal.
     """
-    db = Path('mame_states.db')
+    db = resource_path('mame_states.db')
+    db_schema = resource_path('./database_backups/mame_states_schema_v3.sql')
+    db_roms_data = resource_path('./database_backups/roms.sql')
+    print(db_schema)
+    print(db_roms_data)
     if not db.is_file():
-        with sqlite3.connect(r'mame_states.db') as connection:
-            with open('./database_backups/mame_states_schema_v3.sql', 'r') as schema_file:
+        with sqlite3.connect(db) as connection:
+            with open(db_schema, 'r') as schema_file:
                 schema = schema_file.read()
                 connection.executescript(schema)
                 connection.commit()
 
-            with open('./database_backups/roms.sql', 'r',  encoding='utf-8') as roms_data:
+            with open(db_roms_data, 'r',  encoding='utf-8') as roms_data:
                 data = roms_data.read()
                 pprint.pp(data)
                 connection.executescript(data)
                 connection.commit()
 
 
-    with sqlite3.connect(r'mame_states.db') as connection:
+    with sqlite3.connect(db) as connection:
         # The order the objects are initialized in matters.
         app = QApplication([])
 

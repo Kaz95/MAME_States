@@ -13,7 +13,8 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget, QSpacerItem, \
     QListWidgetItem, QDialogButtonBox, QTreeWidget
 
-from logic.main import save_pb_to_database, scan_for_pb, PersonalBests, get_mame_version, Split, delete_split, MAMEDir
+from logic.main import save_pb_to_database, scan_for_pb, PersonalBests, get_mame_version, Split, delete_split, MAMEDir, \
+    resource_path
 
 
 ######################
@@ -91,7 +92,7 @@ class PBScannerThread(QThread):
 
     def run(self) -> None:
         """Override and extend run function to scan for new personal bests. Emit signal when finished."""
-        with sqlite3.connect(r'mame_states.db') as connection:
+        with sqlite3.connect(resource_path('mame_states.db')) as connection:
             db_cursor = connection.cursor()
             scan_for_pb(connection, db_cursor, self.mame_dirs)
             self.finished.emit()
@@ -258,7 +259,7 @@ class NotesWindow(QWidget):
 
     def closeEvent(self, event: QCloseEvent):
         """Extend closeEvent to save text edit data to notes.txt corresponding to this NotesWindow."""
-        with open(Path('./notes') / self.current_game, 'w') as notes:
+        with open(Path(resource_path(r'./notes')) / (self.current_game + '.txt'), 'w') as notes:
             notes.write(self.text_edit.toPlainText())
         # TODO Do I need to call super? What does close usually do?
         # super().closeEvent(event)

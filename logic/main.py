@@ -7,6 +7,7 @@ import os
 import pprint
 import sqlite3
 import subprocess
+import sys
 from dataclasses import dataclass, asdict, field
 
 from pathlib import Path
@@ -50,6 +51,13 @@ class PersonalBest:
 PersonalBests = dict[str, PersonalBest]
 """In-memory representation of the 'personal_bests' table of the database."""
 
+
+def resource_path(relative_path):
+    """ Get absolute path to resource, works for dev and for PyInstaller """
+    # Get the bundle directory; fallback to the script's parent directory
+    base_path = Path(getattr(sys, '_MEIPASS', Path(__file__).parent.parent))
+
+    return base_path / relative_path
 
 ###############
 # Save States #
@@ -420,7 +428,7 @@ def new_get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, RomInfo]:
 
 def has_xml(rom_name: str) -> bool:
     """Check if a given rom has an XML file, and is therefore compatible with 'hi2txt'."""
-    zip_path = r'.\hi2txt\hi2txt.zip'
+    zip_path = resource_path(r'.\hi2txt\hi2txt.zip')
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
         xml_paths = [Path(file_name) for file_name in xml_strings]
@@ -441,7 +449,7 @@ def get_games_with_hs(mame_dirs: list[MAMEDir]) -> dict[str, list[Path]]:
         hiscore_files = list(hiscore_dir.glob('*.hi'))
         hi2txt_compatible_hi_scores[str(mame_dir)] = hiscore_files
 
-    zip_path = r'.\hi2txt\hi2txt.zip'
+    zip_path = resource_path(r'.\hi2txt\hi2txt.zip')
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
         xml_paths = [Path(file_name) for file_name in xml_strings]
@@ -464,8 +472,8 @@ def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[st
         for file in hiscore_files:
             print(f'Score is: {file}')
             try:
-                results = subprocess.run([r'.\hi2txt\hi2txt.exe', '-r', f'{file}'],
-                                         cwd=r'.\hi2txt', capture_output=True, text=True,
+                results = subprocess.run([resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{file}'],
+                                         cwd=resource_path(r'.\hi2txt'), capture_output=True, text=True,
                                          check=True, encoding='utf-8')
                 hi2txt_tables[mame_dir][f'{file.stem}'] = results.stdout
             except FileNotFoundError:
@@ -526,7 +534,7 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
 # FIXME Too much code reuse.
 def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> PersonalBests:
     """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
-    defaults_xml = Path(r'.\hi2txt\hi2txt_doc\hi2txt_defaults')
+    defaults_xml = Path(resource_path(r'.\hi2txt\hi2txt_doc\hi2txt_defaults'))
     new_pbs = {}
     for mame_dir in hi2txt_tables:
         pb_dict = hi2txt_tables[mame_dir]
@@ -648,7 +656,7 @@ def get_mame_version(mame_dir: Path):
         results = subprocess.run([mame_exe, '-version'], cwd=mame_dir, capture_output=True, text=True)
         return results.stdout
 
-# if __name__ == '__main__':
-#     for path in raw_mame_paths:
-#         results = subprocess.run([(path + r'\mame.exe'), '-version'], cwd=path, capture_output=True, text=True)
-#         print(results.stdout)
+if __name__ == '__main__':
+    p = resource_path(r'.\hi2txt')
+    yarp = resource_path(p)
+    print(yarp)
