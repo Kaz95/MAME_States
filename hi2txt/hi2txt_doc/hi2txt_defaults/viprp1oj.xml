@@ -1,0 +1,28 @@
+<hi2txt>
+  <table id="SOLO PLAYER">
+    <col>RANK</col><col>SCORE</col><col>NAME</col><col>STG</col>
+    <row><cell>1</cell><cell>500000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>2</cell><cell>480000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>3</cell><cell>460000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>4</cell><cell>440000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>5</cell><cell>420000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>6</cell><cell>400000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>7</cell><cell>380000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>8</cell><cell>360000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>9</cell><cell>340000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>10</cell><cell>320000</cell><cell>...</cell><cell>1-1</cell></row>
+  </table>
+  <table id="DUAL PLAYER">
+    <col>RANK</col><col>SCORE</col><col>NAME</col><col>STG</col>
+    <row><cell>1</cell><cell>500000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>2</cell><cell>480000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>3</cell><cell>460000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>4</cell><cell>440000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>5</cell><cell>420000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>6</cell><cell>400000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>7</cell><cell>380000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>8</cell><cell>360000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>9</cell><cell>340000</cell><cell>...</cell><cell>1-1</cell></row>
+    <row><cell>10</cell><cell>320000</cell><cell>...</cell><cell>1-1</cell></row>
+  </table>
+</hi2txt>
