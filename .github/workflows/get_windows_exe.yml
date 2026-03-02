@@ -9,10 +9,10 @@ jobs:
     steps:
 
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6.0.2
 
       - name: Set up Python
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v6.2.0
         with:
           python-version: '3.13'
 
@@ -20,14 +20,14 @@ jobs:
         run: >
           python -m pip install --upgrade pip
 
-          pip install .  # Install dependencies; modify if using requirements.txt
+          pip install -r requirements.txt  
 
       - name: Package Application with PyInstaller
         run: |
-          pyinstaller pyinstaller.spec
+          pyinstaller gui.spec
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-pages-artifact@v4.0.0
         with:
           name: Windows-exe
           path: dist/windows.exe
