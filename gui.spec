@@ -14,6 +14,7 @@ a = Analysis(
     noarchive=False,
     optimize=0,
 )
+a.datas = [x for x in a.datas if '.git' not in x[0]]
 pyz = PYZ(a.pure)
 
 exe = EXE(
