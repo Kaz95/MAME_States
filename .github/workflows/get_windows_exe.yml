@@ -1,6 +1,8 @@
 name: Package Application with PyInstaller
 on:
   push:
+    tags:
+      - "v*.*.*"
     branches:
       - master
   
@@ -28,7 +30,7 @@ jobs:
           pyinstaller gui.spec
       - name: GH Release
         uses: softprops/action-gh-release@v2.5.0
-        if: github.ref_type == 'tag'
+
         with:
           files:
             dist/gui/
