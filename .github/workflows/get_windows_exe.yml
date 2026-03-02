@@ -27,6 +27,7 @@ jobs:
           pyinstaller gui.spec
 
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4.0.0
+        uses: actions/upload-artifact@v7.0.0
         with:
-          path: dist/gui/gui.exe
+          name: MAMEStates
+          path: dist/gui/
