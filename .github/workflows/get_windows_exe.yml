@@ -3,8 +3,6 @@ on:
   push:
     tags:
       - "v*.*.*"
-    branches:
-      - master
   
 jobs:
   build:
@@ -30,8 +28,8 @@ jobs:
           pyinstaller gui.spec
       - name: GH Release
         uses: softprops/action-gh-release@v2.5.0
-
         with:
+          tag_name: v
           files:
             dist/gui/
             
