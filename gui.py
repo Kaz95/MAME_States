@@ -1317,6 +1317,21 @@ def main() -> None:
     This function allows me to create DB connects with context manager. If the program ends early, rollback occurs.
     Alternative would be creating db connection with context inside MainWindow _init_, which seems not ideal.
     """
+    db = Path('mame_states.db')
+    if not db.is_file():
+        with sqlite3.connect(r'mame_states.db') as connection:
+            with open('./database_backups/mame_states_schema_v3.sql', 'r') as schema_file:
+                schema = schema_file.read()
+                connection.executescript(schema)
+                connection.commit()
+
+            with open('./database_backups/roms.sql', 'r',  encoding='utf-8') as roms_data:
+                data = roms_data.read()
+                pprint.pp(data)
+                connection.executescript(data)
+                connection.commit()
+
+
     with sqlite3.connect(r'mame_states.db') as connection:
         # The order the objects are initialized in matters.
         app = QApplication([])
