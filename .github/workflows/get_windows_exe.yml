@@ -3,6 +3,7 @@ on:
   push:
     branches:
       - master
+  
 jobs:
   build:
     runs-on: windows-latest
@@ -25,9 +26,17 @@ jobs:
       - name: Package Application with PyInstaller
         run: |
           pyinstaller gui.spec
-
-      - name: Upload artifact
-        uses: actions/upload-artifact@v7.0.0
+      - name: GH Release
+        uses: softprops/action-gh-release@v2.5.0
+        if: github.ref_type == 'tag'
         with:
-          name: MAMEStates
-          path: dist/gui/
+          files:
+            dist/gui/
+            
+
+      # - name: Upload artifact
+      #   uses: actions/upload-artifact@v7.0.0
+      #   with:
+      #     name: MAMEStates
+      #     path: dist/gui/
+      
