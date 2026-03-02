@@ -30,13 +30,13 @@ jobs:
         uses: softprops/action-gh-release@v2.5.0
         with:
           tag_name: 'v1.0.0-alpha'
-          files:
-            dist/gui/
+          files: dist/gui
+
             
 
       # - name: Upload artifact
       #   uses: actions/upload-artifact@v7.0.0
       #   with:
       #     name: MAMEStates
-      #     path: dist/gui/
+      #     path:
       
