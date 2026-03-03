@@ -254,7 +254,7 @@ class NotesWindow(QWidget):
         self.layout.addWidget(self.text_edit)
         self.setLayout(self.layout)
 
-        notes_dir = Path(r'./notes')
+        notes_dir = Path(resource_path(r'./notes'))
         notes_dir.mkdir(exist_ok=True)
 
         self.current_game = None
