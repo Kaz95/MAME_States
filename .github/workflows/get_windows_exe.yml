@@ -30,12 +30,12 @@ jobs:
       - name: Archive Bundle (Windows)
         shell: pwsh
         run: |
-          Compress-Archive -Path dist/gui -DestinationPath gui-bundle.zip
+          Compress-Archive -Path dist/gui -DestinationPath "gui-${{ github.ref_name }}-windows.zip"
 
       - name: GH Release
         uses: softprops/action-gh-release@v2.5.0
         with:
-          files: gui-bundle.zip
+          files: "gui-${{ github.ref_name }}-windows.zip"
 
             
 
