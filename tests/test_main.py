@@ -15,8 +15,9 @@ def test_resource_path_parent_dir_with_path_input():
 def test_resource_path_pyinstaller_archive_with_str_input():
     sys._MEIPASS = r'S:\ome\base\path'
     assert resource_path('abc') == Path('S:/ome/base/path/abc')
+    delattr(sys, '_MEIPASS')
 
 def test_resource_path_pyinstaller_archive_with_path_input():
     sys._MEIPASS = Path(r'S:\ome\base\path')
     assert resource_path('abc') == Path('S:/ome/base/path/abc')
-
+    delattr(sys, '_MEIPASS')
