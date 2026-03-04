@@ -88,17 +88,7 @@ def get_save_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list
     return save_states
 
 
-def get_all_input_files(mame_dirs: list[Path]) -> dict[Path, list[str]]:
-    """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
-    all_input_files = {}
-    for mame_dir in mame_dirs:
-        input_file_dir = mame_dir / 'inp'
-        if input_file_dir.is_dir():
-            all_input_files[mame_dir] = [input_file.stem for input_file in input_file_dir.iterdir()]
-    return all_input_files
-
-
-def new_get_all_input_files(mame_dirs: list[MAMEDir]) -> dict[MAMEDir, list[str]]:
+def get_all_input_files(mame_dirs: list[MAMEDir]) -> dict[MAMEDir, list[str]]:
     """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
     all_input_files = {}
     for mame_dir in mame_dirs:
@@ -108,18 +98,8 @@ def new_get_all_input_files(mame_dirs: list[MAMEDir]) -> dict[MAMEDir, list[str]
     return all_input_files
 
 
-def get_all_roms_with_saves(mame_dirs: list[Path]) -> dict[Path, dict[str, list[str]]]:
-    """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
-    all_save_state_names = {}
-    for mame_dir in mame_dirs:
-        roms_with_saves = get_roms_with_saves(mame_dir)
-        save_state_names = get_save_names(roms_with_saves, mame_dir)
-        all_save_state_names[mame_dir] = save_state_names
 
-    return all_save_state_names
-
-
-def new_get_all_roms_with_saves(mame_dirs: list[MAMEDir]) -> dict[MAMEDir, dict[str, list[str]]]:
+def get_all_roms_with_saves(mame_dirs: list[MAMEDir]) -> dict[MAMEDir, dict[str, list[str]]]:
     """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
     all_save_state_names = {}
     for mame_dir in mame_dirs:
@@ -142,19 +122,7 @@ def rom_description_from_name(description_db: dict[str, str], rom_name: str) -> 
 #########
 # Paths #
 #########
-def get_mame_dirs(cursor: sqlite3.Cursor) -> list[Path]:
-    """Load paths as strings from database. Convert to Path objects before returning them."""
-    sql_query = """SELECT * FROM paths"""
-    cursor.execute(sql_query)
-    raw_results = cursor.fetchall()
-    mame_dirs = []
-    for entry in raw_results:
-        mame_dir = Path(entry[1])
-        mame_dirs.append(mame_dir)
-    return mame_dirs
-
-
-def new_get_mame_dirs(cursor: sqlite3.Cursor) -> list[MAMEDir]:
+def get_mame_dirs(cursor: sqlite3.Cursor) -> list[MAMEDir]:
     """Load paths as strings from database. Convert to Path objects before returning them."""
     sql_query = """SELECT * FROM paths"""
     cursor.execute(sql_query)
@@ -169,21 +137,8 @@ def new_get_mame_dirs(cursor: sqlite3.Cursor) -> list[MAMEDir]:
 
 
 # TODO This wipes out manually added version #s until I sort that out.
-def save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[Path], version=None) -> None:
-    """Format list of paths as rows. Insert them into database. """
-    sql_statement = """INSERT OR IGNORE INTO paths VALUES (?, ?, ?, ?, ?);"""
-    rows = []
-    for mame_dir in mame_dirs:
-        row = (None, str(mame_dir), mame_dir.name, version, None)
-        rows.append(row)
-
-    cursor.executemany(sql_statement, rows)
-    connection.commit()
-
-
-# TODO This wipes out manually added version #s until I sort that out.
-def new_save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[MAMEDir],
-                       version=None) -> None:
+def save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[MAMEDir],
+                   version=None) -> None:
     """Format list of paths as rows. Insert them into database. """
     sql_statement = """INSERT OR IGNORE INTO paths (path, version) VALUES (:path, :version);"""
     rows = []
@@ -202,35 +157,6 @@ def new_save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, m
 # Personal Bests #
 ##################
 def get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
-    """Load and format all personal best information from the database. Keyed to rom description."""
-    pb_info = {}
-
-    pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.other_fields 
-    FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
-
-    splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description
-        FROM 'splits' JOIN 'roms' ON splits.rom_id = roms.id 
-        ORDER BY roms.description, splits.'index'"""
-
-    cursor.execute(pb_query)
-    personal_bests = cursor.fetchall()
-
-    for pb in personal_bests:
-        if pb[2]:
-            other_fields = json.loads(pb[2])
-        else:
-            other_fields = None
-        pb_info[pb[0]] = {'hs': pb[1], 'other_fields': other_fields, 'splits': []}
-
-    cursor.execute(splits_query)
-    splits = cursor.fetchall()
-    for split in splits:
-        pb_info[split['description']]['splits'].append([split[0], split[1]])
-
-    return pb_info
-
-
-def new_get_personal_bests(cursor: sqlite3.Cursor) -> PersonalBests:
     """Load and format all personal best information from the database. Keyed to rom description."""
     pb_info = {}
 
@@ -382,20 +308,7 @@ def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str, str]:
 
     return descriptions_and_names
 
-
-def serialize_rom_info(raw_rom_info: list[tuple]) -> dict[str, dict[str, str]]:
-    """Format raw rom info, from database, into in-memory representation."""
-    formatted_rom_info = {}
-
-    for row in raw_rom_info:
-        formatted_rom_info[row[2]] = {'name': row[1], 'manufacturer': row[3], 'year': row[4], 'parent': row[5],
-                                      'video_info': f'{row[6]}x{row[7]}@{row[9]} - Rotate {row[8]}°',
-                                      'video_driver': row[10],
-                                      'sound_driver': row[11]}
-    return formatted_rom_info
-
-
-def new_serialize_rom_info(raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo]:
+def serialize_rom_info(raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo]:
     """Format raw rom info, from database, into in-memory representation."""
     formatted_rom_info = {}
 
@@ -415,18 +328,10 @@ def new_serialize_rom_info(raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo
 
     return formatted_rom_info
 
-
-def get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, dict[str, str]]:
+def get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, RomInfo]:
     """Retrieve and format raw rom info, from the database."""
     raw_rom_info = get_raw_rom_info(cursor)
     formatted_rom_info = serialize_rom_info(raw_rom_info)
-    return formatted_rom_info
-
-
-def new_get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, RomInfo]:
-    """Retrieve and format raw rom info, from the database."""
-    raw_rom_info = get_raw_rom_info(cursor)
-    formatted_rom_info = new_serialize_rom_info(raw_rom_info)
     return formatted_rom_info
 
 

@@ -19,15 +19,14 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QFileDialog, QMessageBox, QMenu, QListWidget, QInputDialog
 
 from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
-    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, MAMEThread, NewStageSplitItem, \
+    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, MAMEThread, StageSplitItem, \
     PBField, RomSearchDialog
-from logic.main import get_descriptions_and_names, \
-    delete_split
-from logic.main import rom_description_from_name, get_mame_dirs, delete_personal_best, delete_splits, \
+from logic.main import get_descriptions_and_names, delete_split
+from logic.main import rom_description_from_name, delete_personal_best, delete_splits, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
-    prepare_pb_for_db, get_formatted_rom_info, PersonalBests, get_mame_version, MAMEDir, new_get_mame_dirs, \
-    new_get_all_roms_with_saves, new_get_all_input_files, new_save_mame_dirs, new_get_formatted_rom_info, \
-    new_get_personal_bests, Split, PersonalBest, resource_path
+    prepare_pb_for_db, PersonalBests, get_mame_version, MAMEDir, get_mame_dirs, \
+    get_all_roms_with_saves, get_all_input_files, save_mame_dirs, get_formatted_rom_info, \
+    get_personal_bests, Split, PersonalBest, resource_path
 
 
 class MainWindow(QMainWindow):
@@ -46,7 +45,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
-        self.new_all_rom_info = None
+
         self.progress_bar = None
         """Reference to progress bar popup window. Prevents garbage collection and allows access."""
 
@@ -81,19 +80,15 @@ class MainWindow(QMainWindow):
         self.all_input_files = None
         """MAME paths and the contents of their respective inp directories."""
 
-        self.all_rom_info: dict | None = None
-        """All rom related information. Keyed to rom description."""
+        self.all_rom_info = None
 
         # --------- #
         # Load Data #
         # --------- #
-        self.mame_dirs: list[Path] = get_mame_dirs(self.db_cursor)
-        """List of all MAME directories that will be used by the application."""
 
-        self.new_mame_dirs: list[MAMEDir] = new_get_mame_dirs(self.db_cursor)
-        pprint.pp(self.new_mame_dirs)
+        self.mame_dirs: list[MAMEDir] = get_mame_dirs(self.db_cursor)
 
-        self.pb_info: PersonalBests = new_get_personal_bests(self.db_cursor)
+        self.pb_info: PersonalBests = get_personal_bests(self.db_cursor)
         """Personal best information."""
 
         self.fill_data_structures()
@@ -185,8 +180,8 @@ class MainWindow(QMainWindow):
         """Contains stage splits for current PB."""
 
         self.pb_fields_list: QListWidget = QListWidget()
-        self.new_personal_best_layout = QVBoxLayout()
-        self.new_personal_best_layout.addWidget(self.pb_fields_list)
+        self.personal_best_layout = QVBoxLayout()
+        self.personal_best_layout.addWidget(self.pb_fields_list)
         self.pb_fields_list.setFont(self.small_font)
 
         self.add_split_button: QPushButton = QPushButton('Add Split')
@@ -218,7 +213,7 @@ class MainWindow(QMainWindow):
         self.setup_pb_panel()
         self.setup_split_panel()
 
-        self.info_layout.addLayout(self.new_personal_best_layout, 1)
+        self.info_layout.addLayout(self.personal_best_layout, 1)
         self.info_layout.addStretch()
 
         self.info_layout.addWidget(self.splits_list, 1)
@@ -312,7 +307,7 @@ class MainWindow(QMainWindow):
         """File Menu widget customization."""
         self.test_button_1_action.triggered.connect(self.menu_button_1_clicked)
         self.test_button_2_action.triggered.connect(self.menu_button_2_clicked)
-        self.add_mame_directory_action.triggered.connect(self.new_add_path_button_clicked)
+        self.add_mame_directory_action.triggered.connect(self.add_path_button_clicked)
         self.update_pb_action.triggered.connect(self.scan_for_pbs)
 
         self.file_menu.addAction(self.test_button_1_action)
@@ -322,7 +317,8 @@ class MainWindow(QMainWindow):
 
     def setup_save_state_page(self) -> None:
         """Save State Page windget customization."""
-        self.save_and_input_tree.setEditTriggers(QTreeWidget.EditTrigger.AnyKeyPressed | QTreeWidget.EditTrigger.DoubleClicked)
+        self.save_and_input_tree.setEditTriggers(
+            QTreeWidget.EditTrigger.AnyKeyPressed | QTreeWidget.EditTrigger.DoubleClicked)
         self.save_and_input_tree.setHeaderLabels(['MAME Folders'])
         self.save_and_input_tree.setColumnWidth(0, 1000)
         self.save_and_input_tree.setItemDelegate(SaveStateNameInputValidator(self))
@@ -330,7 +326,7 @@ class MainWindow(QMainWindow):
         self.save_and_input_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.save_and_input_tree.customContextMenuRequested.connect(self.show_save_state_tree_context)
 
-        self.new_fill_save_state_tree()
+        self.fill_save_state_tree()
         self.save_and_input_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
         self.save_and_input_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
 
@@ -369,7 +365,6 @@ class MainWindow(QMainWindow):
         """Personal Best Panel widget customization."""
         self.pb_fields_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.pb_fields_list.customContextMenuRequested.connect(self.show_pb_fields_context)
-
 
     def setup_split_panel(self) -> None:
         """Split Panel widget customization."""
@@ -426,7 +421,7 @@ class MainWindow(QMainWindow):
         self.rom_search_tree.setHeaderLabels(['Games'])
         for rom_description in self.descriptions_and_names.keys():
             item = QTreeWidgetItem(self.rom_search_tree, [rom_description])
-            parent = self.new_all_rom_info[rom_description].parent
+            parent = self.all_rom_info[rom_description].parent
             if parent is not None:
                 self.paint_clone_rom_item(item, rom_description)
 
@@ -468,8 +463,8 @@ class MainWindow(QMainWindow):
 
     def create_split_item(self, split: Split, rom_description: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
-        split_item = NewStageSplitItem(split, self.pb_info, rom_description, self.splits_list, self.db_connection,
-                                       self.db_cursor)
+        split_item = StageSplitItem(split, self.pb_info, rom_description, self.splits_list, self.db_connection,
+                                    self.db_cursor)
         list_item = QListWidgetItem(self.splits_list)
         self.splits_list.setItemWidget(list_item, split_item)
         list_item.setSizeHint(split_item.sizeHint())
@@ -493,31 +488,13 @@ class MainWindow(QMainWindow):
         else:
             return True
 
-    def get_mame_dir(self) -> Path | None:
-        """Prompt user for a MAME directory using a file dialog.
-
-        Loops if invalid path and user selects 'retry'.
-        """
-        mame_dir = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
-                                                    options=QFileDialog.Option.ShowDirsOnly)
-
-        mame_dir = Path(mame_dir)
-
-        path_validity = self.valid_path(mame_dir)
-        if path_validity is True:
-            return mame_dir
-        if path_validity is False:
-            self.get_mame_dir()
-
-        return path_validity
-
-    def new_get_mame_dir(self) -> MAMEDir | None:
+    def get_mame_dir(self) -> MAMEDir | None:
         """Prompt user for a MAME directory using a file dialog.
 
         Loops if invalid path and user selects 'retry'.
         """
         mame_path = QFileDialog.getExistingDirectory(self, 'Choose a Directory',
-                                                    options=QFileDialog.Option.ShowDirsOnly)
+                                                     options=QFileDialog.Option.ShowDirsOnly)
 
         mame_path = Path(mame_path)
         mame_version = get_mame_version(mame_path)
@@ -534,12 +511,11 @@ class MainWindow(QMainWindow):
     def fill_data_structures(self) -> None:
         """Fill data structures that are used as convenient in-memory references."""
         self.descriptions_and_names = get_descriptions_and_names(self.db_cursor)
-        self.all_save_states = new_get_all_roms_with_saves(self.new_mame_dirs)
-        self.all_input_files = new_get_all_input_files(self.new_mame_dirs)
+        self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
+        self.all_input_files = get_all_input_files(self.mame_dirs)
         self.all_rom_info = get_formatted_rom_info(self.db_cursor)
-        self.new_all_rom_info = new_get_formatted_rom_info(self.db_cursor)
 
-    def new_fill_save_state_tree(self) -> None:
+    def fill_save_state_tree(self) -> None:
         """Clear, then fill and customize the Save State Tree Widget.
 
         Font size is configured on each item. Large for parent items, small for leaf items.
@@ -548,7 +524,7 @@ class MainWindow(QMainWindow):
         self.save_and_input_tree.clear()
 
         # Add path items.
-        for mame_dir in self.new_mame_dirs:
+        for mame_dir in self.mame_dirs:
             mame_dir_item = QTreeWidgetItem(self.save_and_input_tree, [str(mame_dir.path)])
             mame_dir_item.setFont(0, self.big_font)
             save_states_container_item = QTreeWidgetItem(mame_dir_item, ['Save States'])
@@ -573,6 +549,7 @@ class MainWindow(QMainWindow):
                     save_state_item = QTreeWidgetItem(game_item, [save_state])
                     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
                     save_state_item.setFont(0, self.small_font)
+
     #########
     # Slots #
     #########
@@ -846,7 +823,7 @@ class MainWindow(QMainWindow):
                 rom_name = input_file_name.split('_')[0]  # inp files created by program will have rom name at start.
 
                 sub_menu = QMenu('Playback with...')
-                for mame_dir in self.new_mame_dirs:
+                for mame_dir in self.mame_dirs:
                     run = QAction(str(mame_dir.path), self)
                     run.triggered.connect(
                         lambda: self.run_rom(rom_name, play_back_input=True, input_file_name=input_file_name))
@@ -916,13 +893,13 @@ class MainWindow(QMainWindow):
         menu.addAction(open_notes)
 
         open_with_submenu = QMenu('Open with...')
-        for mame_dir in self.new_mame_dirs:
+        for mame_dir in self.mame_dirs:
             run = QAction(str(mame_dir.path), self)
             run.triggered.connect(lambda: self.run_rom(rom_name))
             open_with_submenu.addAction(run)
 
         open_with_inp_submenu = QMenu('Open with input file...')
-        for mame_dir in self.new_mame_dirs:
+        for mame_dir in self.mame_dirs:
             run_and_record_inp = QAction(str(mame_dir.path), self)
             run_and_record_inp.triggered.connect(lambda: self.run_rom(rom_name, record_input=True))
             open_with_inp_submenu.addAction(run_and_record_inp)
@@ -940,6 +917,7 @@ class MainWindow(QMainWindow):
         print(dlg.rom_description_for_inp)
         self.tabs.addTab(dlg.rom_search_popup, 'Rom Search')
         return dlg.rom_description_for_inp
+
     # TODO Take another look at this.
     def run_rom(self, rom_name: str, record_input=False, play_back_input=False, input_file_name=None) -> None:
         """Attempt to run a rom, with a given MAME path.
@@ -1038,7 +1016,7 @@ class MainWindow(QMainWindow):
     def create_rom_search_item(self, rom_description, rom_name, weight=3) -> tuple[QTreeWidgetItem, int]:
         item = QTreeWidgetItem([rom_description])
         item.setToolTip(0, rom_name)
-        parent = self.new_all_rom_info[rom_description].parent
+        parent = self.all_rom_info[rom_description].parent
         if parent is not None:
             self.paint_clone_rom_item(item, rom_description)
 
@@ -1094,15 +1072,17 @@ class MainWindow(QMainWindow):
         selected = self.rom_search_tree.selectedItems()
         if selected:
             game_description = selected[0].text(0)
-            rom_info = self.new_all_rom_info[game_description]
+            rom_info = self.all_rom_info[game_description]
             self.rom_description_label.setText(f'Game: {game_description}')
             self.rom_name_label.setText(f'Rom Name: {rom_info.name}')
             self.rom_manufacturer_label.setText(f'Manufacturer: {rom_info.manufacturer}')
             self.rom_release_year_label.setText(f'Year: {rom_info.year}')
             self.rom_parent_label.setText(f'Parent: {rom_info.parent}')
-            self.rom_video_info_label.setText(f'Video Info: {rom_info.hres}x{rom_info.vres}@{rom_info.refresh} - {rom_info.rotate}°')
+            self.rom_video_info_label.setText(
+                f'Video Info: {rom_info.hres}x{rom_info.vres}@{rom_info.refresh} - {rom_info.rotate}°')
             self.rom_video_driver_warnings_label.setText(f'Video Driver: {rom_info.video}')
             self.rom_audio_driver_warnings_label.setText(f'Sound Driver: {rom_info.sound}')
+
     # --------------------- #
     # Save State Page Slots #
     # --------------------- #
@@ -1183,25 +1163,26 @@ class MainWindow(QMainWindow):
         """Temporary, easily accessible, trigger for prototype methods."""
         self.save_and_input_tree.show()
 
-    def new_add_path_button_clicked(self) -> None:
+    def add_path_button_clicked(self) -> None:
         """Prompt user for new MAME path and then, clear and refill save state tree.
 
         Path must be valid filepath, not already in the in-memory representation of the 'paths' database table.
         Path is saved to database and in-memory representation. Slots are disconnected before refilling tree.
         This avoids the incidental signals emitted when adding objects.
         """
-        mame_dir = self.new_get_mame_dir()
+        mame_dir = self.get_mame_dir()
         if mame_dir:
-            if mame_dir not in self.new_mame_dirs:
-                self.new_mame_dirs.append(mame_dir)
-            new_save_mame_dirs(self.db_connection, self.db_cursor, self.new_mame_dirs)
-            self.all_save_states = new_get_all_roms_with_saves(self.new_mame_dirs)
+            if mame_dir not in self.mame_dirs:
+                self.mame_dirs.append(mame_dir)
+            save_mame_dirs(self.db_connection, self.db_cursor, self.mame_dirs)
+            self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
             self.save_and_input_tree.blockSignals(True)
-            self.new_fill_save_state_tree()
+            self.fill_save_state_tree()
             self.save_and_input_tree.blockSignals(False)
             # print(f'New MAME path: {path}')
         # else:
         #     print('Cancel chosen')
+
     def scan_for_pbs(self) -> None:
         """Scan for new personal bests and insert, or update, them into database.
 
@@ -1211,10 +1192,10 @@ class MainWindow(QMainWindow):
         self.setEnabled(False)
         self.progress_bar = ProgressBarWidget(self)
         self.progress_bar.show()
-        pb_scanner = PBScannerThread(self.new_mame_dirs)
+        pb_scanner = PBScannerThread(self.mame_dirs)
         pb_scanner.finished.connect(self.scan_finished)
         pb_scanner.start()
-        self.pb_info = new_get_personal_bests(self.db_cursor)
+        self.pb_info = get_personal_bests(self.db_cursor)
         self.fill_highscore_game_list()
 
     def scan_finished(self) -> None:
@@ -1241,12 +1222,11 @@ def main() -> None:
                 connection.executescript(schema)
                 connection.commit()
 
-            with open(db_roms_data, 'r',  encoding='utf-8') as roms_data:
+            with open(db_roms_data, 'r', encoding='utf-8') as roms_data:
                 data = roms_data.read()
                 pprint.pp(data)
                 connection.executescript(data)
                 connection.commit()
-
 
     with sqlite3.connect(db) as connection:
         # The order the objects are initialized in matters.

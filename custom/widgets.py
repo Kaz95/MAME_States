@@ -321,7 +321,7 @@ class ToggleableLabel(QWidget):
 
             if reply == QMessageBox.StandardButton.Yes:
                 self.label.setText(new_text)
-                if isinstance(self.parent(), NewStageSplitItem):
+                if isinstance(self.parent(), StageSplitItem):
                     widget = self.parent()
                     widget._update_split_db()
                     widget.parent_list.add_diffs(widget.pb_info[widget.rom_description].splits)
@@ -345,7 +345,7 @@ class PBField(QWidget):
         self.layout.addWidget(self.field_value)
 
 
-class NewStageSplitItem(QWidget):
+class StageSplitItem(QWidget):
     """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
 
     This class inherits most of its behavior from its parent class, while extending its functionality.
@@ -456,7 +456,7 @@ class StageSplitListWidget(QListWidget):
         self.installEventFilter(self)
         self.currentItemChanged.connect(self.selection_changed)
 
-    def itemWidget(self, item) -> QWidget | NewStageSplitItem | None:
+    def itemWidget(self, item) -> QWidget | StageSplitItem | None:
         """Overloaded to extend typehint."""
         return super().itemWidget(item)
 
