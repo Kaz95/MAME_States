@@ -52,7 +52,7 @@ PersonalBests = dict[str, PersonalBest]
 """In-memory representation of the 'personal_bests' table of the database."""
 
 
-def resource_path(relative_path):
+def resource_path(relative_path: str | Path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     # Get the bundle directory; fallback to the script's parent directory
     base_path = Path(getattr(sys, '_MEIPASS', Path(__file__).parent.parent))
