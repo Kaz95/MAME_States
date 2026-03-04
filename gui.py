@@ -15,20 +15,19 @@ from pathlib import Path
 from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
 from PyQt6.QtGui import QAction, QFont, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
-    QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QGridLayout, QLabel, QPushButton, QListWidgetItem, \
+    QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QListWidgetItem, \
     QFileDialog, QMessageBox, QMenu, QListWidget, QInputDialog
 
 from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, MAMEThread, NewStageSplitItem, \
     PBField, RomSearchDialog
-from logic.main import rom_description_from_name, get_mame_dirs, get_all_roms_with_saves, \
-    delete_personal_best, delete_splits, get_all_input_files, get_personal_bests, \
+from logic.main import get_descriptions_and_names, \
+    delete_split
+from logic.main import rom_description_from_name, get_mame_dirs, delete_personal_best, delete_splits, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, get_formatted_rom_info, PersonalBests, get_mame_version, MAMEDir, new_get_mame_dirs, \
     new_get_all_roms_with_saves, new_get_all_input_files, new_save_mame_dirs, new_get_formatted_rom_info, \
     new_get_personal_bests, Split, PersonalBest, resource_path
-from logic.main import save_mame_dirs, get_descriptions_and_names, \
-    delete_split
 
 
 class MainWindow(QMainWindow):
@@ -65,9 +64,6 @@ class MainWindow(QMainWindow):
 
         self.db_connection: sqlite3.Connection = db_connection
         """Connection object that points to database connection."""
-
-        # self.new_db_cursor = self.db_connection.cursor()
-        # self.new_db_cursor.row_factory = sqlite3.Row
 
         self.db_cursor: sqlite3.Cursor = self.db_connection.cursor()
         self.db_cursor.row_factory = sqlite3.Row
@@ -316,7 +312,6 @@ class MainWindow(QMainWindow):
         """File Menu widget customization."""
         self.test_button_1_action.triggered.connect(self.menu_button_1_clicked)
         self.test_button_2_action.triggered.connect(self.menu_button_2_clicked)
-        # self.add_mame_directory_action.triggered.connect(self.add_path_button_clicked)
         self.add_mame_directory_action.triggered.connect(self.new_add_path_button_clicked)
         self.update_pb_action.triggered.connect(self.scan_for_pbs)
 
@@ -335,7 +330,6 @@ class MainWindow(QMainWindow):
         self.save_and_input_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.save_and_input_tree.customContextMenuRequested.connect(self.show_save_state_tree_context)
 
-        # self.fill_save_state_tree()
         self.new_fill_save_state_tree()
         self.save_and_input_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
         self.save_and_input_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
@@ -375,12 +369,7 @@ class MainWindow(QMainWindow):
         """Personal Best Panel widget customization."""
         self.pb_fields_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.pb_fields_list.customContextMenuRequested.connect(self.show_pb_fields_context)
-        pass
-        # self.high_score_value_label.editor.setValidator(QIntValidator())
-        # self.high_score_value_label.editor.editingFinished.connect(self.update_high_score_pb)
-        #
-        # self.personal_best_layout.addWidget(self.high_score_label, 0, 0)
-        # self.personal_best_layout.addWidget(self.high_score_value_label, 0, 1)
+
 
     def setup_split_panel(self) -> None:
         """Split Panel widget customization."""
@@ -437,7 +426,6 @@ class MainWindow(QMainWindow):
         self.rom_search_tree.setHeaderLabels(['Games'])
         for rom_description in self.descriptions_and_names.keys():
             item = QTreeWidgetItem(self.rom_search_tree, [rom_description])
-            # parent = self.all_rom_info[rom_description]['parent']
             parent = self.new_all_rom_info[rom_description].parent
             if parent is not None:
                 self.paint_clone_rom_item(item, rom_description)
@@ -546,48 +534,10 @@ class MainWindow(QMainWindow):
     def fill_data_structures(self) -> None:
         """Fill data structures that are used as convenient in-memory references."""
         self.descriptions_and_names = get_descriptions_and_names(self.db_cursor)
-        # self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
-        # self.all_input_files = get_all_input_files(self.mame_dirs)
         self.all_save_states = new_get_all_roms_with_saves(self.new_mame_dirs)
         self.all_input_files = new_get_all_input_files(self.new_mame_dirs)
         self.all_rom_info = get_formatted_rom_info(self.db_cursor)
         self.new_all_rom_info = new_get_formatted_rom_info(self.db_cursor)
-
-
-    # def fill_save_state_tree(self) -> None:
-    #     """Clear, then fill and customize the Save State Tree Widget.
-    #
-    #     Font size is configured on each item. Large for parent items, small for leaf items.
-    #     Leaf items are made editable via flags.
-    #     """
-    #     self.save_and_input_tree.clear()
-    #
-    #     # Add path items.
-    #     for mame_dir in self.mame_dirs:
-    #         mame_dir_item = QTreeWidgetItem(self.save_and_input_tree, [str(mame_dir)])
-    #         mame_dir_item.setFont(0, self.big_font)
-    #         save_states_container_item = QTreeWidgetItem(mame_dir_item, ['Save States'])
-    #         save_states_container_item.setFont(0, self.big_font)
-    #         input_files = self.all_input_files.get(mame_dir)
-    #         if input_files:
-    #             input_files_container_item = QTreeWidgetItem(mame_dir_item, ['Input Files'])
-    #             input_files_container_item.setFont(0, self.big_font)
-    #             for file in input_files:
-    #                 item = QTreeWidgetItem(input_files_container_item, [file])
-    #                 item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
-    #                 item.setFont(0, self.small_font)
-    #
-    #         # Add game items.
-    #         for rom_name in self.all_save_states[mame_dir]:
-    #             game_description = rom_description_from_name(self.descriptions_and_names, rom_name)
-    #             game_item = QTreeWidgetItem(save_states_container_item, [game_description])
-    #             game_item.setFont(0, self.big_font)
-    #
-    #             # Add savestate items.
-    #             for save_state in self.all_save_states[mame_dir][rom_name]:
-    #                 save_state_item = QTreeWidgetItem(game_item, [save_state])
-    #                 save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
-    #                 save_state_item.setFont(0, self.small_font)
 
     def new_fill_save_state_tree(self) -> None:
         """Clear, then fill and customize the Save State Tree Widget.
@@ -1021,7 +971,6 @@ class MainWindow(QMainWindow):
                 print('whoops')
 
         if rom_name not in list(self.descriptions_and_names.values()):
-        # if not rom.is_file():
             rom_description = self.open_rom_for_inp_search()
             if rom_description:
                 rom_name = self.descriptions_and_names[rom_description]
@@ -1089,7 +1038,6 @@ class MainWindow(QMainWindow):
     def create_rom_search_item(self, rom_description, rom_name, weight=3) -> tuple[QTreeWidgetItem, int]:
         item = QTreeWidgetItem([rom_description])
         item.setToolTip(0, rom_name)
-        # parent = self.all_rom_info[rom_description]['parent']
         parent = self.new_all_rom_info[rom_description].parent
         if parent is not None:
             self.paint_clone_rom_item(item, rom_description)
@@ -1147,15 +1095,6 @@ class MainWindow(QMainWindow):
         if selected:
             game_description = selected[0].text(0)
             rom_info = self.new_all_rom_info[game_description]
-            # self.rom_description_label.setText(f'Game: {game_description}')
-            # self.rom_name_label.setText(f'Rom Name: {rom_info['name']}')
-            # self.rom_manufacturer_label.setText(f'Manufacturer: {rom_info['manufacturer']}')
-            # self.rom_release_year_label.setText(f'Year: {str(rom_info['year'])}')
-            # self.rom_parent_label.setText(f'Parent: {rom_info['parent']}')
-            # self.rom_video_info_label.setText(f'Video Info: {rom_info['video_info']}')
-            # self.rom_video_driver_warnings_label.setText(f'Video Driver: {rom_info['video_driver']}')
-            # self.rom_audio_driver_warnings_label.setText(f'Sound Driver: {rom_info['sound_driver']}')
-
             self.rom_description_label.setText(f'Game: {game_description}')
             self.rom_name_label.setText(f'Rom Name: {rom_info.name}')
             self.rom_manufacturer_label.setText(f'Manufacturer: {rom_info.manufacturer}')
@@ -1238,39 +1177,11 @@ class MainWindow(QMainWindow):
     # --------------- #
     def menu_button_1_clicked(self) -> None:
         """Temporary, easily accessible, trigger for prototype methods."""
-        self.tabs.removeTab(2)
-        self.rom_info_container.hide()
-        dlg = RomSearchDialog(RomSearchWindow(self.rom_search_page, self.tabs), self.rom_search_tree, parent=self)
-        dlg.exec()
-        self.rom_info_container.show()
-        print(dlg.rom_description_for_inp)
-        self.tabs.addTab(dlg.rom_search_popup, 'Rom Search')
-        # self.save_and_input_tree.hide()
+        self.save_and_input_tree.hide()
 
     def menu_button_2_clicked(self) -> None:
         """Temporary, easily accessible, trigger for prototype methods."""
         self.save_and_input_tree.show()
-    #
-    # def add_path_button_clicked(self) -> None:
-    #     """Prompt user for new MAME path and then, clear and refill save state tree.
-    #
-    #     Path must be valid filepath, not already in the in-memory representation of the 'paths' database table.
-    #     Path is saved to database and in-memory representation. Slots are disconnected before refilling tree.
-    #     This avoids the incidental signals emitted when adding objects.
-    #     """
-    #     mame_dir = self.get_mame_dir()
-    #     if mame_dir:
-    #         if mame_dir not in self.mame_dirs:
-    #             self.mame_dirs.append(mame_dir)
-    #         mame_version = get_mame_version(mame_dir)
-    #         save_mame_dirs(self.db_connection, self.db_cursor, self.mame_dirs, version=mame_version)
-    #         self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
-    #         self.save_and_input_tree.blockSignals(True)
-    #         self.fill_save_state_tree()
-    #         self.save_and_input_tree.blockSignals(False)
-    #         # print(f'New MAME path: {path}')
-    #     # else:
-        #     print('Cancel chosen')
 
     def new_add_path_button_clicked(self) -> None:
         """Prompt user for new MAME path and then, clear and refill save state tree.
