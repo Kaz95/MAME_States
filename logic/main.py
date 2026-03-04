@@ -8,13 +8,14 @@ import pprint
 import sqlite3
 import subprocess
 import sys
+
 from dataclasses import dataclass, asdict, field
-
 from pathlib import Path
-import zipfile
 
+import zipfile
 import xmltodict
-# test
+
+
 @dataclass(frozen=True)
 class MAMEDir:
     path: Path
@@ -35,16 +36,17 @@ class RomInfo:
     video: str
     sound: str
 
+
 @dataclass
 class Split:
     label: str
     score: int
 
+
 @dataclass
 class PersonalBest:
-    # description: str
     score: int
-    other_fields: dict[str,str | int] = field(default_factory=dict)
+    other_fields: dict[str, str | int] = field(default_factory=dict)
     splits: list = field(default_factory=list)
 
 
@@ -58,6 +60,7 @@ def resource_path(relative_path: str | Path):
     base_path = Path(getattr(sys, '_MEIPASS', Path(__file__).parent.parent))
 
     return base_path / relative_path
+
 
 ###############
 # Save States #
@@ -264,8 +267,9 @@ def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, 
        """
     pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
                  "excluded.highscore, other_fields = excluded.other_fields")
-    splits_insert = ("INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT(label, rom_id) DO UPDATE SET label = excluded.label, "
-                     "score = excluded.score, 'index' = excluded.'index'")
+    splits_insert = (
+        "INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT(label, rom_id) DO UPDATE SET label = excluded.label, "
+        "score = excluded.score, 'index' = excluded.'index'")
 
     pb_rows = collate_pb_rows(cursor, pb_info)
     split_rows = collate_split_rows(cursor, pb_info)
@@ -358,7 +362,6 @@ def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list:
             split = asdict(split)
             split['index'] = index
             split['rom_id'] = id_from_description(pb, cursor)
-            # row = (split[2], split[0], split[1], splits.index(split), id_from_description(pb, cursor))
             rows.append(split)
 
     return rows
@@ -397,18 +400,18 @@ def new_serialize_rom_info(raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo
     formatted_rom_info = {}
 
     for row in raw_rom_info:
-       rom_info = RomInfo(row['name'],
-                     row['description'],
-                     row['manufacturer'],
-                     row['year'],
-                     row['parent'],
-                     row['hres'],
-                     row['vres'],
-                     row['rotate'],
-                     row['refresh'],
-                     row['video'],
-                     row['sound'])
-       formatted_rom_info[rom_info.description] = rom_info
+        rom_info = RomInfo(row['name'],
+                           row['description'],
+                           row['manufacturer'],
+                           row['year'],
+                           row['parent'],
+                           row['hres'],
+                           row['vres'],
+                           row['rotate'],
+                           row['refresh'],
+                           row['video'],
+                           row['sound'])
+        formatted_rom_info[rom_info.description] = rom_info
 
     return formatted_rom_info
 
@@ -418,6 +421,7 @@ def get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, dict[str, str]]:
     raw_rom_info = get_raw_rom_info(cursor)
     formatted_rom_info = serialize_rom_info(raw_rom_info)
     return formatted_rom_info
+
 
 def new_get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, RomInfo]:
     """Retrieve and format raw rom info, from the database."""
@@ -439,12 +443,10 @@ def has_xml(rom_name: str) -> bool:
             return False
 
 
-
 # TODO Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
 def get_games_with_hs(mame_dirs: list[MAMEDir]) -> dict[str, list[Path]]:
     hi2txt_compatible_hi_scores: dict[str, list[Path]] = {}
     for mame_dir in mame_dirs:
-        # mame_dir = Path(raw_string)
         hiscore_dir = mame_dir.path / 'hiscore'
         hiscore_files = list(hiscore_dir.glob('*.hi'))
         hi2txt_compatible_hi_scores[str(mame_dir)] = hiscore_files
@@ -486,7 +488,6 @@ def format_table(raw_hi2txt_table: str) -> dict[str, list | str]:
     table = {}
     leaderboards = raw_hi2txt_table.split('\n#')
     for leaderboard in leaderboards:
-        # pprint.pp(leaderboard.splitlines())
         leaderboard_lines = leaderboard.splitlines()
         leaderboard_lines = [line for line in leaderboard_lines if line]
         if leaderboard_lines[0].startswith('#') or leaderboard_lines[0].startswith(' '):
@@ -635,8 +636,9 @@ def save_pbs(new_pbs: PersonalBests, connection: sqlite3.Connection, cursor: sql
         rom_id = id_from_rom_name(rom_name, cursor)
 
         row = (score, other_fields, rom_id)
-        sql_statement = ("INSERT INTO personal_bests (highscore, other_fields, rom_id) VALUES (?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
-                         "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
+        sql_statement = (
+            "INSERT INTO personal_bests (highscore, other_fields, rom_id) VALUES (?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
+            "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
         cursor.execute(sql_statement, row)
     connection.commit()
 
@@ -655,8 +657,3 @@ def get_mame_version(mame_dir: Path):
     if mame_exe.is_file():
         results = subprocess.run([mame_exe, '-version'], cwd=mame_dir, capture_output=True, text=True)
         return results.stdout
-
-if __name__ == '__main__':
-    p = resource_path(r'.\hi2txt')
-    yarp = resource_path(p)
-    print(yarp)
