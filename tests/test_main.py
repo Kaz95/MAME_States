@@ -3,7 +3,7 @@ import pprint
 
 import pytest
 
-from logic.main import resource_path, get_roms_with_saves, get_all_input_files, MAMEDir
+from logic.main import resource_path, get_roms_with_saves, get_all_input_files, MAMEDir, get_all_roms_with_saves
 from pathlib import Path
 import sys
 from logic import main
@@ -36,6 +36,7 @@ def test_get_roms_with_saves(mocker):
     main.os.listdir.assert_called_once_with(some_dir / 'sta')
 
 
+# FIXME Need to add rom subdirs, before adding .sta files to mirror actual file system.
 @pytest.fixture(scope="session")
 def mock_file_system(tmp_path_factory):
     base_dir = tmp_path_factory.mktemp('file_system')
