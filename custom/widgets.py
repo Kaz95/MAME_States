@@ -8,10 +8,10 @@ from datetime import datetime
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize
-from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent, QIcon
+from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
-    QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QStyle, QApplication, QTabWidget, QSpacerItem, \
-    QListWidgetItem, QDialogButtonBox, QTreeWidget
+    QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QTabWidget, QListWidgetItem, QDialogButtonBox, \
+    QTreeWidget
 
 from logic.main import save_pb_to_database, scan_for_pb, PersonalBests, get_mame_version, Split, delete_split, MAMEDir, \
     resource_path
@@ -189,7 +189,6 @@ class RomSearchWindow(QWidget):
         if self.add_game_button and self.cancel_button:
             self.add_game_button.show()
             self.cancel_button.show()
-        # self.widget.setWindowFlags(Qt.WindowType.Window)
         self.rom_search_page.show()
         self.layout: QVBoxLayout = QVBoxLayout()
         self.layout.addWidget(self.rom_search_page)
