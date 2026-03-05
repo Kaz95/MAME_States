@@ -1176,7 +1176,7 @@ class MainWindow(QMainWindow):
         pb_scanner = PBScannerThread(self.mame_dirs)
         pb_scanner.finished.connect(self.scan_finished)
         pb_scanner.start()
-        self.pb_info = self.core.get_personal_bests()
+        self.pb_info = self.core.pb_info = self.core.get_personal_bests()
         self.fill_highscore_game_list()
 
     def scan_finished(self) -> None:
