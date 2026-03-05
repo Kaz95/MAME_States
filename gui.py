@@ -166,7 +166,7 @@ class MainWindow(QMainWindow):
         self.highscore_delete_game_button: QPushButton = QPushButton('Delete Game')
         """Allow user to, manually, remove game from highscore tree."""
 
-        self.splits_list: StageSplitListWidget = StageSplitListWidget(self.pb_info, self.db_connection, self.db_cursor)
+        self.splits_list: StageSplitListWidget = StageSplitListWidget(self.core)
         """Contains stage splits for current PB."""
 
         self.pb_fields_list: QListWidget = QListWidget()
@@ -453,8 +453,7 @@ class MainWindow(QMainWindow):
 
     def create_split_item(self, split: Split, rom_description: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
-        split_item = StageSplitItem(split, self.pb_info, rom_description, self.splits_list, self.db_connection,
-                                    self.db_cursor)
+        split_item = StageSplitItem(split, self.pb_info, rom_description, self.splits_list, self.core)
         list_item = QListWidgetItem(self.splits_list)
         self.splits_list.setItemWidget(list_item, split_item)
         list_item.setSizeHint(split_item.sizeHint())
@@ -591,7 +590,7 @@ class MainWindow(QMainWindow):
                     continue
                 self.pb_info[rom_description].other_fields[field_name] = self.temp_fields[
                     field_name].field_value.editor.text()
-            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            self.core.save_pb_to_database()
 
     def highscore_add_game_clicked(self) -> None:
         """Pop out Rom Search Tab and allow user to choose a rom. Main window is disabled."""
@@ -623,7 +622,7 @@ class MainWindow(QMainWindow):
 
             self.pb_info[rom_description] = PersonalBest(0)
 
-            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            self.core.save_pb_to_database()
             self.rom_search_popup.close()
             self.games_with_pb_tree.setCurrentItem(new_item)
 
@@ -672,7 +671,7 @@ class MainWindow(QMainWindow):
                 split_name = splits[row].label
                 del splits[row]
                 delete_split(self.db_connection, self.db_cursor, rom_description, split_name)
-                save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+                self.core.save_pb_to_database()
 
     def new_split(self) -> None:
         """Create a new, blank split item. Add it to the list widget and the in memory database representation.
@@ -739,7 +738,7 @@ class MainWindow(QMainWindow):
         self.pb_fields_list.takeItem(row)
         del self.pb_info[rom_description].other_fields[field_name]
         del item
-        save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+        self.core.save_pb_to_database()
 
     def add_pb_field(self, rom_description):
         text, ok = QInputDialog.getText(self, 'New Personal Best Field.', 'Please enter the name of the new field:')
@@ -753,7 +752,7 @@ class MainWindow(QMainWindow):
         if ok:
             self.create_pb_field_item(f'{text}', 0)
             self.pb_info[rom_description].other_fields[text] = 0
-            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            self.core.save_pb_to_database()
 
     def show_pb_fields_context(self, position: QPoint):
         pb_field_list_item = self.pb_fields_list.itemAt(position)
