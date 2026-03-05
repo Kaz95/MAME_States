@@ -66,6 +66,7 @@ class MAMEStatesCore:
         self.connection = connection
         self.cursor = self.connection.cursor()
         self.cursor.row_factory = sqlite3.Row
+        self.mame_dirs = self.get_mame_dirs()
 
     def get_mame_dirs(self) -> list[MAMEDir]:
         """Load paths as strings from database. Convert to Path objects before returning them."""

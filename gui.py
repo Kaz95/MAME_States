@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
         # Load Data #
         # --------- #
 
-        self.mame_dirs: list[MAMEDir] = self.core.get_mame_dirs()
+        self.mame_dirs: list[MAMEDir] = self.core.mame_dirs
 
         self.pb_info: PersonalBests = get_personal_bests(self.db_cursor)
         """Personal best information."""
