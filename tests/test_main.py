@@ -4,11 +4,11 @@ import sqlite3
 
 import pytest
 
-from logic.main import resource_path, get_roms_with_saves, get_all_input_files, MAMEDir, get_all_roms_with_saves, \
+from logic.core import resource_path, get_roms_with_saves, get_all_input_files, MAMEDir, get_all_roms_with_saves, \
     rom_description_from_name, get_mame_dirs
 from pathlib import Path
 import sys
-from logic import main
+from logic import core
 
 
 def test_resource_path_parent_dir_with_str_input():
@@ -35,7 +35,7 @@ def test_get_roms_with_saves(mocker):
     some_dir = Path('abc')
 
     assert get_roms_with_saves(some_dir) == mock_files
-    main.os.listdir.assert_called_once_with(some_dir / 'sta')
+    core.os.listdir.assert_called_once_with(some_dir / 'sta')
 
 
 # FIXME Need to add rom subdirs, before adding .sta files to mirror actual file system.
