@@ -61,6 +61,7 @@ def resource_path(relative_path: str | Path):
 
     return base_path / relative_path
 
+
 class MAMEStatesCore:
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
@@ -73,6 +74,9 @@ class MAMEStatesCore:
         self.rom_info = self.get_formatted_rom_info()
         self.pb_info = self.get_personal_bests()
 
+    #########
+    # Paths #
+    #########
     def get_mame_dirs(self) -> list[MAMEDir]:
         """Load paths as strings from database. Convert to Path objects before returning them."""
         sql_query = """SELECT * FROM paths"""
@@ -85,6 +89,21 @@ class MAMEStatesCore:
             mame_dir = MAMEDir(mame_path, mame_version)
             mame_dirs.append(mame_dir)
         return mame_dirs
+
+    # TODO This wipes out manually added version #s until I sort that out.
+    def save_mame_dirs(self, version=None) -> None:
+        """Format list of paths as rows. Insert them into database. """
+        sql_statement = """INSERT OR IGNORE INTO paths (path, version) VALUES (:path, :version);"""
+        rows = []
+        for mame_dir in self.mame_dirs:
+            row = asdict(mame_dir)
+            # Change Path to str before inserting.
+            row['path'] = str(row['path'])
+            print(row)
+            rows.append(row)
+
+        self.cursor.executemany(sql_statement, rows)
+        self.connection.commit()
 
     def get_all_input_files(self) -> dict[MAMEDir, list[str]]:
         """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
@@ -191,31 +210,9 @@ def rom_description_from_name(description_db: dict[str, str], rom_name: str) -> 
             return rom_description
 
 
-#########
-# Paths #
-#########
-
-# TODO This wipes out manually added version #s until I sort that out.
-def save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[MAMEDir],
-                   version=None) -> None:
-    """Format list of paths as rows. Insert them into database. """
-    sql_statement = """INSERT OR IGNORE INTO paths (path, version) VALUES (:path, :version);"""
-    rows = []
-    for mame_dir in mame_dirs:
-        row = asdict(mame_dir)
-        # Change Path to str before inserting.
-        row['path'] = str(row['path'])
-        print(row)
-        rows.append(row)
-
-    cursor.executemany(sql_statement, rows)
-    connection.commit()
-
-
 ##################
 # Personal Bests #
 ##################
-
 
 
 def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info: PersonalBests) -> None:
