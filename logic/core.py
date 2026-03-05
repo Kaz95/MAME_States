@@ -174,6 +174,25 @@ class MAMEStatesCore:
 
         return pb_info
 
+    def save_pb_to_database(self) -> None:
+        """Update database with provided personal best and split information.
+
+           Rows are added if they do not exist, and updated otherwise.
+           """
+        pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
+                     "excluded.highscore, other_fields = excluded.other_fields")
+        splits_insert = (
+            "INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT(label, rom_id) DO UPDATE SET label = excluded.label, "
+            "score = excluded.score, 'index' = excluded.'index'")
+
+        pb_rows = collate_pb_rows(self.cursor, self.pb_info)
+        split_rows = collate_split_rows(self.cursor, self.pb_info)
+
+        self.cursor.executemany(pb_insert, pb_rows)
+        self.cursor.executemany(splits_insert, split_rows)
+
+        self.connection.commit()
+
 
 ###############
 # Save States #
@@ -213,27 +232,6 @@ def rom_description_from_name(description_db: dict[str, str], rom_name: str) -> 
 ##################
 # Personal Bests #
 ##################
-
-
-def save_pb_to_database(connection: sqlite3.Connection, cursor: sqlite3.Cursor, pb_info: PersonalBests) -> None:
-    """Update database with provided personal best and split information.
-
-       Rows are added if they do not exist, and updated otherwise.
-       """
-    pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
-                 "excluded.highscore, other_fields = excluded.other_fields")
-    splits_insert = (
-        "INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT(label, rom_id) DO UPDATE SET label = excluded.label, "
-        "score = excluded.score, 'index' = excluded.'index'")
-
-    pb_rows = collate_pb_rows(cursor, pb_info)
-    split_rows = collate_split_rows(cursor, pb_info)
-
-    cursor.executemany(pb_insert, pb_rows)
-    cursor.executemany(splits_insert, split_rows)
-
-    connection.commit()
-
 
 def delete_personal_best(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str) -> None:
     """Delete personal best data from database, for a given rom."""
