@@ -22,8 +22,8 @@ from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, MAMEThread, StageSplitItem, \
     PBField, RomSearchDialog
 
-from logic import core
-from logic.core import save_pbs, has_xml, get_new_pb, \
+from logic import core, hi2txt_wrapper
+from logic.core import save_pbs, get_new_pb, \
     prepare_pb_for_db, PersonalBests, get_mame_version, MAMEDir, \
     Split, PersonalBest, resource_path
 
@@ -917,7 +917,7 @@ class MainWindow(QMainWindow):
         print(rom)
         print(rom.is_file())
 
-        hi2txt_compatible = has_xml(rom_name)
+        hi2txt_compatible = hi2txt_wrapper.has_xml(rom_name)
         if hi2txt_compatible:
             try:
                 # FIXME Hardcoded slop...is fine now? Think I fixed this already. Need to do something in exception.

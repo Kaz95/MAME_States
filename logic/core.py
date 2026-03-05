@@ -336,20 +336,6 @@ class MAMEStatesCore:
 # hi2txt #
 ##########
 
-
-def has_xml(rom_name: str) -> bool:
-    """Check if a given rom has an XML file, and is therefore compatible with 'hi2txt'."""
-    zip_path = resource_path(r'.\hi2txt\hi2txt.zip')
-    with zipfile.ZipFile(zip_path, 'r') as zip_obj:
-        xml_strings = zip_obj.namelist()
-        xml_paths = [Path(file_name) for file_name in xml_strings]
-        xml_names = [file_name.stem for file_name in xml_paths]
-        if rom_name in xml_names:
-            return True
-        else:
-            return False
-
-
 # TODO Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
 def get_games_with_hs(mame_dirs: list[MAMEDir]) -> dict[str, list[Path]]:
     hi2txt_compatible_hi_scores: dict[str, list[Path]] = {}
