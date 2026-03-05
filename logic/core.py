@@ -532,6 +532,13 @@ def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str) -> PersonalBests:
     all_pbs[rom_name] = new_pb
     return all_pbs
 
+def id_from_rom_name(name: str, cursor) -> int:
+    """Retrieve the corresponding rom_id, for a given rom name, from the database."""
+    sql_statement = "SELECT id FROM roms WHERE name = ?"
+    cursor.execute(sql_statement, (name,))
+    results = cursor.fetchall()
+    rom_id = results[0][0]
+    return rom_id
 
 def save_pbs(new_pbs: PersonalBests, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
     """Insert or update new PB entries into database, if new PB has a higher score."""
