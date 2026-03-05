@@ -649,7 +649,7 @@ class MainWindow(QMainWindow):
             # Delete from in-memory database representation.
             del self.pb_info[rom_description]
             # Delete from database.
-            delete_personal_best(self.db_connection, self.db_cursor, rom_description)
+            self.core.delete_personal_best(rom_description)
             delete_splits(self.db_connection, self.db_cursor, rom_description)
 
             # Finally, remove item from Highscore Game Tree.
