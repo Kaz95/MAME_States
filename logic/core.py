@@ -128,17 +128,6 @@ def get_save_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list
     return save_states
 
 
-def get_all_roms_with_saves(mame_dirs: list[MAMEDir]) -> dict[MAMEDir, dict[str, list[str]]]:
-    """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
-    all_save_state_names = {}
-    for mame_dir in mame_dirs:
-        roms_with_saves = get_roms_with_saves(mame_dir.path)
-        save_state_names = get_save_names(roms_with_saves, mame_dir.path)
-        all_save_state_names[mame_dir] = save_state_names
-
-    return all_save_state_names
-
-
 # TODO Consider generator
 def rom_description_from_name(description_db: dict[str, str], rom_name: str) -> str:
     """Return the full name of a given rom"""
