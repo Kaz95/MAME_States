@@ -23,8 +23,7 @@ from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     PBField, RomSearchDialog
 
 from logic import core, hi2txt_wrapper
-from logic.core import save_pbs, get_new_pb, \
-    prepare_pb_for_db, PersonalBests, get_mame_version, MAMEDir, \
+from logic.core import PersonalBests, get_mame_version, MAMEDir, \
     Split, PersonalBest, resource_path
 
 
@@ -968,13 +967,13 @@ class MainWindow(QMainWindow):
                 except FileNotFoundError:
                     print('whoops')
 
-                new_pb = get_new_pb(self.pre_hs_table, post_hs_table)
+                new_pb = hi2txt_wrapper.get_new_pb(self.pre_hs_table, post_hs_table)
                 if new_pb:
                     response = QMessageBox.question(self, 'New PB Detected!',
                                                     f'A new personal best has been detected\n{new_pb['col']}\n{new_pb['row']}\nWould you like to add new PB?')
                     if response == QMessageBox.StandardButton.Yes:
-                        new_pb = prepare_pb_for_db(new_pb, self.mame_thread.rom_name)
-                        save_pbs(new_pb, self.db_connection, self.db_cursor)
+                        new_pb = hi2txt_wrapper.prepare_pb_for_db(new_pb, self.mame_thread.rom_name)
+                        hi2txt_wrapper.save_pbs(new_pb, self.db_connection, self.db_cursor)
                         QMessageBox.information(self, 'Ok', 'Pb Updated!')
                     else:
                         QMessageBox.information(self, 'Ok', 'PB discarded.')
