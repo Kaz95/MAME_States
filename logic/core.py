@@ -193,6 +193,12 @@ class MAMEStatesCore:
 
         self.connection.commit()
 
+    def delete_personal_best(self, rom_description: str) -> None:
+        """Delete personal best data from database, for a given rom."""
+        sql_statement = "DELETE FROM personal_bests WHERE rom_id = ?"
+        rom_id = id_from_description(rom_description, self.cursor)
+        self.cursor.execute(sql_statement, (rom_id,))
+        self.connection.commit()
 
 ###############
 # Save States #
@@ -232,14 +238,6 @@ def rom_description_from_name(description_db: dict[str, str], rom_name: str) -> 
 ##################
 # Personal Bests #
 ##################
-
-def delete_personal_best(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str) -> None:
-    """Delete personal best data from database, for a given rom."""
-    sql_statement = "DELETE FROM personal_bests WHERE rom_id = ?"
-    rom_id = id_from_description(rom_description, cursor)
-    cursor.execute(sql_statement, (rom_id,))
-    connection.commit()
-
 
 def delete_splits(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str) -> None:
     """Delete all 'splits' data from database, for a given rom."""
