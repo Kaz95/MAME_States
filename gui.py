@@ -23,7 +23,7 @@ from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     PBField, RomSearchDialog
 from logic import core
 from logic.core import delete_split
-from logic.core import rom_description_from_name, delete_personal_best, delete_splits, \
+from logic.core import rom_description_from_name, delete_splits, \
     save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, PersonalBests, get_mame_version, MAMEDir, \
     Split, PersonalBest, resource_path
