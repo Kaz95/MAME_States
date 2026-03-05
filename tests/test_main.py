@@ -4,8 +4,8 @@ import sqlite3
 
 import pytest
 
-from logic.core import resource_path, get_roms_with_saves, MAMEDir, get_all_roms_with_saves, \
-    rom_description_from_name, get_mame_dirs
+from logic.core import resource_path, get_roms_with_saves, \
+    rom_description_from_name
 from pathlib import Path
 import sys
 from logic import core
