@@ -80,7 +80,7 @@ class MainWindow(QMainWindow):
 
         self.mame_dirs: list[MAMEDir] = self.core.mame_dirs
 
-        self.pb_info: PersonalBests = get_personal_bests(self.db_cursor)
+        self.pb_info: PersonalBests = self.core.pb_info
         """Personal best information."""
 
 
