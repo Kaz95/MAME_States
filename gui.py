@@ -26,8 +26,7 @@ from logic.core import delete_split
 from logic.core import rom_description_from_name, delete_personal_best, delete_splits, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, PersonalBests, get_mame_version, MAMEDir, \
-    save_mame_dirs, get_formatted_rom_info, \
-    get_personal_bests, Split, PersonalBest, resource_path
+    save_mame_dirs, Split, PersonalBest, resource_path
 
 
 class MainWindow(QMainWindow):
