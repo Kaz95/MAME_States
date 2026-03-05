@@ -66,8 +66,7 @@ class MainWindow(QMainWindow):
         """Connection object that points to database connection."""
 
         self.db_cursor: sqlite3.Cursor = self.core.cursor
-        # self.db_cursor.row_factory = sqlite3.Row
-        # """Cursor object used to navigate database."""
+        """Cursor object used to navigate database."""
 
         self.save_state_page_text_before_editing: str | None = None
         """Text of the previous selected save state item."""
