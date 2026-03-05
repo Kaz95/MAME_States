@@ -117,17 +117,6 @@ def get_save_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list
     return save_states
 
 
-def get_all_input_files(mame_dirs: list[MAMEDir]) -> dict[MAMEDir, list[str]]:
-    """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
-    all_input_files = {}
-    for mame_dir in mame_dirs:
-        input_file_dir = mame_dir.path / 'inp'
-        if input_file_dir.is_dir():
-            all_input_files[mame_dir] = [input_file.stem for input_file in input_file_dir.iterdir()]
-    return all_input_files
-
-
-
 def get_all_roms_with_saves(mame_dirs: list[MAMEDir]) -> dict[MAMEDir, dict[str, list[str]]]:
     """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
     all_save_state_names = {}
