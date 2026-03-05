@@ -61,6 +61,12 @@ def resource_path(relative_path: str | Path):
 
     return base_path / relative_path
 
+# TODO Temp fix after I realized inps need version in name.
+def get_mame_version(mame_dir: Path):
+    mame_exe = mame_dir / 'mame.exe'
+    if mame_exe.is_file():
+        results = subprocess.run([mame_exe, '-version'], cwd=mame_dir, capture_output=True, text=True)
+        return results.stdout
 
 class MAMEStatesCore:
     def __init__(self, connection: sqlite3.Connection):
