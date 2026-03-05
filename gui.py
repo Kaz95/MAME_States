@@ -23,8 +23,7 @@ from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     PBField, RomSearchDialog
 
 from logic import core
-from logic.core import rom_description_from_name,\
-    save_pbs, has_xml, get_new_pb, \
+from logic.core import save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, PersonalBests, get_mame_version, MAMEDir, \
     Split, PersonalBest, resource_path
 
@@ -522,7 +521,7 @@ class MainWindow(QMainWindow):
 
             # Add game items.
             for rom_name in self.core.roms_with_saves[mame_dir]:
-                game_description = rom_description_from_name(self.descriptions_and_names, rom_name)
+                game_description = self.core.rom_description_from_name(self.descriptions_and_names, rom_name)
                 game_item = QTreeWidgetItem(save_states_container_item, [game_description])
                 game_item.setFont(0, self.big_font)
 
