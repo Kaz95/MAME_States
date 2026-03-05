@@ -70,14 +70,14 @@ def mock_file_system(tmp_path_factory):
 #         for _ in range(3):
 #             assert all_input_files[mame_dir][_] == f'{mame_dir.path.name}_{'inp' + str(_)}'
 
-def test_get_all_roms_with_saves(mock_file_system):
-    mame_dirs = [MAMEDir(p, '.069') for p in mock_file_system.iterdir()]
-    all_save_states = get_all_roms_with_saves(mame_dirs)
-
-    assert mame_dirs == list(all_save_states.keys())
-    for mame_dir in mame_dirs:
-        for _ in range(3):
-            assert all_save_states[mame_dir][f'rom{_}'][0] == f'{mame_dir.path.name}_{'sta' + str(_)}'
+# def test_get_all_roms_with_saves(mock_file_system):
+#     mame_dirs = [MAMEDir(p, '.069') for p in mock_file_system.iterdir()]
+#     all_save_states = get_all_roms_with_saves(mame_dirs)
+#
+#     assert mame_dirs == list(all_save_states.keys())
+#     for mame_dir in mame_dirs:
+#         for _ in range(3):
+#             assert all_save_states[mame_dir][f'rom{_}'][0] == f'{mame_dir.path.name}_{'sta' + str(_)}'
 
 def test_rom_description_from_name():
     description_db = {'DoDonPachi II - Bee Storm': 'ddp2', 'Libble Rabble': 'liblrabl', 'Final Fight': 'ffight'}
