@@ -69,6 +69,7 @@ class MAMEStatesCore:
         self.mame_dirs = self.get_mame_dirs()
         self.input_files = self.get_all_input_files()
         self.roms_with_saves = self.get_all_roms_with_saves()
+        self.descriptions_and_names = self.get_descriptions_and_names()
 
     def get_mame_dirs(self) -> list[MAMEDir]:
         """Load paths as strings from database. Convert to Path objects before returning them."""
@@ -101,6 +102,27 @@ class MAMEStatesCore:
             all_save_state_names[mame_dir] = save_state_names
 
         return all_save_state_names
+
+    def get_descriptions_and_names(self) -> dict[str, str]:
+        """Construct {rom_description:rom_name} dictionary.
+
+        This dictionary is used as a quick in-memory reference that binds a roms description, to its name.
+        The alternative would be querying them as needed.
+        """
+        sql_statement = """SELECT name, description FROM roms;"""
+        self.cursor.execute(sql_statement)
+        results = self.cursor.fetchall()
+        descriptions_and_names = {}
+        for entry in results:
+            descriptions_and_names[entry[1]] = entry[0]
+
+        return descriptions_and_names
+
+    def get_formatted_rom_info(self) -> dict[str, RomInfo]:
+        """Retrieve and format raw rom info, from the database."""
+        raw_rom_info = get_raw_rom_info(self.cursor)
+        formatted_rom_info = serialize_rom_info(raw_rom_info)
+        return formatted_rom_info
 
 ###############
 # Save States #
@@ -297,21 +319,6 @@ def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list:
 
     return rows
 
-
-def get_descriptions_and_names(cursor: sqlite3.Cursor) -> dict[str, str]:
-    """Construct {rom_description:rom_name} dictionary.
-
-    This dictionary is used as a quick in-memory reference that binds a roms description, to its name.
-    The alternative would be querying them as needed.
-    """
-    sql_statement = """SELECT name, description FROM roms;"""
-    cursor.execute(sql_statement)
-    results = cursor.fetchall()
-    descriptions_and_names = {}
-    for entry in results:
-        descriptions_and_names[entry[1]] = entry[0]
-
-    return descriptions_and_names
 
 def serialize_rom_info(raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo]:
     """Format raw rom info, from database, into in-memory representation."""
