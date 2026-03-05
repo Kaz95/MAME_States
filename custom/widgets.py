@@ -420,7 +420,7 @@ class StageSplitItem(QWidget):
         print(f'here: {old_label}')
 
         if self.name_label.editor.text():
-            delete_split(self.core.connection, self.core.cursor, self.rom_description, old_label)
+            self.core.delete_split(self.rom_description, old_label)
             self.core.save_pb_to_database()
 
 
