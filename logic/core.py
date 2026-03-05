@@ -345,12 +345,6 @@ def serialize_rom_info(raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo]:
 
     return formatted_rom_info
 
-def get_formatted_rom_info(cursor: sqlite3.Cursor) -> dict[str, RomInfo]:
-    """Retrieve and format raw rom info, from the database."""
-    raw_rom_info = get_raw_rom_info(cursor)
-    formatted_rom_info = serialize_rom_info(raw_rom_info)
-    return formatted_rom_info
-
 
 def has_xml(rom_name: str) -> bool:
     """Check if a given rom has an XML file, and is therefore compatible with 'hi2txt'."""
