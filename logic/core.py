@@ -151,19 +151,6 @@ def rom_description_from_name(description_db: dict[str, str], rom_name: str) -> 
 #########
 # Paths #
 #########
-def get_mame_dirs(cursor: sqlite3.Cursor) -> list[MAMEDir]:
-    """Load paths as strings from database. Convert to Path objects before returning them."""
-    sql_query = """SELECT * FROM paths"""
-    cursor.execute(sql_query)
-    raw_results = cursor.fetchall()
-    mame_dirs = []
-    for entry in raw_results:
-        mame_path = Path(entry['path'])
-        mame_version = entry['version']
-        mame_dir = MAMEDir(mame_path, mame_version)
-        mame_dirs.append(mame_dir)
-    return mame_dirs
-
 
 # TODO This wipes out manually added version #s until I sort that out.
 def save_mame_dirs(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[MAMEDir],
