@@ -324,7 +324,7 @@ class ToggleableLabel(QWidget):
                 if isinstance(self.parent(), StageSplitItem):
                     widget = self.parent()
                     widget._update_split_db()
-                    widget.parent_list.add_diffs(widget.pb_info[widget.rom_description].splits)
+                    widget.parent_list.add_diffs(widget.core.pb_info[widget.rom_description].splits)
             else:
                 self.editor.setText(self.label.text())  # Revert
 
@@ -352,18 +352,14 @@ class StageSplitItem(QWidget):
     Used as a customer item widget on a QListWidget instance."""
 
     def __init__(self, split: Split, pb_info: PersonalBests, rom_description: str,
-                 parent_list: 'StageSplitListWidget', connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
+                 parent_list: 'StageSplitListWidget', core: MAMEStatesCore) -> None:
         """ Initialize the StageSplitItem subclass
 
         The StageSplitItem subclass inherits most of its behavior from, and extends, its parent class QWidget.
         The initialization process creates the widgets and layouts that will make up the custom item widget.
         """
         super().__init__()
-        self.db_connection: sqlite3.Connection = connection
-        """Connection object that points to database connection."""
-
-        self.db_cursor: sqlite3.Cursor = cursor
-        """Cursor object used to navigate database."""
+        self.core = core
 
         self.split = split
         """The data that comprises a split. \n[index, stage, score]"""
@@ -424,8 +420,8 @@ class StageSplitItem(QWidget):
         print(f'here: {old_label}')
 
         if self.name_label.editor.text():
-            delete_split(self.db_connection, self.db_cursor, self.rom_description, old_label)
-            save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+            delete_split(self.core.connection, self.core.cursor, self.rom_description, old_label)
+            self.core.save_pb_to_database()
 
 
 class StageSplitListWidget(QListWidget):
@@ -436,19 +432,14 @@ class StageSplitListWidget(QListWidget):
     The difference between splits is calculated and displayed.
     """
 
-    def __init__(self, pb_info, connection: sqlite3.Connection, cursor: sqlite3.Cursor):
+    def __init__(self, core: MAMEStatesCore):
         """ The StageSplitListWidget subclass inherits most of its behavior from, and extends,
         its parent class QListWidget.
 
         The initialization process customizes the widget.
         """
         super().__init__()
-        self.db_connection: sqlite3.Connection = connection
-        self.db_cursor: sqlite3.Cursor = cursor
-
-        self.pb_info = pb_info
-        """In-memory representation of DB schema."""
-
+        self.core = core
         self.last_row: int | None = None
         """The previously selected row. Used internally to track split movement."""
 
@@ -471,7 +462,7 @@ class StageSplitListWidget(QListWidget):
                 item_that_moved = items_that_moved[0]
                 rom_description = self.itemWidget(item_that_moved).rom_description
                 self.update_db(rom_description, self.last_row, self.row(item_that_moved))
-                splits = self.pb_info[rom_description].splits
+                splits = self.core.pb_info[rom_description].splits
                 self.add_diffs(splits)
                 # print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
                 self.last_row = self.row(item_that_moved)
@@ -484,11 +475,11 @@ class StageSplitListWidget(QListWidget):
 
     def update_db(self, rom_description: str, old_index: int, new_index: int) -> None:
         """Mirror internal list changes to the in-memory representation. Save to database."""
-        splits = self.pb_info[rom_description].splits
+        splits = self.core.pb_info[rom_description].splits
         if not (len(splits) - 1) < old_index:
             split = splits.pop(old_index)
             splits.insert(new_index, split)
-        save_pb_to_database(self.db_connection, self.db_cursor, self.pb_info)
+        self.core.save_pb_to_database()
 
     def add_diffs(self, splits: list[Split]) -> None:
         """Calculate and display the difference between a splits score, and the previous splits score."""
