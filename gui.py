@@ -521,7 +521,7 @@ class MainWindow(QMainWindow):
 
             # Add game items.
             for rom_name in self.core.roms_with_saves[mame_dir]:
-                game_description = self.core.rom_description_from_name(self.descriptions_and_names, rom_name)
+                game_description = self.core.rom_description_from_name(rom_name)
                 game_item = QTreeWidgetItem(save_states_container_item, [game_description])
                 game_item.setFont(0, self.big_font)
 
