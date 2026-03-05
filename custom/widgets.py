@@ -325,7 +325,7 @@ class ToggleableLabel(QWidget):
                 if isinstance(self.parent(), StageSplitItem):
                     widget = self.parent()
                     widget._update_split_db()
-                    widget.parent_list.add_diffs(widget.core.pb_info[widget.rom_description].splits)
+                    widget.parent_list.add_diffs(widget.pb_info[widget.rom_description].splits)
             else:
                 self.editor.setText(self.label.text())  # Revert
 
