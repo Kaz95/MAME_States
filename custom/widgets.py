@@ -13,8 +13,8 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QTabWidget, QListWidgetItem, QDialogButtonBox, \
     QTreeWidget
 
-from logic.core import save_pb_to_database, scan_for_pb, PersonalBests, get_mame_version, Split, delete_split, MAMEDir, \
-    resource_path
+from logic.core import scan_for_pb, PersonalBests, get_mame_version, Split, delete_split, MAMEDir, \
+    resource_path, MAMEStatesCore
 
 
 ######################
