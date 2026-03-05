@@ -92,14 +92,66 @@ class MAMEStatesCore:
 
         return descriptions_and_names
 
+    # TODO Consider generator
+    def rom_description_from_name(self, rom_name: str) -> str:
+        """Return the full name of a given rom"""
+        for key, value in self.descriptions_and_names.items():
+            if value == rom_name:
+                rom_description = key
+                return rom_description
+
     ############
     # Rom Info #
     ############
     def get_formatted_rom_info(self) -> dict[str, RomInfo]:
         """Retrieve and format raw rom info, from the database."""
-        raw_rom_info = get_raw_rom_info(self.cursor)
-        formatted_rom_info = serialize_rom_info(raw_rom_info)
+        raw_rom_info = self.get_raw_rom_info()
+        formatted_rom_info = self._serialize_rom_info(raw_rom_info)
         return formatted_rom_info
+
+    @staticmethod
+    def _serialize_rom_info(self, raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo]:
+        """Format raw rom info, from database, into in-memory representation."""
+        formatted_rom_info = {}
+
+        for row in raw_rom_info:
+            rom_info = RomInfo(row['name'],
+                               row['description'],
+                               row['manufacturer'],
+                               row['year'],
+                               row['parent'],
+                               row['hres'],
+                               row['vres'],
+                               row['rotate'],
+                               row['refresh'],
+                               row['video'],
+                               row['sound'])
+            formatted_rom_info[rom_info.description] = rom_info
+
+        return formatted_rom_info
+
+    def get_raw_rom_info(self) -> list[sqlite3.Row]:
+        """Retrieve all rom information from database and return it raw."""
+        sql_statement = "SELECT * FROM roms"
+        self.cursor.execute(sql_statement)
+        results = self.cursor.fetchall()
+        return results
+
+    def id_from_description(self, description: str) -> int:
+        """Retrieve the corresponding rom_id, for a given rom description, from the database."""
+        sql_statement = "SELECT id FROM roms WHERE description = ?"
+        self.cursor.execute(sql_statement, (description,))
+        results = self.cursor.fetchall()
+        rom_id = results[0][0]
+        return rom_id
+
+    def id_from_rom_name(self, name: str) -> int:
+        """Retrieve the corresponding rom_id, for a given rom name, from the database."""
+        sql_statement = "SELECT id FROM roms WHERE name = ?"
+        self.cursor.execute(sql_statement, (name,))
+        results = self.cursor.fetchall()
+        rom_id = results[0][0]
+        return rom_id
 
     #########
     # Paths #
@@ -220,8 +272,8 @@ class MAMEStatesCore:
             "INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT(label, rom_id) DO UPDATE SET label = excluded.label, "
             "score = excluded.score, 'index' = excluded.'index'")
 
-        pb_rows = collate_pb_rows(self.cursor, self.pb_info)
-        split_rows = collate_split_rows(self.cursor, self.pb_info)
+        pb_rows = self.collate_pb_rows()
+        split_rows = self.collate_split_rows()
 
         self.cursor.executemany(pb_insert, pb_rows)
         self.cursor.executemany(splits_insert, split_rows)
@@ -231,114 +283,58 @@ class MAMEStatesCore:
     def delete_personal_best(self, rom_description: str) -> None:
         """Delete personal best data from database, for a given rom."""
         sql_statement = "DELETE FROM personal_bests WHERE rom_id = ?"
-        rom_id = id_from_description(rom_description, self.cursor)
+        rom_id = self.id_from_description(rom_description)
         self.cursor.execute(sql_statement, (rom_id,))
         self.connection.commit()
 
     def delete_splits(self, rom_description: str) -> None:
         """Delete all 'splits' data from database, for a given rom."""
         sql_statement = "DELETE FROM splits WHERE rom_id = ?"
-        rom_id = id_from_description(rom_description, self.cursor)
+        rom_id = self.id_from_description(rom_description)
         self.cursor.execute(sql_statement, (rom_id,))
         self.connection.commit()
 
     def delete_split(self, rom_description: str, split_label: str) -> None:
         """Delete a single split from the database. Rom id and split label text are used as unique identifier."""
         sql_statement = "DELETE FROM splits WHERE rom_id = ? AND label = ?"
-        rom_id = id_from_description(rom_description, self.cursor)
+        rom_id = self.id_from_description(rom_description)
         self.cursor.execute(sql_statement, (rom_id, split_label))
         self.connection.commit()
 
+    def collate_pb_rows(self) -> list[tuple]:
+        """Serialize personal best highscore and related information into rows for database insertion."""
+        rows = []
+        for mame_dir in self.pb_info:
+            pb = self.pb_info[mame_dir]
+            rom_id = self.id_from_description(mame_dir)
+            highscore = pb.score
+            other_fields = pb.other_fields
+            other_fields = json.dumps(other_fields)
+            row = (None, highscore, other_fields, rom_id)
+            rows.append(row)
+        return rows
 
-# TODO Consider generator
-def rom_description_from_name(description_db: dict[str, str], rom_name: str) -> str:
-    """Return the full name of a given rom"""
-    for key, value in description_db.items():
-        if value == rom_name:
-            rom_description = key
-            return rom_description
+    def collate_split_rows(self) -> list:
+        """Serialize splits information into rows for database insertion.
 
-def get_raw_rom_info(cursor: sqlite3.Cursor) -> list[sqlite3.Row]:
-    """Retrieve all rom information from database and return it raw."""
-    sql_statement = "SELECT * FROM roms"
-    cursor.execute(sql_statement)
-    results = cursor.fetchall()
-    return results
+        Split order is preserved by using the splits current position in its perspective splits list.
+        """
+        rows = []
+        for pb in self.pb_info:
+            pb_dict = self.pb_info[pb]
+            splits = pb_dict.splits
+            for split in splits:
+                index = splits.index(split)
+                split = asdict(split)
+                split['index'] = index
+                split['rom_id'] = self.id_from_description(pb)
+                rows.append(split)
 
+        return rows
 
 ##########
-# Helper #
+# hi2txt #
 ##########
-def id_from_description(description: str, cursor: sqlite3.Cursor) -> int:
-    """Retrieve the corresponding rom_id, for a given rom description, from the database."""
-    sql_statement = "SELECT id FROM roms WHERE description = ?"
-    cursor.execute(sql_statement, (description,))
-    results = cursor.fetchall()
-    rom_id = results[0][0]
-    return rom_id
-
-
-def id_from_rom_name(name: str, cursor: sqlite3.Cursor) -> int:
-    """Retrieve the corresponding rom_id, for a given rom name, from the database."""
-    sql_statement = "SELECT id FROM roms WHERE name = ?"
-    cursor.execute(sql_statement, (name,))
-    results = cursor.fetchall()
-    rom_id = results[0][0]
-    return rom_id
-
-
-def collate_pb_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list[tuple]:
-    """Serialize personal best highscore and related information into rows for database insertion."""
-    rows = []
-    for mame_dir in pb_info:
-        pb = pb_info[mame_dir]
-        rom_id = id_from_description(mame_dir, cursor)
-        highscore = pb.score
-        other_fields = pb.other_fields
-        other_fields = json.dumps(other_fields)
-        row = (None, highscore, other_fields, rom_id)
-        rows.append(row)
-    return rows
-
-
-def collate_split_rows(cursor: sqlite3.Cursor, pb_info: PersonalBests) -> list:
-    """Serialize splits information into rows for database insertion.
-
-    Split order is preserved by using the splits current position in its perspective splits list.
-    """
-    rows = []
-    for pb in pb_info:
-        pb_dict = pb_info[pb]
-        splits = pb_dict.splits
-        for split in splits:
-            index = splits.index(split)
-            split = asdict(split)
-            split['index'] = index
-            split['rom_id'] = id_from_description(pb, cursor)
-            rows.append(split)
-
-    return rows
-
-
-def serialize_rom_info(raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo]:
-    """Format raw rom info, from database, into in-memory representation."""
-    formatted_rom_info = {}
-
-    for row in raw_rom_info:
-        rom_info = RomInfo(row['name'],
-                           row['description'],
-                           row['manufacturer'],
-                           row['year'],
-                           row['parent'],
-                           row['hres'],
-                           row['vres'],
-                           row['rotate'],
-                           row['refresh'],
-                           row['video'],
-                           row['sound'])
-        formatted_rom_info[rom_info.description] = rom_info
-
-    return formatted_rom_info
 
 
 def has_xml(rom_name: str) -> bool:
