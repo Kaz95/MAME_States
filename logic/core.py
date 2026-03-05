@@ -244,13 +244,6 @@ class MAMEStatesCore:
         self.connection.commit()
 
 
-###############
-# Save States #
-###############
-
-
-
-
 # TODO Consider generator
 def rom_description_from_name(description_db: dict[str, str], rom_name: str) -> str:
     """Return the full name of a given rom"""
@@ -259,10 +252,6 @@ def rom_description_from_name(description_db: dict[str, str], rom_name: str) -> 
             rom_description = key
             return rom_description
 
-
-##################
-# Personal Bests #
-##################
 def get_raw_rom_info(cursor: sqlite3.Cursor) -> list[sqlite3.Row]:
     """Retrieve all rom information from database and return it raw."""
     sql_statement = "SELECT * FROM roms"
