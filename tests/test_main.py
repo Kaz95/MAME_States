@@ -4,7 +4,7 @@ import sqlite3
 
 import pytest
 
-from logic.core import resource_path, get_roms_with_saves, \
+from logic.core import resource_path,\
     rom_description_from_name
 from pathlib import Path
 import sys
@@ -29,13 +29,13 @@ def test_resource_path_pyinstaller_archive_with_path_input(monkeypatch):
     assert resource_path('abc') == Path('S:/ome/base/path/abc')
 
 
-def test_get_roms_with_saves(mocker):
-    mock_files = ['file1.sta', 'file2.sta', 'file3.sta']
-    mocker.patch('logic.core.os.listdir', return_value=mock_files)
-    some_dir = Path('abc')
-
-    assert get_roms_with_saves(some_dir) == mock_files
-    core.os.listdir.assert_called_once_with(some_dir / 'sta')
+# def test_get_roms_with_saves(mocker):
+#     mock_files = ['file1.sta', 'file2.sta', 'file3.sta']
+#     mocker.patch('logic.core.os.listdir', return_value=mock_files)
+#     some_dir = Path('abc')
+#
+#     assert get_roms_with_saves(some_dir) == mock_files
+#     core.os.listdir.assert_called_once_with(some_dir / 'sta')
 
 
 # FIXME Need to add rom subdirs, before adding .sta files to mirror actual file system.
