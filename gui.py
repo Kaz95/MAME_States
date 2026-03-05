@@ -23,7 +23,7 @@ from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     PBField, RomSearchDialog
 from logic import core
 from logic.core import delete_split
-from logic.core import rom_description_from_name, delete_splits, \
+from logic.core import rom_description_from_name,\
     save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, PersonalBests, get_mame_version, MAMEDir, \
     Split, PersonalBest, resource_path
@@ -650,7 +650,7 @@ class MainWindow(QMainWindow):
             del self.pb_info[rom_description]
             # Delete from database.
             self.core.delete_personal_best(rom_description)
-            delete_splits(self.db_connection, self.db_cursor, rom_description)
+            self.core.delete_splits(rom_description)
 
             # Finally, remove item from Highscore Game Tree.
             game_item_index = self.games_with_pb_tree.indexFromItem(game_item)
