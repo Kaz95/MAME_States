@@ -61,6 +61,24 @@ def resource_path(relative_path: str | Path):
 
     return base_path / relative_path
 
+class MAMEStatesCore:
+    def __init__(self, connection: sqlite3.Connection):
+        self.connection = connection
+        self.cursor = self.connection.cursor()
+        self.cursor.row_factory = sqlite3.Row
+
+    def get_mame_dirs(self) -> list[MAMEDir]:
+        """Load paths as strings from database. Convert to Path objects before returning them."""
+        sql_query = """SELECT * FROM paths"""
+        self.cursor.execute(sql_query)
+        raw_results = self.cursor.fetchall()
+        mame_dirs = []
+        for entry in raw_results:
+            mame_path = Path(entry['path'])
+            mame_version = entry['version']
+            mame_dir = MAMEDir(mame_path, mame_version)
+            mame_dirs.append(mame_dir)
+        return mame_dirs
 
 ###############
 # Save States #
