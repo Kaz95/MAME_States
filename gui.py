@@ -37,7 +37,7 @@ class MainWindow(QMainWindow):
     Houses all GUI elements of the MAMEStates application.
     """
 
-    def __init__(self, db_connection: sqlite3.Connection) -> None:
+    def __init__(self, mame_states_core: core.MAMEStatesCore) -> None:
         """Initialize the MainWindow subclass
 
         The MainWindow subclass inherits most of its behavior from, and extends, its parent class QMainWindow. The
@@ -46,7 +46,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
-
+        self.core = mame_states_core
         self.progress_bar = None
         """Reference to progress bar popup window. Prevents garbage collection and allows access."""
 
@@ -62,12 +62,12 @@ class MainWindow(QMainWindow):
         self.rom_search_popup: QWidget | None = None
         """Reference to rom search popup window. Prevents garbage collection and allows access."""
 
-        self.db_connection: sqlite3.Connection = db_connection
+        self.db_connection: sqlite3.Connection = self.core.connection
         """Connection object that points to database connection."""
 
-        self.db_cursor: sqlite3.Cursor = self.db_connection.cursor()
-        self.db_cursor.row_factory = sqlite3.Row
-        """Cursor object used to navigate database."""
+        self.db_cursor: sqlite3.Cursor = self.core.cursor
+        # self.db_cursor.row_factory = sqlite3.Row
+        # """Cursor object used to navigate database."""
 
         self.save_state_page_text_before_editing: str | None = None
         """Text of the previous selected save state item."""
@@ -87,7 +87,7 @@ class MainWindow(QMainWindow):
         # Load Data #
         # --------- #
 
-        self.mame_dirs: list[MAMEDir] = get_mame_dirs(self.db_cursor)
+        self.mame_dirs: list[MAMEDir] = self.core.get_mame_dirs()
 
         self.pb_info: PersonalBests = get_personal_bests(self.db_cursor)
         """Personal best information."""
@@ -1230,10 +1230,11 @@ def main() -> None:
                 connection.commit()
 
     with sqlite3.connect(db) as connection:
+        mame_states_core = core.MAMEStatesCore(connection)
         # The order the objects are initialized in matters.
         app = QApplication([])
 
-        window = MainWindow(connection)
+        window = MainWindow(mame_states_core)
         window.show()
 
         app.exec()
