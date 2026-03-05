@@ -95,7 +95,7 @@ class PBScannerThread(QThread):
         """Override and extend run function to scan for new personal bests. Emit signal when finished."""
         with sqlite3.connect(resource_path('mame_states.db')) as connection:
             db_cursor = connection.cursor()
-            scan_for_pb(connection, db_cursor, self.mame_dirs)
+            hi2txt_wrapper.scan_for_pb(connection, db_cursor, self.mame_dirs)
             self.finished.emit()
 
 
