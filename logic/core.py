@@ -74,6 +74,9 @@ class MAMEStatesCore:
         self.rom_info = self.get_formatted_rom_info()
         self.pb_info = self.get_personal_bests()
 
+    ########################
+    # Descriptions & Names #
+    ########################
     def get_descriptions_and_names(self) -> dict[str, str]:
         """Construct {rom_description:rom_name} dictionary.
 
@@ -89,6 +92,9 @@ class MAMEStatesCore:
 
         return descriptions_and_names
 
+    ############
+    # Rom Info #
+    ############
     def get_formatted_rom_info(self) -> dict[str, RomInfo]:
         """Retrieve and format raw rom info, from the database."""
         raw_rom_info = get_raw_rom_info(self.cursor)
