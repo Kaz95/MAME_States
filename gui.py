@@ -920,7 +920,7 @@ class MainWindow(QMainWindow):
         hi2txt_compatible = has_xml(rom_name)
         if hi2txt_compatible:
             try:
-                # FIXME Hardcoded slop
+                # FIXME Hardcoded slop...is fine now? Think I fixed this already. Need to do something in exception.
                 hi2txt_results = subprocess.run(
                     [resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{hiscore_file}'],
                     cwd=resource_path(r'.\hi2txt'), capture_output=True, text=True,
