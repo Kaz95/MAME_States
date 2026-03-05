@@ -21,8 +21,9 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, MAMEThread, StageSplitItem, \
     PBField, RomSearchDialog
-from logic.main import get_descriptions_and_names, delete_split
-from logic.main import rom_description_from_name, delete_personal_best, delete_splits, \
+from logic import core
+from logic.core import get_descriptions_and_names, delete_split
+from logic.core import rom_description_from_name, delete_personal_best, delete_splits, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, PersonalBests, get_mame_version, MAMEDir, get_mame_dirs, \
     get_all_roms_with_saves, get_all_input_files, save_mame_dirs, get_formatted_rom_info, \
@@ -735,7 +736,7 @@ class MainWindow(QMainWindow):
         self.notes_window.raise_()
         self.notes_window.setFocus()
 
-    # TODO Consider moving to main.py
+    # TODO Consider moving to core.py
     def run_mame(self, mame_dir):
         mame_dir = Path(mame_dir)
         mame_exe = mame_dir / 'mame.exe'
