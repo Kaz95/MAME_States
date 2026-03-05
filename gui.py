@@ -670,7 +670,7 @@ class MainWindow(QMainWindow):
                 splits = self.pb_info[rom_description].splits
                 split_name = splits[row].label
                 del splits[row]
-                delete_split(self.db_connection, self.db_cursor, rom_description, split_name)
+                self.core.delete_split(rom_description, split_name)
                 self.core.save_pb_to_database()
 
     def new_split(self) -> None:
