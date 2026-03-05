@@ -207,6 +207,14 @@ class MAMEStatesCore:
         self.cursor.execute(sql_statement, (rom_id,))
         self.connection.commit()
 
+    def delete_split(self, rom_description: str, split_label: str) -> None:
+        """Delete a single split from the database. Rom id and split label text are used as unique identifier."""
+        sql_statement = "DELETE FROM splits WHERE rom_id = ? AND label = ?"
+        rom_id = id_from_description(rom_description, self.cursor)
+        self.cursor.execute(sql_statement, (rom_id, split_label))
+        self.connection.commit()
+
+
 ###############
 # Save States #
 ###############
@@ -245,16 +253,6 @@ def rom_description_from_name(description_db: dict[str, str], rom_name: str) -> 
 ##################
 # Personal Bests #
 ##################
-
-def delete_split(connection: sqlite3.Connection, cursor: sqlite3.Cursor, rom_description: str,
-                 split_label: str) -> None:
-    """Delete a single split from the database. Rom id and split label text are used as unique identifier."""
-    sql_statement = "DELETE FROM splits WHERE rom_id = ? AND label = ?"
-    rom_id = id_from_description(rom_description, cursor)
-    cursor.execute(sql_statement, (rom_id, split_label))
-    connection.commit()
-
-
 def get_raw_rom_info(cursor: sqlite3.Cursor) -> list[sqlite3.Row]:
     """Retrieve all rom information from database and return it raw."""
     sql_statement = "SELECT * FROM roms"
