@@ -22,7 +22,7 @@ from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, MAMEThread, StageSplitItem, \
     PBField, RomSearchDialog
 from logic import core
-from logic.core import get_descriptions_and_names, delete_split
+from logic.core import delete_split
 from logic.core import rom_description_from_name, delete_personal_best, delete_splits, \
     save_pb_to_database, save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, PersonalBests, get_mame_version, MAMEDir, \
@@ -71,7 +71,7 @@ class MainWindow(QMainWindow):
         self.save_state_page_text_before_editing: str | None = None
         """Text of the previous selected save state item."""
 
-        self.descriptions_and_names: dict[str, str] = {}
+        self.descriptions_and_names: dict[str, str] = self.core.descriptions_and_names
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
 
 
@@ -506,7 +506,6 @@ class MainWindow(QMainWindow):
 
     def fill_data_structures(self) -> None:
         """Fill data structures that are used as convenient in-memory references."""
-        self.descriptions_and_names = get_descriptions_and_names(self.db_cursor)
         self.all_rom_info = get_formatted_rom_info(self.db_cursor)
 
     def fill_save_state_tree(self) -> None:
