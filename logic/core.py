@@ -110,7 +110,7 @@ class MAMEStatesCore:
         return formatted_rom_info
 
     @staticmethod
-    def _serialize_rom_info(self, raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo]:
+    def _serialize_rom_info(raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo]:
         """Format raw rom info, from database, into in-memory representation."""
         formatted_rom_info = {}
 
