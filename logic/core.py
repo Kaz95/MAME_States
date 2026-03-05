@@ -67,6 +67,7 @@ class MAMEStatesCore:
         self.cursor = self.connection.cursor()
         self.cursor.row_factory = sqlite3.Row
         self.mame_dirs = self.get_mame_dirs()
+        self.input_files = self.get_all_input_files()
 
     def get_mame_dirs(self) -> list[MAMEDir]:
         """Load paths as strings from database. Convert to Path objects before returning them."""
@@ -80,6 +81,15 @@ class MAMEStatesCore:
             mame_dir = MAMEDir(mame_path, mame_version)
             mame_dirs.append(mame_dir)
         return mame_dirs
+
+    def get_all_input_files(self) -> dict[MAMEDir, list[str]]:
+        """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
+        all_input_files = {}
+        for mame_dir in self.mame_dirs:
+            input_file_dir = mame_dir.path / 'inp'
+            if input_file_dir.is_dir():
+                all_input_files[mame_dir] = [input_file.stem for input_file in input_file_dir.iterdir()]
+        return all_input_files
 
 ###############
 # Save States #

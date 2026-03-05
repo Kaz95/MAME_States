@@ -78,9 +78,6 @@ class MainWindow(QMainWindow):
         self.all_save_states: dict[str:dict[str:list[str]]] | None = None
         """Names of games that have a save folder, and their respective save states"""
 
-        self.all_input_files = None
-        """MAME paths and the contents of their respective inp directories."""
-
         self.all_rom_info = None
 
         # --------- #
@@ -513,7 +510,7 @@ class MainWindow(QMainWindow):
         """Fill data structures that are used as convenient in-memory references."""
         self.descriptions_and_names = get_descriptions_and_names(self.db_cursor)
         self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
-        self.all_input_files = get_all_input_files(self.mame_dirs)
+        # self.all_input_files = get_all_input_files(self.mame_dirs)
         self.all_rom_info = get_formatted_rom_info(self.db_cursor)
 
     def fill_save_state_tree(self) -> None:
@@ -530,7 +527,7 @@ class MainWindow(QMainWindow):
             mame_dir_item.setFont(0, self.big_font)
             save_states_container_item = QTreeWidgetItem(mame_dir_item, ['Save States'])
             save_states_container_item.setFont(0, self.big_font)
-            input_files = self.all_input_files.get(mame_dir)
+            input_files = self.core.input_files.get(mame_dir)
             if input_files:
                 input_files_container_item = QTreeWidgetItem(mame_dir_item, ['Input Files'])
                 input_files_container_item.setFont(0, self.big_font)
