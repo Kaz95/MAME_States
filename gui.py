@@ -21,8 +21,8 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
     NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, MAMEThread, StageSplitItem, \
     PBField, RomSearchDialog
+
 from logic import core
-from logic.core import delete_split
 from logic.core import rom_description_from_name,\
     save_pbs, has_xml, get_new_pb, \
     prepare_pb_for_db, PersonalBests, get_mame_version, MAMEDir, \
