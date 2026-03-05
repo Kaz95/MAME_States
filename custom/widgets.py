@@ -13,7 +13,8 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QTabWidget, QListWidgetItem, QDialogButtonBox, \
     QTreeWidget
 
-from logic.core import scan_for_pb, PersonalBests, get_mame_version, Split, MAMEDir, \
+from logic import hi2txt_wrapper
+from logic.core import PersonalBests, get_mame_version, Split, MAMEDir, \
     resource_path, MAMEStatesCore
 
 
