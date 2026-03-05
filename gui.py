@@ -74,8 +74,7 @@ class MainWindow(QMainWindow):
         self.descriptions_and_names: dict[str, str] = {}
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
 
-        self.all_save_states: dict[str:dict[str:list[str]]] | None = None
-        """Names of games that have a save folder, and their respective save states"""
+
 
         self.all_rom_info = None
 
@@ -508,8 +507,6 @@ class MainWindow(QMainWindow):
     def fill_data_structures(self) -> None:
         """Fill data structures that are used as convenient in-memory references."""
         self.descriptions_and_names = get_descriptions_and_names(self.db_cursor)
-        self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
-        # self.all_input_files = get_all_input_files(self.mame_dirs)
         self.all_rom_info = get_formatted_rom_info(self.db_cursor)
 
     def fill_save_state_tree(self) -> None:
@@ -536,13 +533,13 @@ class MainWindow(QMainWindow):
                     item.setFont(0, self.small_font)
 
             # Add game items.
-            for rom_name in self.all_save_states[mame_dir]:
+            for rom_name in self.core.roms_with_saves[mame_dir]:
                 game_description = rom_description_from_name(self.descriptions_and_names, rom_name)
                 game_item = QTreeWidgetItem(save_states_container_item, [game_description])
                 game_item.setFont(0, self.big_font)
 
                 # Add savestate items.
-                for save_state in self.all_save_states[mame_dir][rom_name]:
+                for save_state in self.core.roms_with_saves[mame_dir][rom_name]:
                     save_state_item = QTreeWidgetItem(game_item, [save_state])
                     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
                     save_state_item.setFont(0, self.small_font)
@@ -1172,7 +1169,8 @@ class MainWindow(QMainWindow):
             if mame_dir not in self.mame_dirs:
                 self.mame_dirs.append(mame_dir)
             save_mame_dirs(self.db_connection, self.db_cursor, self.mame_dirs)
-            self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
+            self.core.roms_with_saves = self.core.get_all_roms_with_saves()
+            # self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
             self.save_and_input_tree.blockSignals(True)
             self.fill_save_state_tree()
             self.save_and_input_tree.blockSignals(False)
