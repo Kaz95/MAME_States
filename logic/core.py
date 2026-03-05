@@ -74,6 +74,27 @@ class MAMEStatesCore:
         self.rom_info = self.get_formatted_rom_info()
         self.pb_info = self.get_personal_bests()
 
+    def get_descriptions_and_names(self) -> dict[str, str]:
+        """Construct {rom_description:rom_name} dictionary.
+
+        This dictionary is used as a quick in-memory reference that binds a roms description, to its name.
+        The alternative would be querying them as needed.
+        """
+        sql_statement = """SELECT name, description FROM roms;"""
+        self.cursor.execute(sql_statement)
+        results = self.cursor.fetchall()
+        descriptions_and_names = {}
+        for entry in results:
+            descriptions_and_names[entry[1]] = entry[0]
+
+        return descriptions_and_names
+
+    def get_formatted_rom_info(self) -> dict[str, RomInfo]:
+        """Retrieve and format raw rom info, from the database."""
+        raw_rom_info = get_raw_rom_info(self.cursor)
+        formatted_rom_info = serialize_rom_info(raw_rom_info)
+        return formatted_rom_info
+
     #########
     # Paths #
     #########
@@ -114,6 +135,9 @@ class MAMEStatesCore:
                 all_input_files[mame_dir] = [input_file.stem for input_file in input_file_dir.iterdir()]
         return all_input_files
 
+    ###############
+    # Save States #
+    ###############
     def get_all_roms_with_saves(self) -> dict[MAMEDir, dict[str, list[str]]]:
         """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
         all_save_state_names = {}
@@ -124,27 +148,9 @@ class MAMEStatesCore:
 
         return all_save_state_names
 
-    def get_descriptions_and_names(self) -> dict[str, str]:
-        """Construct {rom_description:rom_name} dictionary.
-
-        This dictionary is used as a quick in-memory reference that binds a roms description, to its name.
-        The alternative would be querying them as needed.
-        """
-        sql_statement = """SELECT name, description FROM roms;"""
-        self.cursor.execute(sql_statement)
-        results = self.cursor.fetchall()
-        descriptions_and_names = {}
-        for entry in results:
-            descriptions_and_names[entry[1]] = entry[0]
-
-        return descriptions_and_names
-
-    def get_formatted_rom_info(self) -> dict[str, RomInfo]:
-        """Retrieve and format raw rom info, from the database."""
-        raw_rom_info = get_raw_rom_info(self.cursor)
-        formatted_rom_info = serialize_rom_info(raw_rom_info)
-        return formatted_rom_info
-
+    ##################
+    # Personal Bests #
+    ##################
     def get_personal_bests(self) -> PersonalBests:
         """Load and format all personal best information from the database. Keyed to rom description."""
         pb_info = {}
