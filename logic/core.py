@@ -68,6 +68,7 @@ class MAMEStatesCore:
         self.cursor.row_factory = sqlite3.Row
         self.mame_dirs = self.get_mame_dirs()
         self.input_files = self.get_all_input_files()
+        self.roms_with_saves = self.get_all_roms_with_saves()
 
     def get_mame_dirs(self) -> list[MAMEDir]:
         """Load paths as strings from database. Convert to Path objects before returning them."""
@@ -90,6 +91,16 @@ class MAMEStatesCore:
             if input_file_dir.is_dir():
                 all_input_files[mame_dir] = [input_file.stem for input_file in input_file_dir.iterdir()]
         return all_input_files
+
+    def get_all_roms_with_saves(self) -> dict[MAMEDir, dict[str, list[str]]]:
+        """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
+        all_save_state_names = {}
+        for mame_dir in self.mame_dirs:
+            roms_with_saves = get_roms_with_saves(mame_dir.path)
+            save_state_names = get_save_names(roms_with_saves, mame_dir.path)
+            all_save_state_names[mame_dir] = save_state_names
+
+        return all_save_state_names
 
 ###############
 # Save States #
