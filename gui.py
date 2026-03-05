@@ -74,10 +74,6 @@ class MainWindow(QMainWindow):
         self.descriptions_and_names: dict[str, str] = self.core.descriptions_and_names
         """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
 
-
-
-        self.all_rom_info = None
-
         # --------- #
         # Load Data #
         # --------- #
@@ -87,7 +83,6 @@ class MainWindow(QMainWindow):
         self.pb_info: PersonalBests = get_personal_bests(self.db_cursor)
         """Personal best information."""
 
-        self.fill_data_structures()
 
         # -------------------- #
         # Widget customization #
@@ -417,7 +412,7 @@ class MainWindow(QMainWindow):
         self.rom_search_tree.setHeaderLabels(['Games'])
         for rom_description in self.descriptions_and_names.keys():
             item = QTreeWidgetItem(self.rom_search_tree, [rom_description])
-            parent = self.all_rom_info[rom_description].parent
+            parent = self.core.rom_info[rom_description].parent
             if parent is not None:
                 self.paint_clone_rom_item(item, rom_description)
 
@@ -503,10 +498,6 @@ class MainWindow(QMainWindow):
             self.get_mame_dir()
 
         return path_validity
-
-    def fill_data_structures(self) -> None:
-        """Fill data structures that are used as convenient in-memory references."""
-        self.all_rom_info = get_formatted_rom_info(self.db_cursor)
 
     def fill_save_state_tree(self) -> None:
         """Clear, then fill and customize the Save State Tree Widget.
@@ -1009,7 +1000,7 @@ class MainWindow(QMainWindow):
     def create_rom_search_item(self, rom_description, rom_name, weight=3) -> tuple[QTreeWidgetItem, int]:
         item = QTreeWidgetItem([rom_description])
         item.setToolTip(0, rom_name)
-        parent = self.all_rom_info[rom_description].parent
+        parent = self.core.rom_info[rom_description].parent
         if parent is not None:
             self.paint_clone_rom_item(item, rom_description)
 
@@ -1065,7 +1056,7 @@ class MainWindow(QMainWindow):
         selected = self.rom_search_tree.selectedItems()
         if selected:
             game_description = selected[0].text(0)
-            rom_info = self.all_rom_info[game_description]
+            rom_info = self.core.rom_info[game_description]
             self.rom_description_label.setText(f'Game: {game_description}')
             self.rom_name_label.setText(f'Rom Name: {rom_info.name}')
             self.rom_manufacturer_label.setText(f'Manufacturer: {rom_info.manufacturer}')
