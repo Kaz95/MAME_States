@@ -70,6 +70,7 @@ class MAMEStatesCore:
         self.input_files = self.get_all_input_files()
         self.roms_with_saves = self.get_all_roms_with_saves()
         self.descriptions_and_names = self.get_descriptions_and_names()
+        self.rom_info = self.get_formatted_rom_info()
 
     def get_mame_dirs(self) -> list[MAMEDir]:
         """Load paths as strings from database. Convert to Path objects before returning them."""
