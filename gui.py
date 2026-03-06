@@ -14,17 +14,13 @@ from pathlib import Path
 
 from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
 from PyQt6.QtGui import QAction, QFont, QColor, QBrush
-from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, \
-    QTabWidget, QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QListWidgetItem, \
+from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, QTabWidget, \
+    QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QListWidgetItem, \
     QFileDialog, QMessageBox, QMenu, QListWidget, QInputDialog
 
-from custom.widgets import StageSplitListWidget, SaveStateNameInputValidator, \
-    NotesWindow, RomSearchWindow, PBScannerThread, ProgressBarWidget, MAMEThread, StageSplitItem, \
-    PBField, RomSearchDialog
-
 from logic import core, hi2txt_wrapper
-from logic.core import PersonalBests, get_mame_version, MAMEDir, \
-    Split, PersonalBest, resource_path
+from custom import widgets
+
 
 
 class MainWindow(QMainWindow):
@@ -138,7 +134,7 @@ class MainWindow(QMainWindow):
         self.games_with_pb_tree: QTreeWidget = QTreeWidget()
         """Contains games with personal bests information."""
 
-        self.notes_window = NotesWindow(self)
+        self.notes_window = widgets.NotesWindow(self)
         """Popup raw text edit window."""
 
         self.highscore_add_game_button: QPushButton = QPushButton('Add Game')
@@ -147,7 +143,7 @@ class MainWindow(QMainWindow):
         self.highscore_delete_game_button: QPushButton = QPushButton('Delete Game')
         """Allow user to, manually, remove game from highscore tree."""
 
-        self.splits_list: StageSplitListWidget = StageSplitListWidget(self.core)
+        self.splits_list: widgets.StageSplitListWidget = widgets.StageSplitListWidget(self.core)
         """Contains stage splits for current PB."""
 
         self.pb_fields_list: QListWidget = QListWidget()
@@ -292,7 +288,7 @@ class MainWindow(QMainWindow):
             QTreeWidget.EditTrigger.AnyKeyPressed | QTreeWidget.EditTrigger.DoubleClicked)
         self.save_and_input_tree.setHeaderLabels(['MAME Folders'])
         self.save_and_input_tree.setColumnWidth(0, 1000)
-        self.save_and_input_tree.setItemDelegate(SaveStateNameInputValidator(self))
+        self.save_and_input_tree.setItemDelegate(widgets.SaveStateNameInputValidator(self))
         self.save_and_input_tree.setTabKeyNavigation(True)
         self.save_and_input_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.save_and_input_tree.customContextMenuRequested.connect(self.show_save_state_tree_context)
@@ -420,7 +416,7 @@ class MainWindow(QMainWindow):
 
     def create_pb_field_item(self, field_name, field_value) -> QListWidgetItem:
 
-        pb_field = PBField(field_name, field_value)
+        pb_field = widgets.PBField(field_name, field_value)
         if field_name == 'High Score':
             self.temp_fields['high score'] = pb_field
         else:
@@ -432,9 +428,9 @@ class MainWindow(QMainWindow):
         list_item.setSizeHint(pb_field.sizeHint())
         return list_item
 
-    def create_split_item(self, split: Split, rom_description: str) -> QListWidgetItem:
+    def create_split_item(self, split: core.Split, rom_description: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
-        split_item = StageSplitItem(split, rom_description, self.splits_list, self.core)
+        split_item = widgets.StageSplitItem(split, rom_description, self.splits_list, self.core)
         list_item = QListWidgetItem(self.splits_list)
         self.splits_list.setItemWidget(list_item, split_item)
         list_item.setSizeHint(split_item.sizeHint())
@@ -458,7 +454,7 @@ class MainWindow(QMainWindow):
         else:
             return True
 
-    def get_mame_dir(self) -> MAMEDir | None:
+    def get_mame_dir(self) -> core.MAMEDir | None:
         """Prompt user for a MAME directory using a file dialog.
 
         Loops if invalid path and user selects 'retry'.
@@ -467,8 +463,8 @@ class MainWindow(QMainWindow):
                                                      options=QFileDialog.Option.ShowDirsOnly)
 
         mame_path = Path(mame_path)
-        mame_version = get_mame_version(mame_path)
-        mame_dir = MAMEDir(mame_path, mame_version)
+        mame_version = core.get_mame_version(mame_path)
+        mame_dir = core.MAMEDir(mame_path, mame_version)
 
         path_validity = self.valid_path(mame_path)
         if path_validity is True:
@@ -577,7 +573,7 @@ class MainWindow(QMainWindow):
         """Pop out Rom Search Tab and allow user to choose a rom. Main window is disabled."""
 
         self.tabs.removeTab(2)
-        self.rom_search_popup = RomSearchWindow(self.rom_search_page, self.tabs, self.rom_search_add_game_button,
+        self.rom_search_popup = widgets.RomSearchWindow(self.rom_search_page, self.tabs, self.rom_search_add_game_button,
                                                 self.rom_search_cancel_button)
         self.rom_search_popup.show()
         self.setEnabled(False)
@@ -601,7 +597,7 @@ class MainWindow(QMainWindow):
 
             new_item = QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
 
-            self.core.pb_info[rom_description] = PersonalBest(0)
+            self.core.pb_info[rom_description] = core.PersonalBest(0)
 
             self.core.save_pb_to_database()
             self.rom_search_popup.close()
@@ -664,7 +660,7 @@ class MainWindow(QMainWindow):
             game_item = selected[0]
             rom_description = game_item.text(0)
             game_splits = self.core.pb_info[rom_description].splits
-            new_split = Split('', 0)
+            new_split = core.Split('', 0)
             game_splits.append(new_split)
             new_split_item = self.create_split_item(new_split, rom_description)
             self.splits_list.setCurrentItem(new_split_item)
@@ -683,7 +679,7 @@ class MainWindow(QMainWindow):
             self.notes_window.show()
 
         notes_file = Path('notes') / (rom_name + '.txt')
-        notes_file = resource_path(notes_file)
+        notes_file = core.resource_path(notes_file)
 
         if not notes_file.is_file():
             notes_file.touch()
@@ -874,7 +870,7 @@ class MainWindow(QMainWindow):
     def open_rom_for_inp_search(self):
         self.tabs.removeTab(2)
         self.rom_info_container.hide()
-        dlg = RomSearchDialog(RomSearchWindow(self.rom_search_page, self.tabs), self.rom_search_tree, parent=self)
+        dlg = widgets.RomSearchDialog(widgets.RomSearchWindow(self.rom_search_page, self.tabs), self.rom_search_tree, parent=self)
         dlg.exec()
         self.rom_info_container.show()
         print(dlg.rom_description_for_inp)
@@ -904,8 +900,8 @@ class MainWindow(QMainWindow):
             try:
                 # FIXME Hardcoded slop...is fine now? Think I fixed this already. Need to do something in exception.
                 hi2txt_results = subprocess.run(
-                    [resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{hiscore_file}'],
-                    cwd=resource_path(r'.\hi2txt'), capture_output=True, text=True,
+                    [core.resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{hiscore_file}'],
+                    cwd=core.resource_path(r'.\hi2txt'), capture_output=True, text=True,
                     check=True, encoding='utf-8')
                 self.pre_hs_table = hi2txt_results.stdout
             except FileNotFoundError:
@@ -918,7 +914,7 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.critical(self, 'Error', 'Input File cannot be played back without a valid rom.')
                 return
-        self.mame_thread = MAMEThread(mame_exe, rom_name, Path(mame_dir), record_input=record_input,
+        self.mame_thread = widgets.MAMEThread(mame_exe, rom_name, Path(mame_dir), record_input=record_input,
                                       playback_input=play_back_input, input_file_name=input_file_name)
         self.mame_thread.mame_exited.connect(self.rom_done)
         self.mame_thread.start()
@@ -942,8 +938,8 @@ class MainWindow(QMainWindow):
                 try:
                     # FIXME Hardcoded slop
                     hi2txt_results = subprocess.run(
-                        [resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{hiscore_file}'],
-                        cwd=resource_path(r'.\hi2txt'), capture_output=True,
+                        [core.resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{hiscore_file}'],
+                        cwd=core.resource_path(r'.\hi2txt'), capture_output=True,
                         text=True,
                         check=True, encoding='utf-8')
                     post_hs_table = hi2txt_results.stdout
@@ -1154,9 +1150,9 @@ class MainWindow(QMainWindow):
         The in-memory representation of the database is updated when the scan finishes and GUI reloads with new info.
         """
         self.setEnabled(False)
-        self.progress_bar = ProgressBarWidget(self)
+        self.progress_bar = widgets.ProgressBarWidget(self)
         self.progress_bar.show()
-        pb_scanner = PBScannerThread(self.core.mame_dirs)
+        pb_scanner = widgets.PBScannerThread(self.core.mame_dirs)
         pb_scanner.finished.connect(self.scan_finished)
         pb_scanner.start()
         self.core.pb_info = self.core.get_personal_bests()
@@ -1174,9 +1170,9 @@ def main() -> None:
     This function allows me to create DB connects with context manager. If the program ends early, rollback occurs.
     Alternative would be creating db connection with context inside MainWindow _init_, which seems not ideal.
     """
-    db = resource_path('mame_states.db')
-    db_schema = resource_path('./database_backups/mame_states_schema_v3.sql')
-    db_roms_data = resource_path('./database_backups/roms.sql')
+    db = core.resource_path('mame_states.db')
+    db_schema = core.resource_path('./database_backups/mame_states_schema_v3.sql')
+    db_roms_data = core.resource_path('./database_backups/roms.sql')
     print(db_schema)
     print(db_roms_data)
     if not db.is_file():

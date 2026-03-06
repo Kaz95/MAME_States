@@ -2,16 +2,16 @@ import json
 import pprint
 import sqlite3
 import subprocess
-import zipfile
+from pathlib import Path
 
+import zipfile
 import xmltodict
 
-from logic.core import resource_path, MAMEDir, PersonalBest, PersonalBests
-from pathlib import Path
+from logic import core
 
 def has_xml(rom_name: str) -> bool:
     """Check if a given rom has an XML file, and is therefore compatible with 'hi2txt'."""
-    zip_path = resource_path(r'.\hi2txt\hi2txt.zip')
+    zip_path = core.resource_path(r'.\hi2txt\hi2txt.zip')
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
         xml_paths = [Path(file_name) for file_name in xml_strings]
@@ -22,14 +22,14 @@ def has_xml(rom_name: str) -> bool:
             return False
 
 # TODO Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
-def get_games_with_hs(mame_dirs: list[MAMEDir]) -> dict[str, list[Path]]:
+def get_games_with_hs(mame_dirs: list[core.MAMEDir]) -> dict[str, list[Path]]:
     hi2txt_compatible_hi_scores: dict[str, list[Path]] = {}
     for mame_dir in mame_dirs:
         hiscore_dir = mame_dir.path / 'hiscore'
         hiscore_files = list(hiscore_dir.glob('*.hi'))
         hi2txt_compatible_hi_scores[str(mame_dir)] = hiscore_files
 
-    zip_path = resource_path(r'.\hi2txt\hi2txt.zip')
+    zip_path = core.resource_path(r'.\hi2txt\hi2txt.zip')
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
         xml_paths = [Path(file_name) for file_name in xml_strings]
@@ -51,8 +51,8 @@ def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[st
         for file in hiscore_files:
             print(f'Score is: {file}')
             try:
-                results = subprocess.run([resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{file}'],
-                                         cwd=resource_path(r'.\hi2txt'), capture_output=True, text=True,
+                results = subprocess.run([core.resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{file}'],
+                                         cwd=core.resource_path(r'.\hi2txt'), capture_output=True, text=True,
                                          check=True, encoding='utf-8')
                 hi2txt_tables[mame_dir][f'{file.stem}'] = results.stdout
             except FileNotFoundError:
@@ -107,9 +107,9 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
             return new_pb
 
 # FIXME Too much code reuse.
-def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> PersonalBests:
+def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> core.PersonalBests:
     """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
-    defaults_xml = Path(resource_path(r'.\hi2txt\hi2txt_doc\hi2txt_defaults'))
+    defaults_xml = Path(core.resource_path(r'.\hi2txt\hi2txt_doc\hi2txt_defaults'))
     new_pbs = {}
     for mame_dir in hi2txt_tables:
         pb_dict = hi2txt_tables[mame_dir]
@@ -137,7 +137,7 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> PersonalBests:
                                             some_dic[columns.split('|')[i]] = section
                                         some_dic.pop('NAME', None)
                                         some_dic.pop('RANK', None)
-                                        pb = PersonalBest(int(some_dic.pop('SCORE')), some_dic)
+                                        pb = core.PersonalBest(int(some_dic.pop('SCORE')), some_dic)
                                         new_pbs[rom_name] = pb
 
                                         pprint.pp(some_dic)
@@ -159,7 +159,7 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> PersonalBests:
                                         some_dic[columns.split('|')[i]] = section
                                     some_dic.pop('NAME', None)
                                     some_dic.pop('RANK', None)
-                                    pb = PersonalBest(int(some_dic.pop('SCORE')), some_dic)
+                                    pb = core.PersonalBest(int(some_dic.pop('SCORE')), some_dic)
                                     new_pbs[rom_name] = pb
 
                                     pprint.pp(some_dic)
@@ -173,7 +173,7 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> PersonalBests:
                                         some_dic[columns.split('|')[i]] = section
                                     some_dic.pop('NAME', None)
                                     some_dic.pop('RANK', None)
-                                    pb = PersonalBest(int(some_dic.pop('SCORE')), some_dic)
+                                    pb = core.PersonalBest(int(some_dic.pop('SCORE')), some_dic)
                                     new_pbs[rom_name] = pb
 
                                     pprint.pp(some_dic)
@@ -181,7 +181,7 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> PersonalBests:
     return new_pbs
 
 
-def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str) -> PersonalBests:
+def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str) -> core.PersonalBests:
     """Convert a single new PB entry, into the format used by multiple PB insertion function.
 
     TODO This is lazy af.
@@ -194,7 +194,7 @@ def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str) -> PersonalBests:
         pb[columns[index]] = section
     pb.pop('NAME', None)
     pb.pop('RANK', None)
-    new_pb = PersonalBest(int(pb.pop('SCORE')), pb)
+    new_pb = core.PersonalBest(int(pb.pop('SCORE')), pb)
     pprint.pp(pb)
     all_pbs[rom_name] = new_pb
     return all_pbs
@@ -207,7 +207,7 @@ def id_from_rom_name(name: str, cursor) -> int:
     rom_id = results[0][0]
     return rom_id
 
-def save_pbs(new_pbs: PersonalBests, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
+def save_pbs(new_pbs: core.PersonalBests, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
     """Insert or update new PB entries into database, if new PB has a higher score."""
     for rom_name in new_pbs:
         pb = new_pbs[rom_name]
@@ -223,7 +223,7 @@ def save_pbs(new_pbs: PersonalBests, connection: sqlite3.Connection, cursor: sql
         cursor.execute(sql_statement, row)
     connection.commit()
 
-def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[MAMEDir]) -> None:
+def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[core.MAMEDir]) -> None:
     """Scan hi score tables, parse for possible PB entries and insert or update PB table in database."""
     hi_scores = get_games_with_hs(mame_dirs)
     hi2txt_tables = get_hs_tables(hi_scores)

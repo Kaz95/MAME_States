@@ -13,9 +13,8 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QTabWidget, QListWidgetItem, QDialogButtonBox, \
     QTreeWidget
 
-from logic import hi2txt_wrapper
-from logic.core import PersonalBests, get_mame_version, Split, MAMEDir, \
-    resource_path, MAMEStatesCore
+from logic import hi2txt_wrapper, core
+
 
 
 ######################
@@ -52,7 +51,7 @@ class MAMEThread(QThread):
         formatted_date = date_object.strftime("%Y-%m-%d %H:%M")
         formatted_date = formatted_date.replace(' ', '_')
         formatted_date = formatted_date.replace(':', '-')
-        full_mame_version = get_mame_version(self.mame_dir)
+        full_mame_version = core.get_mame_version(self.mame_dir)
         short_mame_version = full_mame_version.split()[0]
 
         print(f'{self.rom_name}_{formatted_date}.inp')
@@ -86,14 +85,14 @@ class PBScannerThread(QThread):
     Used to scan for personal bests, on a separate thread from the GUI. Avoids blocking GUI. Finished signal emitted.
     """
 
-    def __init__(self, mame_dirs: list[MAMEDir]) -> None:
+    def __init__(self, mame_dirs: list[core.MAMEDir]) -> None:
         super().__init__()
         self.mame_dirs = mame_dirs
         print(self.mame_dirs)
 
     def run(self) -> None:
         """Override and extend run function to scan for new personal bests. Emit signal when finished."""
-        with sqlite3.connect(resource_path('mame_states.db')) as connection:
+        with sqlite3.connect(core.resource_path('mame_states.db')) as connection:
             db_cursor = connection.cursor()
             hi2txt_wrapper.scan_for_pb(connection, db_cursor, self.mame_dirs)
             self.finished.emit()
@@ -254,7 +253,7 @@ class NotesWindow(QWidget):
         self.layout.addWidget(self.text_edit)
         self.setLayout(self.layout)
 
-        notes_dir = Path(resource_path(r'./notes'))
+        notes_dir = Path(core.resource_path(r'./notes'))
         notes_dir.mkdir(exist_ok=True)
 
         self.current_game = None
@@ -262,7 +261,7 @@ class NotesWindow(QWidget):
 
     def closeEvent(self, event: QCloseEvent):
         """Extend closeEvent to save text edit data to notes.txt corresponding to this NotesWindow."""
-        with open(Path(resource_path(r'./notes')) / (self.current_game + '.txt'), 'w') as notes:
+        with open(Path(core.resource_path(r'./notes')) / (self.current_game + '.txt'), 'w') as notes:
             notes.write(self.text_edit.toPlainText())
         # TODO Do I need to call super? What does close usually do?
         # super().closeEvent(event)
@@ -274,8 +273,8 @@ class ToggleableLabel(QWidget):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     A normal QLabel instance is tied to a QlineEdit instance on initialization.
     Double-clicking the label toggles the editor. Pressing enter or changing focus will toggle back to the label.
-    The current text is persisted when toggled. Changes are confirmed via dialog before actually changing.
-    The text is reverted if the changes are not confirmed.
+    The current text persists when toggled. Changes are confirmed via dialog before actually changing.
+    The text reverts if the changes are not confirmed.
     """
 
     def __init__(self, text: str | int, parent=None):
@@ -352,15 +351,15 @@ class StageSplitItem(QWidget):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used as a customer item widget on a QListWidget instance."""
 
-    def __init__(self, split: Split, rom_description: str,
-                 parent_list: 'StageSplitListWidget', core: MAMEStatesCore) -> None:
+    def __init__(self, split: core.Split, rom_description: str,
+                 parent_list: 'StageSplitListWidget', mcore: core.MAMEStatesCore) -> None:
         """ Initialize the StageSplitItem subclass
 
         The StageSplitItem subclass inherits most of its behavior from, and extends, its parent class QWidget.
         The initialization process creates the widgets and layouts that will make up the custom item widget.
         """
         super().__init__()
-        self.core = core
+        self.core = mcore
 
         self.split = split
         """The data that comprises a split. \n[index, stage, score]"""
@@ -433,14 +432,14 @@ class StageSplitListWidget(QListWidget):
     The difference between splits is calculated and displayed.
     """
 
-    def __init__(self, core: MAMEStatesCore):
+    def __init__(self, mcore: core.MAMEStatesCore):
         """ The StageSplitListWidget subclass inherits most of its behavior from, and extends,
         its parent class QListWidget.
 
         The initialization process customizes the widget.
         """
         super().__init__()
-        self.core = core
+        self.core = mcore
         self.last_row: int | None = None
         """The previously selected row. Used internally to track split movement."""
 
@@ -482,7 +481,7 @@ class StageSplitListWidget(QListWidget):
             splits.insert(new_index, split)
         self.core.save_pb_to_database()
 
-    def add_diffs(self, splits: list[Split]) -> None:
+    def add_diffs(self, splits: list[core.Split]) -> None:
         """Calculate and display the difference between a splits score, and the previous splits score."""
         for index, split in enumerate(splits):
             if index > 0:

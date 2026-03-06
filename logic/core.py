@@ -12,9 +12,6 @@ import sys
 from dataclasses import dataclass, asdict, field
 from pathlib import Path
 
-import zipfile
-import xmltodict
-
 
 @dataclass(frozen=True)
 class MAMEDir:
