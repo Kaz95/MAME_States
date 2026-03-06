@@ -22,7 +22,6 @@ from logic import core, hi2txt_wrapper
 from custom import widgets
 
 
-
 class MainWindow(QMainWindow):
     """Subclasses and extends the QQMainWindow class of the PyQt6.QtWidgets Module
 
@@ -58,7 +57,6 @@ class MainWindow(QMainWindow):
 
         self.save_state_page_text_before_editing: str | None = None
         """Text of the previous selected save state item."""
-
 
         # -------------------- #
         # Widget customization #
@@ -573,8 +571,9 @@ class MainWindow(QMainWindow):
         """Pop out Rom Search Tab and allow user to choose a rom. Main window is disabled."""
 
         self.tabs.removeTab(2)
-        self.rom_search_popup = widgets.RomSearchWindow(self.rom_search_page, self.tabs, self.rom_search_add_game_button,
-                                                self.rom_search_cancel_button)
+        self.rom_search_popup = widgets.RomSearchWindow(self.rom_search_page, self.tabs,
+                                                        self.rom_search_add_game_button,
+                                                        self.rom_search_cancel_button)
         self.rom_search_popup.show()
         self.setEnabled(False)
 
@@ -870,7 +869,8 @@ class MainWindow(QMainWindow):
     def open_rom_for_inp_search(self):
         self.tabs.removeTab(2)
         self.rom_info_container.hide()
-        dlg = widgets.RomSearchDialog(widgets.RomSearchWindow(self.rom_search_page, self.tabs), self.rom_search_tree, parent=self)
+        dlg = widgets.RomSearchDialog(widgets.RomSearchWindow(self.rom_search_page, self.tabs), self.rom_search_tree,
+                                      parent=self)
         dlg.exec()
         self.rom_info_container.show()
         print(dlg.rom_description_for_inp)
@@ -915,7 +915,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, 'Error', 'Input File cannot be played back without a valid rom.')
                 return
         self.mame_thread = widgets.MAMEThread(mame_exe, rom_name, Path(mame_dir), record_input=record_input,
-                                      playback_input=play_back_input, input_file_name=input_file_name)
+                                              playback_input=play_back_input, input_file_name=input_file_name)
         self.mame_thread.mame_exited.connect(self.rom_done)
         self.mame_thread.start()
 

@@ -16,7 +16,6 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget
 from logic import hi2txt_wrapper, core
 
 
-
 ######################
 #   Save State Page  #
 ######################
@@ -222,7 +221,6 @@ class RomSearchDialog(QDialog):
         self.setLayout(layout)
         self.rom_description_for_inp = None
 
-
     def select_rom(self):
         selected = self.rom_search_tree.selectedItems()
         if selected:
@@ -231,7 +229,7 @@ class RomSearchDialog(QDialog):
             self.rom_description_for_inp = rom_description
 
     def sizeHint(self):
-        return QSize(800,800)
+        return QSize(800, 800)
 
 
 class NotesWindow(QWidget):
@@ -456,7 +454,7 @@ class StageSplitListWidget(QListWidget):
 
         When an item is moved, the new order is preserved and the split differences are recalculated.
         """
-        if event.type() == QEvent.Type.ChildRemoved: # Child removed includes item deletion as well as movement.
+        if event.type() == QEvent.Type.ChildRemoved:  # Child removed includes item deletion as well as movement.
             items_that_moved = self.selectedItems()
             if items_that_moved:
                 item_that_moved = items_that_moved[0]

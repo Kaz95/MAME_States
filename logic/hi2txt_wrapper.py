@@ -9,6 +9,7 @@ import xmltodict
 
 from logic import core
 
+
 def has_xml(rom_name: str) -> bool:
     """Check if a given rom has an XML file, and is therefore compatible with 'hi2txt'."""
     zip_path = core.resource_path(r'.\hi2txt\hi2txt.zip')
@@ -20,6 +21,7 @@ def has_xml(rom_name: str) -> bool:
             return True
         else:
             return False
+
 
 # TODO Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
 def get_games_with_hs(mame_dirs: list[core.MAMEDir]) -> dict[str, list[Path]]:
@@ -42,6 +44,7 @@ def get_games_with_hs(mame_dirs: list[core.MAMEDir]) -> dict[str, list[Path]]:
 
     return hi2txt_compatible_hi_scores
 
+
 def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[str, dict[str, str]]:
     """Retrieve raw hi2txt leaderboard table output for compatible games with .hi file."""
     hi2txt_tables: dict[str, dict[str, str]] = {}
@@ -58,6 +61,7 @@ def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[st
             except FileNotFoundError:
                 print('whoops')
     return hi2txt_tables
+
 
 def format_table(raw_hi2txt_table: str) -> dict[str, list | str]:
     """Split raw hi2txt leaderboard tables into usable python representations."""
@@ -78,6 +82,7 @@ def format_table(raw_hi2txt_table: str) -> dict[str, list | str]:
             table['col'] = columns
             table['rows'] = leaderboard_lines
             return table
+
 
 def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
     """Compare two raw hi2txt tables to look for new, possible, personal best."""
@@ -105,6 +110,7 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
             if new_leaderboard:
                 new_pb['name'] = new_leaderboard
             return new_pb
+
 
 # FIXME Too much code reuse.
 def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> core.PersonalBests:
@@ -199,6 +205,7 @@ def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str) -> core.PersonalBes
     all_pbs[rom_name] = new_pb
     return all_pbs
 
+
 def id_from_rom_name(name: str, cursor) -> int:
     """Retrieve the corresponding rom_id, for a given rom name, from the database."""
     sql_statement = "SELECT id FROM roms WHERE name = ?"
@@ -206,6 +213,7 @@ def id_from_rom_name(name: str, cursor) -> int:
     results = cursor.fetchall()
     rom_id = results[0][0]
     return rom_id
+
 
 def save_pbs(new_pbs: core.PersonalBests, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
     """Insert or update new PB entries into database, if new PB has a higher score."""
@@ -222,6 +230,7 @@ def save_pbs(new_pbs: core.PersonalBests, connection: sqlite3.Connection, cursor
             "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
         cursor.execute(sql_statement, row)
     connection.commit()
+
 
 def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[core.MAMEDir]) -> None:
     """Scan hi score tables, parse for possible PB entries and insert or update PB table in database."""
