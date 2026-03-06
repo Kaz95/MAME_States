@@ -44,6 +44,7 @@ class MainWindow(QMainWindow):
         super().__init__()
 
         self.core = mame_states_core
+
         self.progress_bar = None
         """Reference to progress bar popup window. Prevents garbage collection and allows access."""
 
@@ -59,26 +60,8 @@ class MainWindow(QMainWindow):
         self.rom_search_popup: QWidget | None = None
         """Reference to rom search popup window. Prevents garbage collection and allows access."""
 
-        self.db_connection: sqlite3.Connection = self.core.connection
-        """Connection object that points to database connection."""
-
-        self.db_cursor: sqlite3.Cursor = self.core.cursor
-        """Cursor object used to navigate database."""
-
         self.save_state_page_text_before_editing: str | None = None
         """Text of the previous selected save state item."""
-
-        self.descriptions_and_names: dict[str, str] = self.core.descriptions_and_names
-        """Maps a roms long name to its short name in the format: \n{'description': 'rom'}"""
-
-        # --------- #
-        # Load Data #
-        # --------- #
-
-        self.mame_dirs: list[MAMEDir] = self.core.mame_dirs
-
-        self.pb_info: PersonalBests = self.core.pb_info
-        """Personal best information."""
 
 
         # -------------------- #
@@ -322,7 +305,7 @@ class MainWindow(QMainWindow):
     def fill_highscore_game_list(self) -> None:
         """Clear and refill High Score Game Tree, based on personal best info."""
         self.games_with_pb_tree.clear()
-        for rom_description in self.pb_info:
+        for rom_description in self.core.pb_info:
             QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
 
     def setup_highscore_panel(self) -> None:
@@ -407,13 +390,13 @@ class MainWindow(QMainWindow):
         self.debounce_timer.timeout.connect(self.update_filter)
 
         self.rom_search_tree.setHeaderLabels(['Games'])
-        for rom_description in self.descriptions_and_names.keys():
+        for rom_description in self.core.descriptions_and_names.keys():
             item = QTreeWidgetItem(self.rom_search_tree, [rom_description])
             parent = self.core.rom_info[rom_description].parent
             if parent is not None:
                 self.paint_clone_rom_item(item, rom_description)
 
-            item.setToolTip(0, self.descriptions_and_names[rom_description])
+            item.setToolTip(0, self.core.descriptions_and_names[rom_description])
 
         self.rom_search_cancel_button.clicked.connect(self.close_rom_search_window)
         self.rom_search_add_game_button.clicked.connect(self.rom_search_add_game_clicked)
@@ -504,7 +487,7 @@ class MainWindow(QMainWindow):
         self.save_and_input_tree.clear()
 
         # Add path items.
-        for mame_dir in self.mame_dirs:
+        for mame_dir in self.core.mame_dirs:
             mame_dir_item = QTreeWidgetItem(self.save_and_input_tree, [str(mame_dir.path)])
             mame_dir_item.setFont(0, self.big_font)
             save_states_container_item = QTreeWidgetItem(mame_dir_item, ['Save States'])
@@ -551,7 +534,7 @@ class MainWindow(QMainWindow):
         selected = self.games_with_pb_tree.selectedItems()
         if selected:
             rom_description = selected[0].text(0)
-            pb = self.pb_info[rom_description]
+            pb = self.core.pb_info[rom_description]
 
             hs = pb.score
             other_fields = pb.other_fields
@@ -582,11 +565,11 @@ class MainWindow(QMainWindow):
         if selected:
             game_item = selected[0]
             rom_description = game_item.text(0)
-            self.pb_info[rom_description].score = self.temp_fields['high score'].field_value.editor.text()
+            self.core.pb_info[rom_description].score = self.temp_fields['high score'].field_value.editor.text()
             for field_name in self.temp_fields:
                 if field_name == 'high score':
                     continue
-                self.pb_info[rom_description].other_fields[field_name] = self.temp_fields[
+                self.core.pb_info[rom_description].other_fields[field_name] = self.temp_fields[
                     field_name].field_value.editor.text()
             self.core.save_pb_to_database()
 
@@ -608,7 +591,7 @@ class MainWindow(QMainWindow):
         if selected:
             item = selected[0]
             rom_description = item.text(0)
-            if rom_description in self.pb_info.keys():
+            if rom_description in self.core.pb_info.keys():
                 QMessageBox.critical(self, 'Error', 'That Game already has a PB entry.')
                 self.rom_search_popup.raise_()
                 self.rom_search_popup.setFocus()
@@ -618,7 +601,7 @@ class MainWindow(QMainWindow):
 
             new_item = QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
 
-            self.pb_info[rom_description] = PersonalBest(0)
+            self.core.pb_info[rom_description] = PersonalBest(0)
 
             self.core.save_pb_to_database()
             self.rom_search_popup.close()
@@ -645,7 +628,7 @@ class MainWindow(QMainWindow):
 
             rom_description = game_item.text(0)
             # Delete from in-memory database representation.
-            del self.pb_info[rom_description]
+            del self.core.pb_info[rom_description]
             # Delete from database.
             self.core.delete_personal_best(rom_description)
             self.core.delete_splits(rom_description)
@@ -665,7 +648,7 @@ class MainWindow(QMainWindow):
             row = self.splits_list.currentRow()
             if row != -1:
                 self.splits_list.takeItem(row)
-                splits = self.pb_info[rom_description].splits
+                splits = self.core.pb_info[rom_description].splits
                 split_name = splits[row].label
                 del splits[row]
                 self.core.delete_split(rom_description, split_name)
@@ -680,7 +663,7 @@ class MainWindow(QMainWindow):
         if selected:
             game_item = selected[0]
             rom_description = game_item.text(0)
-            game_splits = self.pb_info[rom_description].splits
+            game_splits = self.core.pb_info[rom_description].splits
             new_split = Split('', 0)
             game_splits.append(new_split)
             new_split_item = self.create_split_item(new_split, rom_description)
@@ -695,7 +678,7 @@ class MainWindow(QMainWindow):
         A reference is held to the notes widget to avoid it being automatically deleted. Cannot open multiple notes.
         """
         rom_description = self.games_with_pb_tree.selectedItems()[0].text(0)
-        rom_name = self.descriptions_and_names[rom_description]
+        rom_name = self.core.descriptions_and_names[rom_description]
         if self.notes_window.isHidden():
             self.notes_window.show()
 
@@ -734,7 +717,7 @@ class MainWindow(QMainWindow):
             return
 
         self.pb_fields_list.takeItem(row)
-        del self.pb_info[rom_description].other_fields[field_name]
+        del self.core.pb_info[rom_description].other_fields[field_name]
         del item
         self.core.save_pb_to_database()
 
@@ -743,13 +726,13 @@ class MainWindow(QMainWindow):
         if text == 'High Score':
             QMessageBox.critical(self, 'Error', 'Name already in use.')
             return
-        if self.pb_info[rom_description].other_fields:
-            if text in self.pb_info[rom_description].other_fields.keys():
+        if self.core.pb_info[rom_description].other_fields:
+            if text in self.core.pb_info[rom_description].other_fields.keys():
                 QMessageBox.critical(self, 'Error', 'Name already in use.')
                 return
         if ok:
             self.create_pb_field_item(f'{text}', 0)
-            self.pb_info[rom_description].other_fields[text] = 0
+            self.core.pb_info[rom_description].other_fields[text] = 0
             self.core.save_pb_to_database()
 
     def show_pb_fields_context(self, position: QPoint):
@@ -803,7 +786,7 @@ class MainWindow(QMainWindow):
                 rom_name = input_file_name.split('_')[0]  # inp files created by program will have rom name at start.
 
                 sub_menu = QMenu('Playback with...')
-                for mame_dir in self.mame_dirs:
+                for mame_dir in self.core.mame_dirs:
                     run = QAction(str(mame_dir.path), self)
                     run.triggered.connect(
                         lambda: self.run_rom(rom_name, play_back_input=True, input_file_name=input_file_name))
@@ -824,7 +807,7 @@ class MainWindow(QMainWindow):
 
         else:
             rom_description = direct_parent.text(0)
-            rom_name = self.descriptions_and_names[rom_description]
+            rom_name = self.core.descriptions_and_names[rom_description]
             category_item = direct_parent.parent()
             mame_path_item = category_item.parent()
             mame_dir_str = mame_path_item.text(0)
@@ -864,7 +847,7 @@ class MainWindow(QMainWindow):
             return
 
         rom_description = tree_item.text(0)
-        rom_name = self.descriptions_and_names[rom_description]
+        rom_name = self.core.descriptions_and_names[rom_description]
 
         menu = QMenu()
 
@@ -873,13 +856,13 @@ class MainWindow(QMainWindow):
         menu.addAction(open_notes)
 
         open_with_submenu = QMenu('Open with...')
-        for mame_dir in self.mame_dirs:
+        for mame_dir in self.core.mame_dirs:
             run = QAction(str(mame_dir.path), self)
             run.triggered.connect(lambda: self.run_rom(rom_name))
             open_with_submenu.addAction(run)
 
         open_with_inp_submenu = QMenu('Open with input file...')
-        for mame_dir in self.mame_dirs:
+        for mame_dir in self.core.mame_dirs:
             run_and_record_inp = QAction(str(mame_dir.path), self)
             run_and_record_inp.triggered.connect(lambda: self.run_rom(rom_name, record_input=True))
             open_with_inp_submenu.addAction(run_and_record_inp)
@@ -928,10 +911,10 @@ class MainWindow(QMainWindow):
             except FileNotFoundError:
                 print('whoops')
 
-        if rom_name not in list(self.descriptions_and_names.values()):
+        if rom_name not in list(self.core.descriptions_and_names.values()):
             rom_description = self.open_rom_for_inp_search()
             if rom_description:
-                rom_name = self.descriptions_and_names[rom_description]
+                rom_name = self.core.descriptions_and_names[rom_description]
             else:
                 QMessageBox.critical(self, 'Error', 'Input File cannot be played back without a valid rom.')
                 return
@@ -973,7 +956,7 @@ class MainWindow(QMainWindow):
                                                     f'A new personal best has been detected\n{new_pb['col']}\n{new_pb['row']}\nWould you like to add new PB?')
                     if response == QMessageBox.StandardButton.Yes:
                         new_pb = hi2txt_wrapper.prepare_pb_for_db(new_pb, self.mame_thread.rom_name)
-                        hi2txt_wrapper.save_pbs(new_pb, self.db_connection, self.db_cursor)
+                        hi2txt_wrapper.save_pbs(new_pb, self.core.connection, self.core.cursor)
                         QMessageBox.information(self, 'Ok', 'Pb Updated!')
                     else:
                         QMessageBox.information(self, 'Ok', 'PB discarded.')
@@ -1012,7 +995,7 @@ class MainWindow(QMainWindow):
         search_text = self.rom_search_bar.text().lower()
         self.rom_search_tree.clear()
         items = []
-        for rom_description, rom_name in self.descriptions_and_names.items():
+        for rom_description, rom_name in self.core.descriptions_and_names.items():
             if search_text == rom_name.lower() or search_text == rom_description.lower():
                 weight = 1
                 item = self.create_rom_search_item(rom_description, rom_name, weight)
@@ -1111,7 +1094,7 @@ class MainWindow(QMainWindow):
             rom_item = leaf_item.parent()
             rom_description = rom_item.text(0)
 
-            rom_name = self.descriptions_and_names[rom_description]
+            rom_name = self.core.descriptions_and_names[rom_description]
 
             mame_dir_item = rom_item.parent().parent()
             mame_dir_str = mame_dir_item.text(0)
@@ -1152,8 +1135,8 @@ class MainWindow(QMainWindow):
         """
         mame_dir = self.get_mame_dir()
         if mame_dir:
-            if mame_dir not in self.mame_dirs:
-                self.mame_dirs.append(mame_dir)
+            if mame_dir not in self.core.mame_dirs:
+                self.core.mame_dirs.append(mame_dir)
             self.core.save_mame_dirs()
             self.core.roms_with_saves = self.core.get_all_roms_with_saves()
             # self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
@@ -1173,10 +1156,10 @@ class MainWindow(QMainWindow):
         self.setEnabled(False)
         self.progress_bar = ProgressBarWidget(self)
         self.progress_bar.show()
-        pb_scanner = PBScannerThread(self.mame_dirs)
+        pb_scanner = PBScannerThread(self.core.mame_dirs)
         pb_scanner.finished.connect(self.scan_finished)
         pb_scanner.start()
-        self.pb_info = self.core.pb_info = self.core.get_personal_bests()
+        self.core.pb_info = self.core.get_personal_bests()
         self.fill_highscore_game_list()
 
     def scan_finished(self) -> None:
