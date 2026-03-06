@@ -563,8 +563,7 @@ class MainWindow(QMainWindow):
             for field_name in self.temp_fields:
                 if field_name == 'high score':
                     continue
-                self.core.pb_info[rom_description].other_fields[field_name] = self.temp_fields[
-                    field_name].field_value.editor.text()
+                self.core.pb_info[rom_description].other_fields[field_name] = self.temp_fields[field_name].field_value.editor.text()
             self.core.save_pb_to_database()
 
     def highscore_add_game_clicked(self) -> None:
@@ -713,6 +712,7 @@ class MainWindow(QMainWindow):
 
         self.pb_fields_list.takeItem(row)
         del self.core.pb_info[rom_description].other_fields[field_name]
+        self.temp_fields.pop(field_name)
         del item
         self.core.save_pb_to_database()
 
