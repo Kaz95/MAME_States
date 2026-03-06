@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QTabWidget, QListWidgetItem, QDialogButtonBox, \
     QTreeWidget
 
-from logic import hi2txt_wrapper, core
+from mamestates import hi2txt_wrapper, core
 
 
 ######################

@@ -1,5 +1,5 @@
 """Core Logic Package
 
 This exports:
-    logic.main
+    mamestates.main
 """

@@ -1,4 +1,4 @@
-"""MAMEStates core logic
+"""MAMEStates core mamestates
 
 This module encompasses the static functions used by the MAMEStates application.
 """

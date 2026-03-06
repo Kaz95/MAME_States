@@ -4,10 +4,10 @@ import sqlite3
 
 import pytest
 
-from logic.core import resource_path
+from mamestates.core import resource_path
 from pathlib import Path
 import sys
-from logic import core
+from mamestates import core
 
 
 def test_resource_path_parent_dir_with_str_input():
@@ -30,7 +30,7 @@ def test_resource_path_pyinstaller_archive_with_path_input(monkeypatch):
 
 # def test_get_roms_with_saves(mocker):
 #     mock_files = ['file1.sta', 'file2.sta', 'file3.sta']
-#     mocker.patch('logic.core.os.listdir', return_value=mock_files)
+#     mocker.patch('mamestates.core.os.listdir', return_value=mock_files)
 #     some_dir = Path('abc')
 #
 #     assert get_roms_with_saves(some_dir) == mock_files
