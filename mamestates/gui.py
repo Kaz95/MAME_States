@@ -18,8 +18,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QListWidgetItem, \
     QFileDialog, QMessageBox, QMenu, QListWidget, QInputDialog
 
-from mamestates import core, hi2txt_wrapper
-from custom import widgets
+from mamestates import core, hi2txt_wrapper, widgets
 
 
 class MainWindow(QMainWindow):
@@ -676,7 +675,7 @@ class MainWindow(QMainWindow):
         if self.notes_window.isHidden():
             self.notes_window.show()
 
-        notes_file = Path('notes') / (rom_name + '.txt')
+        notes_file = Path('../notes') / (rom_name + '.txt')
         notes_file = core.resource_path(notes_file)
 
         if not notes_file.is_file():
@@ -900,8 +899,8 @@ class MainWindow(QMainWindow):
             try:
                 # FIXME Hardcoded slop...is fine now? Think I fixed this already. Need to do something in exception.
                 hi2txt_results = subprocess.run(
-                    [core.resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{hiscore_file}'],
-                    cwd=core.resource_path(r'.\hi2txt'), capture_output=True, text=True,
+                    [core.resource_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
+                    cwd=core.resource_path(r'../hi2txt'), capture_output=True, text=True,
                     check=True, encoding='utf-8')
                 self.pre_hs_table = hi2txt_results.stdout
             except FileNotFoundError:
@@ -938,8 +937,8 @@ class MainWindow(QMainWindow):
                 try:
                     # FIXME Hardcoded slop
                     hi2txt_results = subprocess.run(
-                        [core.resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{hiscore_file}'],
-                        cwd=core.resource_path(r'.\hi2txt'), capture_output=True,
+                        [core.resource_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
+                        cwd=core.resource_path(r'../hi2txt'), capture_output=True,
                         text=True,
                         check=True, encoding='utf-8')
                     post_hs_table = hi2txt_results.stdout
@@ -1170,7 +1169,7 @@ def main() -> None:
     This function allows me to create DB connects with context manager. If the program ends early, rollback occurs.
     Alternative would be creating db connection with context inside MainWindow _init_, which seems not ideal.
     """
-    db = core.resource_path('mame_states.db')
+    db = core.resource_path('./mame_states.db')
     db_schema = core.resource_path('./database_backups/mame_states_schema_v3.sql')
     db_roms_data = core.resource_path('./database_backups/roms.sql')
     print(db_schema)

@@ -251,7 +251,7 @@ class NotesWindow(QWidget):
         self.layout.addWidget(self.text_edit)
         self.setLayout(self.layout)
 
-        notes_dir = Path(core.resource_path(r'./notes'))
+        notes_dir = Path(core.resource_path(r'../notes'))
         notes_dir.mkdir(exist_ok=True)
 
         self.current_game = None
@@ -259,7 +259,7 @@ class NotesWindow(QWidget):
 
     def closeEvent(self, event: QCloseEvent):
         """Extend closeEvent to save text edit data to notes.txt corresponding to this NotesWindow."""
-        with open(Path(core.resource_path(r'./notes')) / (self.current_game + '.txt'), 'w') as notes:
+        with open(Path(core.resource_path(r'../notes')) / (self.current_game + '.txt'), 'w') as notes:
             notes.write(self.text_edit.toPlainText())
         # TODO Do I need to call super? What does close usually do?
         # super().closeEvent(event)
