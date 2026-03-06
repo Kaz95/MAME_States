@@ -18,7 +18,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
     QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QListWidgetItem, \
     QFileDialog, QMessageBox, QMenu, QListWidget, QInputDialog
 
-from mamestates import core, hi2txt_wrapper, widgets
+import core, hi2txt_wrapper, widgets
 
 
 class MainWindow(QMainWindow):

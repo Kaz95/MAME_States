@@ -7,7 +7,7 @@ from pathlib import Path
 import zipfile
 import xmltodict
 
-from mamestates import core
+import core
 
 
 def has_xml(rom_name: str) -> bool:
