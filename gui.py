@@ -451,7 +451,7 @@ class MainWindow(QMainWindow):
 
     def create_split_item(self, split: Split, rom_description: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
-        split_item = StageSplitItem(split, self.pb_info, rom_description, self.splits_list, self.core)
+        split_item = StageSplitItem(split, rom_description, self.splits_list, self.core)
         list_item = QListWidgetItem(self.splits_list)
         self.splits_list.setItemWidget(list_item, split_item)
         list_item.setSizeHint(split_item.sizeHint())

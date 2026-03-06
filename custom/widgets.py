@@ -325,7 +325,7 @@ class ToggleableLabel(QWidget):
                 if isinstance(self.parent(), StageSplitItem):
                     widget = self.parent()
                     widget._update_split_db()
-                    widget.parent_list.add_diffs(widget.pb_info[widget.rom_description].splits)
+                    widget.parent_list.add_diffs(widget.core.pb_info[widget.rom_description].splits)
             else:
                 self.editor.setText(self.label.text())  # Revert
 
@@ -352,7 +352,7 @@ class StageSplitItem(QWidget):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used as a customer item widget on a QListWidget instance."""
 
-    def __init__(self, split: Split, pb_info: PersonalBests, rom_description: str,
+    def __init__(self, split: Split, rom_description: str,
                  parent_list: 'StageSplitListWidget', core: MAMEStatesCore) -> None:
         """ Initialize the StageSplitItem subclass
 
@@ -368,8 +368,8 @@ class StageSplitItem(QWidget):
         self.parent_list: StageSplitListWidget = parent_list
         """The list widget that contains this item."""
 
-        self.pb_info = pb_info
-        """In-memory representation of DB schema."""
+        # self.pb_info = pb_info
+        # """In-memory representation of DB schema."""
 
         self.rom_description: str = rom_description
         """The name of the game which the split belongs to."""
@@ -414,10 +414,10 @@ class StageSplitItem(QWidget):
         Grabbing the index of the list that represents this item in memory allows you to act on the correct list.
         Will no save empty pb label.
         """
-        item_index = self.pb_info[self.rom_description].splits.index(self.split)
-        old_label = self.pb_info[self.rom_description].splits[item_index].label
-        self.pb_info[self.rom_description].splits[item_index].score = int(self.score_label.editor.text())
-        self.pb_info[self.rom_description].splits[item_index].label = self.name_label.editor.text()
+        item_index = self.core.pb_info[self.rom_description].splits.index(self.split)
+        old_label = self.core.pb_info[self.rom_description].splits[item_index].label
+        self.core.pb_info[self.rom_description].splits[item_index].score = int(self.score_label.editor.text())
+        self.core.pb_info[self.rom_description].splits[item_index].label = self.name_label.editor.text()
         print(f'here: {old_label}')
 
         if self.name_label.editor.text():
