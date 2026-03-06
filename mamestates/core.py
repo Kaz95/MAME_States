@@ -93,6 +93,7 @@ class MAMEStatesCore:
         descriptions_and_names = {}
         for entry in results:
             descriptions_and_names[entry[1]] = entry[0]
+            descriptions_and_names[row['description']] = row['name']
 
         return descriptions_and_names
 
