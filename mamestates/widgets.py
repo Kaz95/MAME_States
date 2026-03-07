@@ -91,7 +91,7 @@ class PBScannerThread(QThread):
 
     def run(self) -> None:
         """Override and extend run function to scan for new personal bests. Emit signal when finished."""
-        with sqlite3.connect(core.resource_path('mame_states.db')) as connection:
+        with sqlite3.connect(core.get_abs_path('mame_states.db')) as connection:
             db_cursor = connection.cursor()
             hi2txt_wrapper.scan_for_pb(connection, db_cursor, self.mame_dirs)
             self.finished.emit()
@@ -251,7 +251,7 @@ class NotesWindow(QWidget):
         self.layout.addWidget(self.text_edit)
         self.setLayout(self.layout)
 
-        notes_dir = Path(core.resource_path(r'../notes'))
+        notes_dir = Path(core.get_abs_path(r'../notes'))
         notes_dir.mkdir(exist_ok=True)
 
         self.current_game = None
@@ -259,7 +259,7 @@ class NotesWindow(QWidget):
 
     def closeEvent(self, event: QCloseEvent):
         """Extend closeEvent to save text edit data to notes.txt corresponding to this NotesWindow."""
-        with open(Path(core.resource_path(r'../notes')) / (self.current_game + '.txt'), 'w') as notes:
+        with open(Path(core.get_abs_path(r'../notes')) / (self.current_game + '.txt'), 'w') as notes:
             notes.write(self.text_edit.toPlainText())
         # TODO Do I need to call super? What does close usually do?
         # super().closeEvent(event)
@@ -413,7 +413,7 @@ class StageSplitItem(QWidget):
         """
         item_index = self.core.pb_info[self.rom_description].splits.index(self.split)
         old_label = self.core.pb_info[self.rom_description].splits[item_index].label
-        self.core.pb_info[self.rom_description].splits[item_index].score = int(self.score_label.editor.text())
+        self.core.pb_info[self.rom_description].splits[item_index].hiscore = int(self.score_label.editor.text())
         self.core.pb_info[self.rom_description].splits[item_index].label = self.name_label.editor.text()
         print(f'here: {old_label}')
 

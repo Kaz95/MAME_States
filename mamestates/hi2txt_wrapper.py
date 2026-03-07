@@ -12,7 +12,7 @@ import core
 
 def has_xml(rom_name: str) -> bool:
     """Check if a given rom has an XML file, and is therefore compatible with 'hi2txt'."""
-    zip_path = core.resource_path(r'.\hi2txt\hi2txt.zip')
+    zip_path = core.get_abs_path(r'.\hi2txt\hi2txt.zip')
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
         xml_paths = [Path(file_name) for file_name in xml_strings]
@@ -31,7 +31,7 @@ def get_games_with_hs(mame_dirs: list[core.MAMEDir]) -> dict[str, list[Path]]:
         hiscore_files = list(hiscore_dir.glob('*.hi'))
         hi2txt_compatible_hi_scores[str(mame_dir)] = hiscore_files
 
-    zip_path = core.resource_path(r'.\hi2txt\hi2txt.zip')
+    zip_path = core.get_abs_path(r'.\hi2txt\hi2txt.zip')
     with zipfile.ZipFile(zip_path, 'r') as zip_obj:
         xml_strings = zip_obj.namelist()
         xml_paths = [Path(file_name) for file_name in xml_strings]
@@ -54,8 +54,8 @@ def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[st
         for file in hiscore_files:
             print(f'Score is: {file}')
             try:
-                results = subprocess.run([core.resource_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{file}'],
-                                         cwd=core.resource_path(r'.\hi2txt'), capture_output=True, text=True,
+                results = subprocess.run([core.get_abs_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{file}'],
+                                         cwd=core.get_abs_path(r'.\hi2txt'), capture_output=True, text=True,
                                          check=True, encoding='utf-8')
                 hi2txt_tables[mame_dir][f'{file.stem}'] = results.stdout
             except FileNotFoundError:
@@ -115,7 +115,7 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
 # FIXME Too much code reuse.
 def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> core.PersonalBests:
     """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
-    defaults_xml = Path(core.resource_path(r'.\hi2txt\hi2txt_doc\hi2txt_defaults'))
+    defaults_xml = Path(core.get_abs_path(r'.\hi2txt\hi2txt_doc\hi2txt_defaults'))
     new_pbs = {}
     for mame_dir in hi2txt_tables:
         pb_dict = hi2txt_tables[mame_dir]
@@ -219,12 +219,10 @@ def save_pbs(new_pbs: core.PersonalBests, connection: sqlite3.Connection, cursor
     """Insert or update new PB entries into database, if new PB has a higher score."""
     for rom_name in new_pbs:
         pb = new_pbs[rom_name]
-        score = pb.score
         other_fields = json.dumps(pb.other_fields)
-        print(f'here: {rom_name}')
         rom_id = id_from_rom_name(rom_name, cursor)
 
-        row = (score, other_fields, rom_id)
+        row = (pb.hiscore, other_fields, rom_id)
         sql_statement = (
             "INSERT INTO personal_bests (highscore, other_fields, rom_id) VALUES (?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
             "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
