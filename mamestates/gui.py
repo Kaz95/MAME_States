@@ -924,6 +924,8 @@ class MainWindow(QMainWindow):
         if results['return_code'] != 0:
             QMessageBox.critical(self, 'Rom Not Found', f'{results['err']}')
         else:
+            if not results['output']:
+                results['output'] = f'{self.mame_thread.rom_name} has close successfully.'
             QMessageBox.information(self, 'Rom Closed', f'{results['output']}')
             if self.pre_hs_table:
                 try:
