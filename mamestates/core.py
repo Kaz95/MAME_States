@@ -42,7 +42,7 @@ class Split:
 
 @dataclass
 class PersonalBest:
-    score: int
+    hiscore: int
     other_fields: dict[str, str | int] = field(default_factory=dict)
     splits: list = field(default_factory=list)
 
@@ -315,7 +315,7 @@ class MAMEStatesCore:
             highscore = pb.score
             other_fields = pb.other_fields
             other_fields = json.dumps(other_fields)
-            row = (None, highscore, other_fields, rom_id)
+            row = (None, pb.hiscore, other_fields, rom_id)
             rows.append(row)
         return rows
 
