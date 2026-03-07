@@ -1124,6 +1124,9 @@ class MainWindow(QMainWindow):
         if mame_dir:
             if mame_dir not in self.core.mame_dirs:
                 self.core.mame_dirs.append(mame_dir)
+            else:
+                QMessageBox.critical(self, 'Error', 'Path already exists')
+                return
             self.core.save_mame_dirs()
             self.core.save_states = self.core.get_save_states()
             # self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
