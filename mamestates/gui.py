@@ -495,13 +495,13 @@ class MainWindow(QMainWindow):
                     item.setFont(0, self.small_font)
 
             # Add game items.
-            for rom_name in self.core.roms_with_saves[mame_dir]:
+            for rom_name in self.core.save_states[mame_dir]:
                 game_description = self.core.rom_description_from_name(rom_name)
                 game_item = QTreeWidgetItem(save_states_container_item, [game_description])
                 game_item.setFont(0, self.big_font)
 
                 # Add savestate items.
-                for save_state in self.core.roms_with_saves[mame_dir][rom_name]:
+                for save_state in self.core.save_states[mame_dir][rom_name]:
                     save_state_item = QTreeWidgetItem(game_item, [save_state])
                     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
                     save_state_item.setFont(0, self.small_font)
@@ -529,7 +529,7 @@ class MainWindow(QMainWindow):
             rom_description = selected[0].text(0)
             pb = self.core.pb_info[rom_description]
 
-            hs = pb.score
+            hs = pb.hiscore
             other_fields = pb.other_fields
             splits = pb.splits
 
@@ -558,7 +558,7 @@ class MainWindow(QMainWindow):
         if selected:
             game_item = selected[0]
             rom_description = game_item.text(0)
-            self.core.pb_info[rom_description].score = self.temp_fields['high score'].field_value.editor.text()
+            self.core.pb_info[rom_description].hiscore = self.temp_fields['high score'].field_value.editor.text()
             for field_name in self.temp_fields:
                 if field_name == 'high score':
                     continue
@@ -676,7 +676,7 @@ class MainWindow(QMainWindow):
             self.notes_window.show()
 
         notes_file = Path('../notes') / (rom_name + '.txt')
-        notes_file = core.resource_path(notes_file)
+        notes_file = core.get_abs_path(notes_file)
 
         if not notes_file.is_file():
             notes_file.touch()
@@ -899,8 +899,8 @@ class MainWindow(QMainWindow):
             try:
                 # FIXME Hardcoded slop...is fine now? Think I fixed this already. Need to do something in exception.
                 hi2txt_results = subprocess.run(
-                    [core.resource_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
-                    cwd=core.resource_path(r'../hi2txt'), capture_output=True, text=True,
+                    [core.get_abs_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
+                    cwd=core.get_abs_path(r'../hi2txt'), capture_output=True, text=True,
                     check=True, encoding='utf-8')
                 self.pre_hs_table = hi2txt_results.stdout
             except FileNotFoundError:
@@ -937,8 +937,8 @@ class MainWindow(QMainWindow):
                 try:
                     # FIXME Hardcoded slop
                     hi2txt_results = subprocess.run(
-                        [core.resource_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
-                        cwd=core.resource_path(r'../hi2txt'), capture_output=True,
+                        [core.get_abs_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
+                        cwd=core.get_abs_path(r'../hi2txt'), capture_output=True,
                         text=True,
                         check=True, encoding='utf-8')
                     post_hs_table = hi2txt_results.stdout
@@ -1133,7 +1133,7 @@ class MainWindow(QMainWindow):
             if mame_dir not in self.core.mame_dirs:
                 self.core.mame_dirs.append(mame_dir)
             self.core.save_mame_dirs()
-            self.core.roms_with_saves = self.core.get_all_roms_with_saves()
+            self.core.save_states = self.core.get_save_states()
             # self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
             self.save_and_input_tree.blockSignals(True)
             self.fill_save_state_tree()
@@ -1169,9 +1169,9 @@ def main() -> None:
     This function allows me to create DB connects with context manager. If the program ends early, rollback occurs.
     Alternative would be creating db connection with context inside MainWindow _init_, which seems not ideal.
     """
-    db = core.resource_path('./mame_states.db')
-    db_schema = core.resource_path('./database_backups/mame_states_schema_v3.sql')
-    db_roms_data = core.resource_path('./database_backups/roms.sql')
+    db = core.get_abs_path('./mame_states.db')
+    db_schema = core.get_abs_path('./database_backups/mame_states_schema_v3.sql')
+    db_roms_data = core.get_abs_path('./database_backups/roms.sql')
     print(db_schema)
     print(db_roms_data)
     if not db.is_file():
