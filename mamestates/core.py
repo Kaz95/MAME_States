@@ -146,8 +146,8 @@ class MAMEStatesCore:
         """Retrieve the corresponding rom_id, for a given rom description, from the database."""
         sql_statement = "SELECT id FROM roms WHERE description = ?"
         self.cursor.execute(sql_statement, (description,))
-        results = self.cursor.fetchall()
-        rom_id = results[0][0]
+        row = self.cursor.fetchone()
+        rom_id = row['id']
         return rom_id
 
     def id_from_rom_name(self, name: str) -> int:
