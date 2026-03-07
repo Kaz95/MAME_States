@@ -210,8 +210,8 @@ def id_from_rom_name(name: str, cursor) -> int:
     """Retrieve the corresponding rom_id, for a given rom name, from the database."""
     sql_statement = "SELECT id FROM roms WHERE name = ?"
     cursor.execute(sql_statement, (name,))
-    results = cursor.fetchall()
-    rom_id = results[0][0]
+    row = cursor.fetchone()
+    rom_id = row['id']
     return rom_id
 
 
