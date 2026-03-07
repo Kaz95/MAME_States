@@ -529,7 +529,7 @@ class MainWindow(QMainWindow):
             rom_description = selected[0].text(0)
             pb = self.core.pb_info[rom_description]
 
-            hs = pb.hiscore
+            hs = pb.score
             other_fields = pb.other_fields
             splits = pb.splits
 
@@ -558,7 +558,7 @@ class MainWindow(QMainWindow):
         if selected:
             game_item = selected[0]
             rom_description = game_item.text(0)
-            self.core.pb_info[rom_description].hiscore = self.temp_fields['high score'].field_value.editor.text()
+            self.core.pb_info[rom_description].score = self.temp_fields['high score'].field_value.editor.text()
             for field_name in self.temp_fields:
                 if field_name == 'high score':
                     continue
