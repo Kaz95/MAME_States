@@ -187,13 +187,13 @@ class MAMEStatesCore:
         self.cursor.executemany(sql_statement, rows)
         self.connection.commit()
 
-    def get_input_files(self) -> dict[MAMEDir, list[str]]:
+    def get_input_files(self) -> dict[str, list[str]]:
         """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
         all_input_files = {}
         for mame_dir in self.mame_dirs:
             input_file_dir = mame_dir.path / 'inp'
             if input_file_dir.is_dir():
-                all_input_files[mame_dir] = [input_file.stem for input_file in input_file_dir.iterdir()]
+                all_input_files[str(mame_dir.path)] = [input_file.stem for input_file in input_file_dir.iterdir()]
         return all_input_files
 
     ###############

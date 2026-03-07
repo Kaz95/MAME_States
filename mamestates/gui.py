@@ -483,7 +483,7 @@ class MainWindow(QMainWindow):
             mame_dir_item.setFont(0, self.big_font)
             save_states_container_item = QTreeWidgetItem(mame_dir_item, ['Save States'])
             save_states_container_item.setFont(0, self.big_font)
-            input_files = self.core.input_files.get(mame_dir)
+            input_files = self.core.input_files.get(str(mame_dir.path))
             if input_files:
                 input_files_container_item = QTreeWidgetItem(mame_dir_item, ['Input Files'])
                 input_files_container_item.setFont(0, self.big_font)
