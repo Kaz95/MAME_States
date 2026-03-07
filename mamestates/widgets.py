@@ -413,7 +413,7 @@ class StageSplitItem(QWidget):
         """
         item_index = self.core.pb_info[self.rom_description].splits.index(self.split)
         old_label = self.core.pb_info[self.rom_description].splits[item_index].label
-        self.core.pb_info[self.rom_description].splits[item_index].hiscore = int(self.score_label.editor.text())
+        self.core.pb_info[self.rom_description].splits[item_index].score = int(self.score_label.editor.text())
         self.core.pb_info[self.rom_description].splits[item_index].label = self.name_label.editor.text()
         print(f'here: {old_label}')
 
