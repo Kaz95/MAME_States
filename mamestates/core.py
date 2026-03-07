@@ -51,7 +51,7 @@ PersonalBests = dict[str, PersonalBest]
 """In-memory representation of the 'personal_bests' table of the database."""
 
 
-def resource_path(relative_path: str | Path):
+def get_abs_path(relative_path: str | Path):
     """ Get absolute path to resource, works for dev and for PyInstaller """
     # Get the bundle directory; fallback to the script's parent directory
     base_path = Path(getattr(sys, '_MEIPASS', Path(__file__).parent.parent))
@@ -72,8 +72,8 @@ class MAMEStatesCore:
         self.cursor = self.connection.cursor()
         self.cursor.row_factory = sqlite3.Row
         self.mame_dirs = self.get_mame_dirs()
-        self.input_files = self.get_all_input_files()
-        self.roms_with_saves = self.get_all_roms_with_saves()
+        self.input_files = self.get_input_files()
+        self.save_states = self.get_save_states()
         self.descriptions_and_names = self.get_descriptions_and_names()
         self.rom_info = self.get_formatted_rom_info()
         self.pb_info = self.get_personal_bests()
@@ -81,6 +81,7 @@ class MAMEStatesCore:
     ########################
     # Descriptions & Names #
     ########################
+    # TODO Should access Row object by key.
     def get_descriptions_and_names(self) -> dict[str, str]:
         """Construct {rom_description:rom_name} dictionary.
 
@@ -89,10 +90,9 @@ class MAMEStatesCore:
         """
         sql_statement = """SELECT name, description FROM roms;"""
         self.cursor.execute(sql_statement)
-        results = self.cursor.fetchall()
+        rows = self.cursor.fetchall()
         descriptions_and_names = {}
-        for entry in results:
-            descriptions_and_names[entry[1]] = entry[0]
+        for row in rows:
             descriptions_and_names[row['description']] = row['name']
 
         return descriptions_and_names
@@ -100,9 +100,8 @@ class MAMEStatesCore:
     # TODO Consider generator
     def rom_description_from_name(self, rom_name: str) -> str:
         """Return the full name of a given rom"""
-        for key, value in self.descriptions_and_names.items():
+        for rom_description, value in self.descriptions_and_names.items():
             if value == rom_name:
-                rom_description = key
                 return rom_description
 
     ############
@@ -139,8 +138,8 @@ class MAMEStatesCore:
         """Retrieve all rom information from database and return it raw."""
         sql_statement = "SELECT * FROM roms"
         self.cursor.execute(sql_statement)
-        results = self.cursor.fetchall()
-        return results
+        rows = self.cursor.fetchall()
+        return rows
 
     def id_from_description(self, description: str) -> int:
         """Retrieve the corresponding rom_id, for a given rom description, from the database."""
@@ -150,13 +149,13 @@ class MAMEStatesCore:
         rom_id = row['id']
         return rom_id
 
-    def id_from_rom_name(self, name: str) -> int:
-        """Retrieve the corresponding rom_id, for a given rom name, from the database."""
-        sql_statement = "SELECT id FROM roms WHERE name = ?"
-        self.cursor.execute(sql_statement, (name,))
-        results = self.cursor.fetchall()
-        rom_id = results[0][0]
-        return rom_id
+    # def id_from_rom_name(self, name: str) -> int:
+    #     """Retrieve the corresponding rom_id, for a given rom name, from the database."""
+    #     sql_statement = "SELECT id FROM roms WHERE name = ?"
+    #     self.cursor.execute(sql_statement, (name,))
+    #     results = self.cursor.fetchall()
+    #     rom_id = results[0][0]
+    #     return rom_id
 
     #########
     # Paths #
@@ -165,11 +164,11 @@ class MAMEStatesCore:
         """Load paths as strings from database. Convert to Path objects before returning them."""
         sql_query = """SELECT * FROM paths"""
         self.cursor.execute(sql_query)
-        raw_results = self.cursor.fetchall()
+        rows = self.cursor.fetchall()
         mame_dirs = []
-        for entry in raw_results:
-            mame_path = Path(entry['path'])
-            mame_version = entry['version']
+        for row in rows:
+            mame_path = Path(row['path'])
+            mame_version = row['version']
             mame_dir = MAMEDir(mame_path, mame_version)
             mame_dirs.append(mame_dir)
         return mame_dirs
@@ -183,13 +182,12 @@ class MAMEStatesCore:
             row = asdict(mame_dir)
             # Change Path to str before inserting.
             row['path'] = str(row['path'])
-            print(row)
             rows.append(row)
 
         self.cursor.executemany(sql_statement, rows)
         self.connection.commit()
 
-    def get_all_input_files(self) -> dict[MAMEDir, list[str]]:
+    def get_input_files(self) -> dict[MAMEDir, list[str]]:
         """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
         all_input_files = {}
         for mame_dir in self.mame_dirs:
@@ -210,7 +208,7 @@ class MAMEStatesCore:
     # TODO Consider using pathlib instead of os.
     #   Also, I think I'm modifying the list in place? Why though? Consider how this scales. Is a new list ok?
     @staticmethod
-    def _get_save_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list[str]]:
+    def _get_save_state_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list[str]]:
         """Return all save files, and their respective roms."""
         save_states = {}
         for rom in roms_with_saves:
@@ -224,12 +222,12 @@ class MAMEStatesCore:
             save_states[rom] = save_state_file_names
         return save_states
 
-    def get_all_roms_with_saves(self) -> dict[MAMEDir, dict[str, list[str]]]:
+    def get_save_states(self) -> dict[MAMEDir, dict[str, list[str]]]:
         """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
         all_save_state_names = {}
         for mame_dir in self.mame_dirs:
             roms_with_saves = self._get_roms_with_saves(mame_dir.path)
-            save_state_names = self._get_save_names(roms_with_saves, mame_dir.path)
+            save_state_names = self._get_save_state_names(roms_with_saves, mame_dir.path)
             all_save_state_names[mame_dir] = save_state_names
 
         return all_save_state_names
@@ -253,7 +251,7 @@ class MAMEStatesCore:
 
         for pb in personal_bests:
             if pb['other_fields']:
-                other_fields = json.loads(pb[2])
+                other_fields = json.loads(pb['other_fields'])
                 pb_info[pb['description']] = PersonalBest(pb['highscore'], other_fields)
             else:
                 pb_info[pb['description']] = PersonalBest(pb['highscore'])
@@ -312,7 +310,6 @@ class MAMEStatesCore:
         for mame_dir in self.pb_info:
             pb = self.pb_info[mame_dir]
             rom_id = self.id_from_description(mame_dir)
-            highscore = pb.score
             other_fields = pb.other_fields
             other_fields = json.dumps(other_fields)
             row = (None, pb.hiscore, other_fields, rom_id)
@@ -325,14 +322,14 @@ class MAMEStatesCore:
         Split order is preserved by using the splits current position in its perspective splits list.
         """
         rows = []
-        for pb in self.pb_info:
-            pb_dict = self.pb_info[pb]
-            splits = pb_dict.splits
-            for split in splits:
-                index = splits.index(split)
+        for rom_description in self.pb_info:
+            pb = self.pb_info[rom_description]
+
+            for split in pb.splits:
+                index = pb.splits.index(split)
                 split = asdict(split)
                 split['index'] = index
-                split['rom_id'] = self.id_from_description(pb)
+                split['rom_id'] = self.id_from_description(rom_description)
                 rows.append(split)
 
         return rows
