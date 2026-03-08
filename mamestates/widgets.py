@@ -280,8 +280,10 @@ class ToggleableLabel(QWidget):
         super().__init__(parent)
         self.layout: QHBoxLayout = QHBoxLayout(self)
         # self.setMouseTracking(True)
-        self.label: QLabel = QLabel(str(text))
-        self.editor: QLineEdit = QLineEdit(str(text))
+        if isinstance(text, int):
+            text = f'{text:,}'
+        self.label: QLabel = QLabel(text)
+        self.editor: QLineEdit = QLineEdit(text.replace(',', ''))
 
         self.editor.hide()
         self.layout.addWidget(self.label)
@@ -306,6 +308,8 @@ class ToggleableLabel(QWidget):
         Confirms any changes made. If changes are not confirmed, text is reverted.
         """
         new_text = self.editor.text()
+        if new_text.isdigit():
+            new_text = f'{int(new_text):,}'
         old_text = self.label.text()
         stripped_label = old_text.split('(+')[0]
         stripped_label = stripped_label.split('(-')[0]
@@ -325,7 +329,7 @@ class ToggleableLabel(QWidget):
                     widget._update_split_db()
                     widget.parent_list.add_diffs(widget.core.pb_info[widget.rom_description].splits)
             else:
-                self.editor.setText(self.label.text())  # Revert
+                self.editor.setText(self.label.text().replace(',', ''))  # Revert
 
         self.editor.hide()
         self.label.show()
@@ -335,7 +339,8 @@ class PBField(QWidget):
     def __init__(self, field_name: str, field_value: str | int):
         super().__init__()
         field_name = (field_name + ':')
-        field_value = str(field_value)
+        if isinstance(field_value, int):
+            field_value = f'{field_value:,}'
         self.field_name = QLabel(field_name)
         self.field_value = ToggleableLabel(field_value)
         self.layout = QHBoxLayout()
@@ -375,8 +380,8 @@ class StageSplitItem(QWidget):
         self.stage: str = split.label
         self.score: int = split.score
 
-        self.name_label: ToggleableLabel = ToggleableLabel(f'{self.stage}')
-        self.score_label: ToggleableLabel = ToggleableLabel(f'{self.score}')
+        self.name_label: ToggleableLabel = ToggleableLabel(self.stage)
+        self.score_label: ToggleableLabel = ToggleableLabel(self.score)
 
         self.name_label.editor.setPlaceholderText('Stage-69')
         self.score_label.editor.setPlaceholderText('696969')
@@ -487,8 +492,8 @@ class StageSplitListWidget(QListWidget):
                 diff = split.score - splits[index - 1].score
                 list_item = self.item(index)
                 widget_item = self.itemWidget(list_item)
-                widget_item.score_label.label.setText(str(split.score) + f'({diff:+d})')
+                widget_item.score_label.label.setText(f'{split.score:,}' + f'({diff:+d})')
             else:
                 list_item = self.item(index)
                 widget_item = self.itemWidget(list_item)
-                widget_item.score_label.label.setText(str(split.score))
+                widget_item.score_label.label.setText(f'{split.score:,}')
