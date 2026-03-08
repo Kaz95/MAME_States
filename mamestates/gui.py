@@ -493,13 +493,13 @@ class MainWindow(QMainWindow):
                     item.setFont(0, self.small_font)
 
             # Add game items.
-            for rom_name in self.core.save_states[mame_dir.path]:
+            for rom_name in self.core.save_states[str(mame_dir.path)]:
                 game_description = self.core.rom_description_from_name(rom_name)
                 game_item = QTreeWidgetItem(save_states_container_item, [game_description])
                 game_item.setFont(0, self.big_font)
 
                 # Add savestate items.
-                for save_state in self.core.save_states[mame_dir.path][rom_name]:
+                for save_state in self.core.save_states[str(mame_dir.path)][rom_name]:
                     save_state_item = QTreeWidgetItem(game_item, [save_state])
                     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
                     save_state_item.setFont(0, self.small_font)
@@ -740,6 +740,18 @@ class MainWindow(QMainWindow):
         menu.addAction(add_pb_field)
         menu.exec(self.pb_fields_list.viewport().mapToGlobal(position))
 
+    def delete_mame_dir(self, item):
+        path_str = item.text(0)
+        root = self.save_state_and_inp_tree.invisibleRootItem()
+        selected_dir = self.save_state_and_inp_tree.selectedItems()[0]
+        root.removeChild(selected_dir)
+        for mame_dir in self.core.mame_dirs:
+            if path_str == str(mame_dir.path):
+                self.core.mame_dirs.remove(mame_dir)
+        del self.core.save_states[path_str]
+        del self.core.input_files[path_str]
+        self.core.delete_mame_dir(path_str)
+
     def show_save_state_tree_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
 
@@ -754,6 +766,7 @@ class MainWindow(QMainWindow):
             launch = QAction('Launch')
             delete = QAction('Delete')
             launch.triggered.connect(lambda: self.run_mame(tree_item.text(0)))
+            delete.triggered.connect(lambda: self.delete_mame_dir(tree_item))
             menu.addAction(launch)
             menu.addAction(delete)
 
