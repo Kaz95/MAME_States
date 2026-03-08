@@ -684,12 +684,13 @@ class MainWindow(QMainWindow):
         self.notes_window.setFocus()
 
     # TODO Consider moving to core.py
-    def run_mame(self, mame_dir):
-        mame_dir = Path(mame_dir)
+    def run_mame(self, path_str):
+        mame_dir = Path(path_str)
         mame_exe = mame_dir / 'mame.exe'
         if mame_exe.is_file():
             subprocess.Popen(mame_exe, cwd=rf'{mame_dir}')
         else:
+            self.remove_invalid_mame_dir(path_str)
             print(f'File {mame_exe} not found')
 
     def delete_pb_field(self, item, rom_description):
@@ -740,7 +741,18 @@ class MainWindow(QMainWindow):
         menu.addAction(add_pb_field)
         menu.exec(self.pb_fields_list.viewport().mapToGlobal(position))
 
-    def delete_mame_dir(self, item):
+    def remove_invalid_mame_dir(self, path_str):
+        items = [self.save_state_and_inp_tree.takeTopLevelItem(i) for i in range(self.save_state_and_inp_tree.topLevelItemCount()) if self.save_state_and_inp_tree.topLevelItem(i).text(0) == path_str]
+        [print(item.text(0)) for item in items]
+        for mame_dir in self.core.mame_dirs:
+            if path_str == str(mame_dir.path):
+                self.core.mame_dirs.remove(mame_dir)
+        del self.core.save_states[path_str]
+        del self.core.input_files[path_str]
+        self.core.delete_mame_dir(path_str)
+        QMessageBox.critical(self, 'Error', 'Invalid MAME Directory.\nDirectory has been removed. Please update it.')
+
+    def delete_mame_dir_clicked(self, item):
         path_str = item.text(0)
         root = self.save_state_and_inp_tree.invisibleRootItem()
         selected_dir = self.save_state_and_inp_tree.selectedItems()[0]
@@ -766,7 +778,7 @@ class MainWindow(QMainWindow):
             launch = QAction('Launch')
             delete = QAction('Delete')
             launch.triggered.connect(lambda: self.run_mame(tree_item.text(0)))
-            delete.triggered.connect(lambda: self.delete_mame_dir(tree_item))
+            delete.triggered.connect(lambda: self.delete_mame_dir_clicked(tree_item))
             menu.addAction(launch)
             menu.addAction(delete)
 
@@ -802,6 +814,9 @@ class MainWindow(QMainWindow):
         if direct_parent.text(0) == 'Input Files':
             mame_dir_str = direct_parent.parent().text(0)
             mame_dir = Path(mame_dir_str)
+            if not mame_dir.is_dir():
+                self.remove_invalid_mame_dir(mame_dir_str)
+                return
             input_file_dir = mame_dir / 'inp'
             input_file = input_file_dir / f'{leaf_item.text(0)}.inp'
             input_file.unlink()
@@ -813,6 +828,9 @@ class MainWindow(QMainWindow):
             mame_path_item = category_item.parent()
             mame_dir_str = mame_path_item.text(0)
             mame_dir = Path(mame_dir_str)
+            if not mame_dir.is_dir():
+                self.remove_invalid_mame_dir(mame_dir_str)
+                return
             save_states_dir = mame_dir / 'sta'
             rom_saves_dir = save_states_dir / f'{rom_name}'
             save_state_file = rom_saves_dir / f'{leaf_item.text(0)}.sta'
@@ -822,7 +840,9 @@ class MainWindow(QMainWindow):
 
     def open_in_explorer(self, category_item: QTreeWidgetItem):
         mame_dir = Path(category_item.parent().text(0))
-
+        if not mame_dir.is_dir():
+            self.remove_invalid_mame_dir(str(mame_dir))
+            return
         if category_item.text(0) == 'Input Files':
             input_file_dir = mame_dir / 'inp'
             if input_file_dir.is_dir():
@@ -894,7 +914,11 @@ class MainWindow(QMainWindow):
         # The action that triggered this function call. Its label has the correct MAME path.
         action = self.sender()
         mame_dir = action.text()
+
         mame_exe = Path(mame_dir) / 'mame.exe'
+        if not mame_exe.is_file():
+            self.remove_invalid_mame_dir(mame_dir)
+            return
         rom = Path(mame_dir) / 'roms' / (rom_name + '.zip')
         hiscore_file = Path(mame_dir) / 'hiscore' / (rom_name + '.hi')
 
@@ -1074,6 +1098,9 @@ class MainWindow(QMainWindow):
             mame_dir_item = leaf_item.parent().parent()
             mame_dir_str = mame_dir_item.text(0)
             mame_dir = Path(mame_dir_str)
+            if not mame_dir.is_dir():
+                self.remove_invalid_mame_dir(mame_dir_str)
+                return
             old_input_file_path = mame_dir / 'inp' / f'{self.save_state_page_text_before_editing}.inp'
             new_input_file_path = old_input_file_path.with_stem(input_file_name)
 
@@ -1104,6 +1131,9 @@ class MainWindow(QMainWindow):
             mame_dir_str = mame_dir_item.text(0)
 
             mame_dir = Path(mame_dir_str)
+            if not mame_dir.is_dir():
+                self.remove_invalid_mame_dir(mame_dir_str)
+                return
             save_state_dir = mame_dir / 'sta' / rom_name
             old_save_state_path = save_state_dir / (self.save_state_page_text_before_editing + '.sta')
             new_save_state_path = old_save_state_path.with_stem(save_state_name)
@@ -1124,7 +1154,8 @@ class MainWindow(QMainWindow):
     # --------------- #
     def menu_button_1_clicked(self) -> None:
         """Temporary, easily accessible, trigger for prototype methods."""
-        self.save_state_and_inp_tree.hide()
+        self.remove_invalid_mame_dir(r'C:\Users\kazac\Downloads\mame')
+        # self.save_state_and_inp_tree.hide()
 
     def menu_button_2_clicked(self) -> None:
         """Temporary, easily accessible, trigger for prototype methods."""

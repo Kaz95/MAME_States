@@ -168,6 +168,9 @@ class MAMEStatesCore:
         mame_dirs = []
         for row in rows:
             mame_path = Path(row['path'])
+            if not mame_path.is_dir():
+                self.delete_mame_dir(row['path'])
+                continue
             mame_version = row['version']
             mame_dir = MAMEDir(mame_path, mame_version)
             mame_dirs.append(mame_dir)
@@ -217,6 +220,8 @@ class MAMEStatesCore:
         """Return all save files, and their respective roms."""
         save_states = {}
         for rom in roms_with_saves:
+            if not rom:
+                continue
             save_state_file_names = os.listdir(mame_dir / 'sta' / rom)
 
             for name in save_state_file_names:
