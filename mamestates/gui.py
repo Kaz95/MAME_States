@@ -1131,6 +1131,7 @@ class MainWindow(QMainWindow):
                 return
             self.core.save_mame_dirs()
             self.core.save_states = self.core.get_save_states()
+            self.core.input_files = self.core.get_input_files()
             # self.all_save_states = get_all_roms_with_saves(self.mame_dirs)
             self.save_state_and_inp_tree.blockSignals(True)
             self.fill_save_state_tree()
