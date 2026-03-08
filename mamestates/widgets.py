@@ -167,7 +167,7 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
 
 
 #####################
-#   Highscore Page  #
+#   Hiscore Page  #
 #####################
 class RomSearchWindow(QWidget):
     """Subclass and extend the QWidget class of the PyQt6.QtWidgets module.

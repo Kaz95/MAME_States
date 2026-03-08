@@ -224,8 +224,8 @@ def save_pbs(new_pbs: core.PersonalBests, connection: sqlite3.Connection, cursor
 
         row = (pb.hiscore, other_fields, rom_id)
         sql_statement = (
-            "INSERT INTO personal_bests (highscore, other_fields, rom_id) VALUES (?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
-            "excluded.highscore, other_fields = excluded.other_fields WHERE excluded.highscore > highscore")
+            "INSERT INTO personal_bests (hiscore, other_fields, rom_id) VALUES (?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET hiscore = "
+            "excluded.hiscore, other_fields = excluded.other_fields WHERE excluded.hiscore > hiscore")
         cursor.execute(sql_statement, row)
     connection.commit()
 

@@ -239,7 +239,7 @@ class MAMEStatesCore:
         """Load and format all personal best information from the database. Keyed to rom description."""
         pb_info = {}
 
-        pb_query = """SELECT roms.description, personal_bests.highscore, personal_bests.other_fields 
+        pb_query = """SELECT roms.description, personal_bests.hiscore, personal_bests.other_fields 
         FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
 
         splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description
@@ -252,9 +252,9 @@ class MAMEStatesCore:
         for pb in personal_bests:
             if pb['other_fields']:
                 other_fields = json.loads(pb['other_fields'])
-                pb_info[pb['description']] = PersonalBest(pb['highscore'], other_fields)
+                pb_info[pb['description']] = PersonalBest(pb['hiscore'], other_fields)
             else:
-                pb_info[pb['description']] = PersonalBest(pb['highscore'])
+                pb_info[pb['description']] = PersonalBest(pb['hiscore'])
 
         self.cursor.execute(splits_query)
         splits = self.cursor.fetchall()
@@ -269,8 +269,8 @@ class MAMEStatesCore:
 
            Rows are added if they do not exist, and updated otherwise.
            """
-        pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET highscore = "
-                     "excluded.highscore, other_fields = excluded.other_fields")
+        pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET hiscore = "
+                     "excluded.hiscore, other_fields = excluded.other_fields")
         splits_insert = (
             "INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT(label, rom_id) DO UPDATE SET label = excluded.label, "
             "score = excluded.score, 'index' = excluded.'index'")
@@ -305,7 +305,7 @@ class MAMEStatesCore:
         self.connection.commit()
 
     def collate_pb_rows(self) -> list[tuple]:
-        """Serialize personal best highscore and related information into rows for database insertion."""
+        """Serialize personal best hiscore and related information into rows for database insertion."""
         rows = []
         for mame_dir in self.pb_info:
             pb = self.pb_info[mame_dir]

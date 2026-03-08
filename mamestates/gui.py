@@ -123,7 +123,7 @@ class MainWindow(QMainWindow):
         self.save_state_and_inp_layout.addWidget(self.save_state_and_inp_tree)
 
         # ------------------#
-        #   Highscore Page  #
+        #   Hiscore Page  #
         # ------------------#
 
         # Widgets
@@ -135,10 +135,10 @@ class MainWindow(QMainWindow):
         """Popup raw text edit window."""
 
         self.hiscore_add_game_button: QPushButton = QPushButton('Add Game')
-        """Allow user to, manually, add game to highscore tree."""
+        """Allow user to, manually, add game to hiscore tree."""
 
         self.hiscore_delete_game_button: QPushButton = QPushButton('Delete Game')
-        """Allow user to, manually, remove game from highscore tree."""
+        """Allow user to, manually, remove game from hiscore tree."""
 
         self.splits_list: widgets.StageSplitListWidget = widgets.StageSplitListWidget(self.core)
         """Contains stage splits for current PB."""
@@ -173,7 +173,7 @@ class MainWindow(QMainWindow):
 
         # Add widgets to layout. Setup signals and slots.
         self.setup_save_state_page()
-        self.setup_highscore_panel()
+        self.setup_hiscore_panel()
         self.setup_pb_panel()
         self.setup_split_panel()
 
@@ -295,24 +295,24 @@ class MainWindow(QMainWindow):
         self.save_state_and_inp_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
 
     # FIXME Move somewheres else.
-    def fill_highscore_game_list(self) -> None:
+    def fill_hiscore_game_list(self) -> None:
         """Clear and refill High Score Game Tree, based on personal best info."""
         self.games_with_pb_tree.clear()
         for rom_description in self.core.pb_info:
             QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
 
-    def setup_highscore_panel(self) -> None:
+    def setup_hiscore_panel(self) -> None:
         """High Score Panel widget customization"""
         self.notes_window.hide()
         # Fill Game List
-        self.fill_highscore_game_list()
+        self.fill_hiscore_game_list()
 
         self.games_with_pb_tree.setHeaderLabels(['Games'])
         self.games_with_pb_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.games_with_pb_tree.customContextMenuRequested.connect(self.show_rom_item_context)
         self.games_with_pb_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
 
-        self.hiscore_add_game_button.clicked.connect(self.highscore_add_game_clicked)
+        self.hiscore_add_game_button.clicked.connect(self.hiscore_add_game_clicked)
         self.hiscore_delete_game_button.clicked.connect(self.delete_game)
 
         self.game_list_button_container.addWidget(self.hiscore_add_game_button)
@@ -559,7 +559,7 @@ class MainWindow(QMainWindow):
                 self.core.pb_info[rom_description].other_fields[field_name] = self.temp_fields[field_name].field_value.editor.text()
             self.core.save_pb_to_database()
 
-    def highscore_add_game_clicked(self) -> None:
+    def hiscore_add_game_clicked(self) -> None:
         """Pop out Rom Search Tab and allow user to choose a rom. Main window is disabled."""
 
         self.tabs.removeTab(2)
@@ -593,7 +593,7 @@ class MainWindow(QMainWindow):
             self.games_with_pb_tree.setCurrentItem(new_item)
 
     def delete_game(self) -> None:
-        """Delete game from Highscore Game Tree and remove all its information from database.
+        """Delete game from Hiscore Game Tree and remove all its information from database.
 
         Item selection is moved programmatically before deleting.
         """
@@ -618,7 +618,7 @@ class MainWindow(QMainWindow):
             self.core.delete_personal_best(rom_description)
             self.core.delete_splits(rom_description)
 
-            # Finally, remove item from Highscore Game Tree.
+            # Finally, remove item from Hiscore Game Tree.
             game_item_index = self.games_with_pb_tree.indexFromItem(game_item)
             game_row = game_item_index.row()
             self.games_with_pb_tree.takeTopLevelItem(game_row)
@@ -915,7 +915,7 @@ class MainWindow(QMainWindow):
     def rom_done(self, results: dict) -> None:
         """Perform actions after rom finishes running.
 
-        If rom is hi2txt compatible, a new snapshot is taken of roms highscore tables. Tables are compared to find PB.
+        If rom is hi2txt compatible, a new snapshot is taken of roms hiscore tables. Tables are compared to find PB.
         If new PB is found, user is prompted to add or discard new PB.
         """
         post_hs_table = None
@@ -1152,7 +1152,7 @@ class MainWindow(QMainWindow):
         pb_scanner.finished.connect(self.scan_finished)
         pb_scanner.start()
         self.core.pb_info = self.core.get_personal_bests()
-        self.fill_highscore_game_list()
+        self.fill_hiscore_game_list()
 
     def scan_finished(self) -> None:
         """Personal Best Scanner cleanup. Hide progress bar and re-enable GUI."""
