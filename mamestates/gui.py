@@ -752,8 +752,10 @@ class MainWindow(QMainWindow):
         menu = QMenu()
         if tree_item.parent() is None:
             launch = QAction('Launch')
+            delete = QAction('Delete')
             launch.triggered.connect(lambda: self.run_mame(tree_item.text(0)))
             menu.addAction(launch)
+            menu.addAction(delete)
 
         elif tree_item.text(0) == 'Input Files' or tree_item.text(0) == 'Save States':
             open_in_explorer = QAction('Open in Explorer')
