@@ -222,13 +222,13 @@ class MAMEStatesCore:
             save_states[rom] = save_state_file_names
         return save_states
 
-    def get_save_states(self) -> dict[MAMEDir, dict[str, list[str]]]:
+    def get_save_states(self) -> dict[Path, dict[str, list[str]]]:
         """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
         all_save_state_names = {}
         for mame_dir in self.mame_dirs:
             roms_with_saves = self._get_roms_with_saves(mame_dir.path)
             save_state_names = self._get_save_state_names(roms_with_saves, mame_dir.path)
-            all_save_state_names[mame_dir] = save_state_names
+            all_save_state_names[mame_dir.path] = save_state_names
 
         return all_save_state_names
 

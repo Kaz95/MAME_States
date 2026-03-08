@@ -493,13 +493,13 @@ class MainWindow(QMainWindow):
                     item.setFont(0, self.small_font)
 
             # Add game items.
-            for rom_name in self.core.save_states[mame_dir]:
+            for rom_name in self.core.save_states[mame_dir.path]:
                 game_description = self.core.rom_description_from_name(rom_name)
                 game_item = QTreeWidgetItem(save_states_container_item, [game_description])
                 game_item.setFont(0, self.big_font)
 
                 # Add savestate items.
-                for save_state in self.core.save_states[mame_dir][rom_name]:
+                for save_state in self.core.save_states[mame_dir.path][rom_name]:
                     save_state_item = QTreeWidgetItem(game_item, [save_state])
                     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
                     save_state_item.setFont(0, self.small_font)
