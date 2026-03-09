@@ -585,8 +585,9 @@ class MainWindow(QMainWindow):
                 return
 
             new_item = QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
+            rom_id = self.core.id_from_description(rom_description)
 
-            self.core.pb_info[rom_description] = core.PersonalBest(0)
+            self.core.pb_info[rom_description] = core.PersonalBest(0, rom_id)
 
             self.core.save_pb_to_database()
             self.rom_search_popup.close()
@@ -648,8 +649,9 @@ class MainWindow(QMainWindow):
         if selected:
             game_item = selected[0]
             rom_description = game_item.text(0)
+            rom_id = self.core.id_from_description(rom_description)
             game_splits = self.core.pb_info[rom_description].splits
-            new_split = core.Split('', 0)
+            new_split = core.Split('', 0, rom_id)
             game_splits.append(new_split)
             new_split_item = self.create_split_item(new_split, rom_description)
             self.splits_list.setCurrentItem(new_split_item)

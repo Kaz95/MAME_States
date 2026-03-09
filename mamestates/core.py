@@ -38,11 +38,13 @@ class RomInfo:
 class Split:
     label: str
     score: int
+    rom_id: int
 
 
 @dataclass
 class PersonalBest:
     hiscore: int
+    rom_id: int
     other_fields: dict[str, str | int] = field(default_factory=dict)
     splits: list = field(default_factory=list)
 
@@ -249,10 +251,10 @@ class MAMEStatesCore:
         """Load and format all personal best information from the database. Keyed to rom description."""
         pb_info = {}
 
-        pb_query = """SELECT roms.description, personal_bests.hiscore, personal_bests.other_fields 
-        FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
+        pb_query = """SELECT roms.description, personal_bests.hiscore, personal_bests.other_fields, 
+        personal_bests.rom_id FROM 'roms' JOIN 'personal_bests' ON roms.id = personal_bests.rom_id"""
 
-        splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description
+        splits_query = """SELECT splits.label, splits.score, splits.'index', roms.description, splits.rom_id
             FROM 'splits' JOIN 'roms' ON splits.rom_id = roms.id 
             ORDER BY roms.description, splits.'index'"""
 
@@ -262,14 +264,14 @@ class MAMEStatesCore:
         for pb in personal_bests:
             if pb['other_fields']:
                 other_fields = json.loads(pb['other_fields'])
-                pb_info[pb['description']] = PersonalBest(pb['hiscore'], other_fields)
+                pb_info[pb['description']] = PersonalBest(pb['hiscore'], pb['rom_id'], other_fields)
             else:
-                pb_info[pb['description']] = PersonalBest(pb['hiscore'])
+                pb_info[pb['description']] = PersonalBest(pb['hiscore'], pb['rom_id'])
 
         self.cursor.execute(splits_query)
         splits = self.cursor.fetchall()
         for row in splits:
-            some_split = Split(row['label'], row['score'])
+            some_split = Split(row['label'], row['score'], row['rom_id'])
             pb_info[row['description']].splits.append(some_split)
 
         return pb_info
@@ -319,10 +321,10 @@ class MAMEStatesCore:
         rows = []
         for rom_description in self.pb_info:
             pb = self.pb_info[rom_description]
-            rom_id = self.id_from_description(rom_description)
+            # rom_id = self.id_from_description(rom_description)
             other_fields = pb.other_fields
             other_fields = json.dumps(other_fields)
-            row = (None, pb.hiscore, other_fields, rom_id)
+            row = (None, pb.hiscore, other_fields, pb.rom_id)
             rows.append(row)
         return rows
 
@@ -339,7 +341,7 @@ class MAMEStatesCore:
                 index = pb.splits.index(split)
                 split = asdict(split)
                 split['index'] = index
-                split['rom_id'] = self.id_from_description(rom_description)
+                # split['rom_id'] = self.id_from_description(rom_description)
                 rows.append(split)
 
         return rows

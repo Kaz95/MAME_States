@@ -113,7 +113,7 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
 
 
 # FIXME Too much code reuse.
-def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> core.PersonalBests:
+def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]], cursor: sqlite3.Cursor) -> core.PersonalBests:
     """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
     defaults_xml = Path(core.get_abs_path(r'.\hi2txt\hi2txt_doc\hi2txt_defaults'))
     new_pbs = {}
@@ -143,7 +143,8 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> core.PersonalBests:
                                             some_dic[columns.split('|')[i]] = section
                                         some_dic.pop('NAME', None)
                                         some_dic.pop('RANK', None)
-                                        pb = core.PersonalBest(int(some_dic.pop('SCORE')), some_dic)
+                                        rom_id = id_from_rom_name(rom_name, cursor)
+                                        pb = core.PersonalBest(int(some_dic.pop('SCORE')), rom_id,some_dic)
                                         new_pbs[rom_name] = pb
 
                                         pprint.pp(some_dic)
@@ -165,7 +166,8 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> core.PersonalBests:
                                         some_dic[columns.split('|')[i]] = section
                                     some_dic.pop('NAME', None)
                                     some_dic.pop('RANK', None)
-                                    pb = core.PersonalBest(int(some_dic.pop('SCORE')), some_dic)
+                                    rom_id = id_from_rom_name(rom_name, cursor)
+                                    pb = core.PersonalBest(int(some_dic.pop('SCORE')), rom_id,some_dic)
                                     new_pbs[rom_name] = pb
 
                                     pprint.pp(some_dic)
@@ -179,7 +181,8 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> core.PersonalBests:
                                         some_dic[columns.split('|')[i]] = section
                                     some_dic.pop('NAME', None)
                                     some_dic.pop('RANK', None)
-                                    pb = core.PersonalBest(int(some_dic.pop('SCORE')), some_dic)
+                                    rom_id = id_from_rom_name(rom_name, cursor)
+                                    pb = core.PersonalBest(int(some_dic.pop('SCORE')), rom_id,some_dic)
                                     new_pbs[rom_name] = pb
 
                                     pprint.pp(some_dic)
@@ -187,7 +190,7 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]]) -> core.PersonalBests:
     return new_pbs
 
 
-def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str) -> core.PersonalBests:
+def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str, cursor:sqlite3.Cursor) -> core.PersonalBests:
     """Convert a single new PB entry, into the format used by multiple PB insertion function.
 
     TODO This is lazy af.
@@ -200,7 +203,8 @@ def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str) -> core.PersonalBes
         pb[columns[index]] = section
     pb.pop('NAME', None)
     pb.pop('RANK', None)
-    new_pb = core.PersonalBest(int(pb.pop('SCORE')), pb)
+    rom_id = id_from_rom_name(rom_name, cursor)
+    new_pb = core.PersonalBest(int(pb.pop('SCORE')), rom_id,pb)
     pprint.pp(pb)
     all_pbs[rom_name] = new_pb
     return all_pbs
