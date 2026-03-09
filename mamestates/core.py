@@ -317,9 +317,9 @@ class MAMEStatesCore:
     def collate_pb_rows(self) -> list[tuple]:
         """Serialize personal best hiscore and related information into rows for database insertion."""
         rows = []
-        for mame_dir in self.pb_info:
-            pb = self.pb_info[mame_dir]
-            rom_id = self.id_from_description(mame_dir)
+        for rom_description in self.pb_info:
+            pb = self.pb_info[rom_description]
+            rom_id = self.id_from_description(rom_description)
             other_fields = pb.other_fields
             other_fields = json.dumps(other_fields)
             row = (None, pb.hiscore, other_fields, rom_id)
