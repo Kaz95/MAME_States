@@ -764,6 +764,20 @@ class MainWindow(QMainWindow):
         del self.core.input_files[path_str]
         self.core.delete_mame_dir(path_str)
 
+    def open_ini_actioned_clicked(self):
+        mame_dir_item = self.save_state_and_inp_tree.selectedItems()[0]
+        path_str = mame_dir_item.text(0)
+        mame_path = Path(path_str)
+        if Path(path_str).is_dir():
+            mame_ini_file = mame_path / 'mame.ini'
+            if mame_ini_file.is_file():
+                os.startfile(mame_ini_file)
+            else:
+                QMessageBox.critical(self, 'Directory Not Found', f'Could Not Find File: {mame_ini_file}')
+        else:
+            self.remove_invalid_mame_dir(path_str)
+
+
     def show_save_state_tree_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
 
@@ -777,9 +791,14 @@ class MainWindow(QMainWindow):
         if tree_item.parent() is None:
             launch = QAction('Launch')
             delete = QAction('Delete')
+            open_ini = QAction('Open mame.ini')
+
             launch.triggered.connect(lambda: self.run_mame(tree_item.text(0)))
             delete.triggered.connect(lambda: self.delete_mame_dir_clicked(tree_item))
+            open_ini.triggered.connect(self.open_ini_actioned_clicked)
+
             menu.addAction(launch)
+            menu.addAction(open_ini)
             menu.addAction(delete)
 
         elif tree_item.text(0) == 'Input Files' or tree_item.text(0) == 'Save States':
