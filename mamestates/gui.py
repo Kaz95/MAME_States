@@ -777,7 +777,9 @@ class MainWindow(QMainWindow):
             if mame_ini_file.is_file():
                 os.startfile(mame_ini_file)
             else:
-                QMessageBox.critical(self, 'Directory Not Found', f'Could Not Find File: {mame_ini_file}')
+                response = QMessageBox.question(self, 'Directory Not Found', f'Could Not Find File: {mame_ini_file}\nWould you like to create a new ini file?')
+                if response == QMessageBox.StandardButton.Yes:
+                    subprocess.run([core.get_abs_path(mame_path / 'mame.exe'), '-cc'], cwd=core.get_abs_path(mame_path))
         else:
             self.remove_invalid_mame_dir(path_str)
 
