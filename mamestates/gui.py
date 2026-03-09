@@ -562,7 +562,9 @@ class MainWindow(QMainWindow):
     def hiscore_add_game_clicked(self) -> None:
         """Pop out Rom Search Tab and allow user to choose a rom. Main window is disabled."""
 
-        self.tabs.removeTab(2)
+        # self.tabs.removeTab(2)
+        search_tab_index = self.tabs.indexOf(self.rom_search_page)
+        self.tabs.removeTab(search_tab_index)
         self.rom_search_popup = widgets.RomSearchWindow(self.rom_search_page, self.tabs,
                                                         self.rom_search_add_game_button,
                                                         self.rom_search_cancel_button)
