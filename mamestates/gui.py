@@ -783,6 +783,13 @@ class MainWindow(QMainWindow):
         else:
             self.remove_invalid_mame_dir(path_str)
 
+    def open_mame_dir_in_explorer(self, mame_dir_item: QTreeWidgetItem):
+        mame_dir = Path(mame_dir_item.text(0))
+        if not mame_dir.is_dir():
+            self.remove_invalid_mame_dir(str(mame_dir))
+            return
+        os.startfile(mame_dir)
+
 
     def show_save_state_tree_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
@@ -798,18 +805,22 @@ class MainWindow(QMainWindow):
             launch = QAction('Launch')
             delete = QAction('Delete')
             open_ini = QAction('Open mame.ini')
+            open_in_explorer = QAction('Open in Explorer')
 
             launch.triggered.connect(lambda: self.run_mame(tree_item.text(0)))
             delete.triggered.connect(lambda: self.delete_mame_dir_clicked(tree_item))
             open_ini.triggered.connect(self.open_ini_actioned_clicked)
+            open_in_explorer.triggered.connect(lambda: self.open_mame_dir_in_explorer(tree_item))
+
 
             menu.addAction(launch)
             menu.addAction(open_ini)
             menu.addAction(delete)
+            menu.addAction(open_in_explorer)
 
         elif tree_item.text(0) == 'Input Files' or tree_item.text(0) == 'Save States':
             open_in_explorer = QAction('Open in Explorer')
-            open_in_explorer.triggered.connect(lambda: self.open_in_explorer(tree_item))
+            open_in_explorer.triggered.connect(lambda: self.open_save_or_inp_in_explorer(tree_item))
             menu.addAction(open_in_explorer)
 
         else:
@@ -863,7 +874,7 @@ class MainWindow(QMainWindow):
 
         direct_parent.removeChild(leaf_item)
 
-    def open_in_explorer(self, category_item: QTreeWidgetItem):
+    def open_save_or_inp_in_explorer(self, category_item: QTreeWidgetItem):
         mame_dir = Path(category_item.parent().text(0))
         if not mame_dir.is_dir():
             self.remove_invalid_mame_dir(str(mame_dir))
