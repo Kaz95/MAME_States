@@ -519,9 +519,11 @@ class MainWindow(QMainWindow):
     # ------------------------- #
     # Personal Bests Page Slots #
     # ------------------------- #
-    # TODO Since there is no teardown, I could just connect .close() directly to signal.
     def close_rom_search_window(self) -> None:
-        """Close rom search popup."""
+        """Close rom search popup.
+
+        Can't connect self.rom_search_popup.close() directly, as it does not exist at the time of initialization.
+        """
         self.rom_search_popup.close()
 
     def high_score_tree_selection_changed(self) -> None:
