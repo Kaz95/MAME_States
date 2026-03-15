@@ -637,9 +637,11 @@ class MainWindow(QMainWindow):
             game_row = game_item_index.row()
             self.games_with_pb_tree.takeTopLevelItem(game_row)
 
-    # TODO Why am I not using selectedItems() on splitlist? I seem to be checking row instead.
     def delete_split(self) -> None:
-        """Delete a split in the split list. Also deleted from in-memory database representation and database."""
+        """Delete a split in the split list. Also deleted from in-memory database representation and database.
+
+        Row is used instead of .selectedItems() so that it can be used for deleting from in-memory data structure.
+        """
         selected = self.games_with_pb_tree.selectedItems()
         if selected:
             rom_description = selected[0].text(0)
