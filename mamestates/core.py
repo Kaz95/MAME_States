@@ -209,8 +209,6 @@ class MAMEStatesCore:
         rom_names = os.listdir(mame_dir / 'sta')
         return rom_names
 
-    # TODO Consider using pathlib instead of os.
-    #   Also, I think I'm modifying the list in place? Why though? Consider how this scales. Is a new list ok?
     @staticmethod
     def _get_save_state_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list[str]]:
         """Return all save files, and their respective roms."""
@@ -218,13 +216,8 @@ class MAMEStatesCore:
         for rom_name in roms_with_saves:
             if not rom_name:
                 continue
-            save_state_file_names = os.listdir(mame_dir / 'sta' / rom_name)
-
-            for name in save_state_file_names:
-                save_index = save_state_file_names.index(name)
-                name, _ = os.path.splitext(name)
-                save_state_file_names[save_index] = name
-
+            save_state_files = (mame_dir / 'sta' / rom_name).iterdir()
+            save_state_file_names = [x.stem for x in save_state_files]
             save_states[rom_name] = save_state_file_names
         return save_states
 
