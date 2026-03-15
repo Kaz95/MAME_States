@@ -99,7 +99,6 @@ class MAMEStatesCore:
 
         return descriptions_and_names
 
-    # TODO Consider generator
     def rom_description_from_name(self, rom_name: str) -> str:
         """Return the rom description of a given rom name."""
         for rom_description, value in self.descriptions_and_names.items():
