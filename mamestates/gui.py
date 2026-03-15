@@ -768,6 +768,7 @@ class MainWindow(QMainWindow):
         menu.addAction(add_pb_field)
         menu.exec(self.pb_fields_list.viewport().mapToGlobal(position))
 
+    # FIXME Probably should be on core.
     # FIXME What in the holy hell was I thinking with that list comprehension???!!!
     def remove_invalid_mame_dir(self, mame_path: str) -> None:
         """Remove MAME directory and all related info(saves, inps, ect) from GUI, in-memory datastructures, and DB"""
