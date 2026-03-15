@@ -268,7 +268,7 @@ class MAMEStatesCore:
 
         Rows are added if they do not exist, and updated otherwise.
         """
-        pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) "
+        pb_insert = ("INSERT INTO personal_bests VALUES (:id, :hiscore, :other_fields, :rom_id) "
                      "ON CONFLICT(rom_id) "
                      "DO UPDATE SET hiscore = excluded.hiscore, other_fields = excluded.other_fields")
 
@@ -306,14 +306,15 @@ class MAMEStatesCore:
         self.connection.commit()
 
     # FIXME Use dict instead of tuple for row collation.
-    def collate_pb_rows(self) -> list[tuple]:
+    def collate_pb_rows(self) -> list[dict]:
         """Serialize personal best hiscore and related information into rows for database insertion."""
         rows = []
         for rom_description in self.pb_info:
             pb = self.pb_info[rom_description]
             other_fields = pb.other_fields
             other_fields = json.dumps(other_fields)
-            row = (None, pb.hiscore, other_fields, pb.rom_id)
+            row = {'id': None, 'hiscore': pb.hiscore, 'other_fields': other_fields, 'rom_id': pb.rom_id}
+            # row = (None, pb.hiscore, other_fields, pb.rom_id)
             rows.append(row)
         return rows
 
