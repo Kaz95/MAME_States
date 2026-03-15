@@ -35,7 +35,7 @@ class RomInfo:
 
 
 @dataclass
-class Split:
+class StageSplit:
     label: str
     score: int
     rom_id: int
@@ -53,15 +53,15 @@ PersonalBests = dict[str, PersonalBest]
 """In-memory representation of the 'personal_bests' table of the database."""
 
 
-def get_abs_path(relative_path: str | Path):
+def get_abs_path(relative_path: str | Path) -> Path:
     """ Get absolute path to resource, works for dev and for PyInstaller """
     # Get the bundle directory; fallback to the script's parent directory
     base_path = Path(getattr(sys, '_MEIPASS', Path(__file__).parent.parent))
     return base_path / relative_path
 
 
-# TODO Temp fix after I realized inps need version in name.
-def get_mame_version(mame_dir: Path):
+def get_mame_version(mame_dir: Path) -> str | None:
+    """Retrieve the version for the given path's MAME.exe file."""
     mame_exe = mame_dir / 'mame.exe'
     if mame_exe.is_file():
         results = subprocess.run([mame_exe, '-version'], cwd=mame_dir, capture_output=True, text=True)
@@ -69,6 +69,7 @@ def get_mame_version(mame_dir: Path):
 
 
 class MAMEStatesCore:
+    """Encapsulates the internal state and logic of the MAMEStates Application."""
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
         self.cursor = self.connection.cursor()
@@ -83,7 +84,6 @@ class MAMEStatesCore:
     ########################
     # Descriptions & Names #
     ########################
-    # TODO Should access Row object by key.
     def get_descriptions_and_names(self) -> dict[str, str]:
         """Construct {rom_description:rom_name} dictionary.
 
@@ -101,7 +101,7 @@ class MAMEStatesCore:
 
     # TODO Consider generator
     def rom_description_from_name(self, rom_name: str) -> str:
-        """Return the full name of a given rom"""
+        """Return the rom description of a given rom name."""
         for rom_description, value in self.descriptions_and_names.items():
             if value == rom_name:
                 return rom_description
@@ -151,19 +151,14 @@ class MAMEStatesCore:
         rom_id = row['id']
         return rom_id
 
-    # def id_from_rom_name(self, name: str) -> int:
-    #     """Retrieve the corresponding rom_id, for a given rom name, from the database."""
-    #     sql_statement = "SELECT id FROM roms WHERE name = ?"
-    #     self.cursor.execute(sql_statement, (name,))
-    #     results = self.cursor.fetchall()
-    #     rom_id = results[0][0]
-    #     return rom_id
-
     #########
     # Paths #
     #########
     def get_mame_dirs(self) -> list[MAMEDir]:
-        """Load paths as strings from database. Convert to Path objects before returning them."""
+        """Load paths as strings from database. Convert to Path objects before returning them.
+
+        Prune invalid MAME directories from the database.
+        """
         sql_query = """SELECT * FROM paths"""
         self.cursor.execute(sql_query)
         rows = self.cursor.fetchall()
@@ -178,9 +173,8 @@ class MAMEStatesCore:
             mame_dirs.append(mame_dir)
         return mame_dirs
 
-    # TODO This wipes out manually added version #s until I sort that out.
-    def save_mame_dirs(self, version=None) -> None:
-        """Format list of paths as rows. Insert them into database. """
+    def save_mame_dirs(self) -> None:
+        """Format list of MAMEDirs as rows. Insert them into database. """
         sql_statement = """INSERT OR IGNORE INTO paths (path, version) VALUES (:path, :version);"""
         rows = []
         for mame_dir in self.mame_dirs:
@@ -192,13 +186,14 @@ class MAMEStatesCore:
         self.cursor.executemany(sql_statement, rows)
         self.connection.commit()
 
-    def delete_mame_dir(self, path_str):
+    def delete_mame_dir(self, mame_path: str) -> None:
+        """Remove a given mame directory from the database."""
         sql_statement = "DELETE FROM paths WHERE path = ?"
-        self.cursor.execute(sql_statement, (path_str,))
+        self.cursor.execute(sql_statement, (mame_path,))
         self.connection.commit()
 
     def get_input_files(self) -> dict[str, list[str]]:
-        """Retrieve and return input file names, for each path in the given list. File extensions are stripped."""
+        """Retrieve and return input file names, for each path in the mame_dirs list. File extensions are stripped."""
         all_input_files = {}
         for mame_dir in self.mame_dirs:
             input_file_dir = mame_dir.path / 'inp'
@@ -221,21 +216,21 @@ class MAMEStatesCore:
     def _get_save_state_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list[str]]:
         """Return all save files, and their respective roms."""
         save_states = {}
-        for rom in roms_with_saves:
-            if not rom:
+        for rom_name in roms_with_saves:
+            if not rom_name:
                 continue
-            save_state_file_names = os.listdir(mame_dir / 'sta' / rom)
+            save_state_file_names = os.listdir(mame_dir / 'sta' / rom_name)
 
             for name in save_state_file_names:
                 save_index = save_state_file_names.index(name)
                 name, _ = os.path.splitext(name)
                 save_state_file_names[save_index] = name
 
-            save_states[rom] = save_state_file_names
+            save_states[rom_name] = save_state_file_names
         return save_states
 
     def get_save_states(self) -> dict[str, dict[str, list[str]]]:
-        """Retrieve and return save state file names, for each path in the given list. File extensions are stripped."""
+        """Retrieve and return save state file names, for each path in the mame_dirs list. File extensions are stripped."""
         all_save_state_names = {}
         for mame_dir in self.mame_dirs:
             roms_with_saves = self._get_roms_with_saves(mame_dir.path)
@@ -248,7 +243,7 @@ class MAMEStatesCore:
     # Personal Bests #
     ##################
     def get_personal_bests(self) -> PersonalBests:
-        """Load and format all personal best information from the database. Keyed to rom description."""
+        """Load, and format, all personal best information from the database. Keyed to rom description."""
         pb_info = {}
 
         pb_query = """SELECT roms.description, personal_bests.hiscore, personal_bests.other_fields, 
@@ -271,20 +266,22 @@ class MAMEStatesCore:
         self.cursor.execute(splits_query)
         splits = self.cursor.fetchall()
         for row in splits:
-            some_split = Split(row['label'], row['score'], row['rom_id'])
+            some_split = StageSplit(row['label'], row['score'], row['rom_id'])
             pb_info[row['description']].splits.append(some_split)
 
         return pb_info
 
+    # FIXME Fix sql string format.
     def save_pb_to_database(self) -> None:
         """Update database with provided personal best and split information.
 
-           Rows are added if they do not exist, and updated otherwise.
-           """
+        Rows are added if they do not exist, and updated otherwise.
+        """
         pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET hiscore = "
                      "excluded.hiscore, other_fields = excluded.other_fields")
         splits_insert = (
-            "INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT(label, rom_id) DO UPDATE SET label = excluded.label, "
+            "INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT("
+            "label, rom_id) DO UPDATE SET label = excluded.label,"
             "score = excluded.score, 'index' = excluded.'index'")
 
         pb_rows = self.collate_pb_rows()
@@ -316,12 +313,12 @@ class MAMEStatesCore:
         self.cursor.execute(sql_statement, (rom_id, split_label))
         self.connection.commit()
 
+    # FIXME Use dict instead of tuple for row collation.
     def collate_pb_rows(self) -> list[tuple]:
         """Serialize personal best hiscore and related information into rows for database insertion."""
         rows = []
         for rom_description in self.pb_info:
             pb = self.pb_info[rom_description]
-            # rom_id = self.id_from_description(rom_description)
             other_fields = pb.other_fields
             other_fields = json.dumps(other_fields)
             row = (None, pb.hiscore, other_fields, pb.rom_id)
@@ -341,7 +338,6 @@ class MAMEStatesCore:
                 index = pb.splits.index(split)
                 split = asdict(split)
                 split['index'] = index
-                # split['rom_id'] = self.id_from_description(rom_description)
                 rows.append(split)
 
         return rows

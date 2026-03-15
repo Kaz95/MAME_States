@@ -33,8 +33,14 @@ class MAMEThread(QThread):
                  input_file_name=None) -> None:
         super().__init__()
         self.playback_input = playback_input
+        """Flag"""
+
         self.record_input = record_input
+        """Flag"""
+
         self.input_file_name = input_file_name
+        """Used if playback_input is True."""
+
         self.mame_exe: Path = mame_exe
         """Path object pointing to MAME.exe file."""
 
@@ -205,8 +211,12 @@ class RomSearchWindow(QWidget):
         main_window.setEnabled(True)
         event.accept()
 
-
 class RomSearchDialog(QDialog):
+    """Subclass and extend QDialog class of the PyQt6.QtWidgets module.
+
+    This class inherits most of its behavior from its parent class , while extending its functionality.
+    The 'rom search' tab is passed in and inserted into a custom dialog, along with a standard dialog button box.
+    """
     def __init__(self, rom_search_popup: RomSearchWindow, rom_search_tree: QTreeWidget, parent=None):
         super().__init__(parent)
         self.rom_search_tree = rom_search_tree
@@ -222,7 +232,8 @@ class RomSearchDialog(QDialog):
         self.setLayout(layout)
         self.rom_description_for_inp = None
 
-    def select_rom(self):
+    def select_rom(self) -> None:
+        """Select a rom and set class attribute to roms description. Will be retrieved after dialog closes."""
         selected = self.rom_search_tree.selectedItems()
         if selected:
             rom_item = selected[0]
@@ -234,7 +245,7 @@ class RomSearchDialog(QDialog):
 
 
 class NotesWindow(QWidget):
-    """Subclass and extend QWidget class of the PyQt6.QyWidgets module.
+    """Subclass and extend QWidget class of the PyQt6.QtWidgets module.
 
     This class inherits most of its behavior from its parent class , while extending its functionality.
     A QWidget is initialized to create a detached window via flags. A single text edit is the only widget added.
@@ -334,8 +345,12 @@ class ToggleableLabel(QWidget):
         self.editor.hide()
         self.label.show()
 
-
 class PBField(QWidget):
+    """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Used as a customer item widget on a QListWidget instance.
+    """
     def __init__(self, field_name: str, field_value: str | int):
         super().__init__()
         field_name = (field_name + ':')
@@ -353,9 +368,9 @@ class StageSplitItem(QWidget):
     """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
 
     This class inherits most of its behavior from its parent class, while extending its functionality.
-    Used as a customer item widget on a QListWidget instance."""
-
-    def __init__(self, split: core.Split, rom_description: str,
+    Used as a customer item widget on a QListWidget instance.
+    """
+    def __init__(self, split: core.StageSplit, rom_description: str,
                  parent_list: 'StageSplitListWidget', mcore: core.MAMEStatesCore) -> None:
         """ Initialize the StageSplitItem subclass
 
@@ -485,7 +500,7 @@ class StageSplitListWidget(QListWidget):
             splits.insert(new_index, split)
         self.core.save_pb_to_database()
 
-    def add_diffs(self, splits: list[core.Split]) -> None:
+    def add_diffs(self, splits: list[core.StageSplit]) -> None:
         """Calculate and display the difference between a splits score, and the previous splits score."""
         for index, split in enumerate(splits):
             if index > 0:

@@ -22,9 +22,8 @@ def has_xml(rom_name: str) -> bool:
         else:
             return False
 
-
-# TODO Maybe consider how this will be used. Might want to make this method to access self.mame_paths.
 def get_games_with_hs(mame_dirs: list[core.MAMEDir]) -> dict[str, list[Path]]:
+    """Retrieve and return all hiscore files with compatible hi2txt xml files, based on the given list of MAME directories."""
     hi2txt_compatible_hi_scores: dict[str, list[Path]] = {}
     for mame_dir in mame_dirs:
         hiscore_dir = mame_dir.path / 'hiscore'
@@ -238,5 +237,5 @@ def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dir
     """Scan hi score tables, parse for possible PB entries and insert or update PB table in database."""
     hi_scores = get_games_with_hs(mame_dirs)
     hi2txt_tables = get_hs_tables(hi_scores)
-    new_pbs = get_new_pbs(hi2txt_tables)
+    new_pbs = get_new_pbs(hi2txt_tables, cursor)
     save_pbs(new_pbs, connection, cursor)
