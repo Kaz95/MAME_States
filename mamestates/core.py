@@ -263,18 +263,18 @@ class MAMEStatesCore:
 
         return pb_info
 
-    # FIXME Fix sql string format.
     def save_pb_to_database(self) -> None:
         """Update database with provided personal best and split information.
 
         Rows are added if they do not exist, and updated otherwise.
         """
-        pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET hiscore = "
-                     "excluded.hiscore, other_fields = excluded.other_fields")
-        splits_insert = (
-            "INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) ON CONFLICT("
-            "label, rom_id) DO UPDATE SET label = excluded.label,"
-            "score = excluded.score, 'index' = excluded.'index'")
+        pb_insert = ("INSERT INTO personal_bests VALUES (?, ?, ?, ?) "
+                     "ON CONFLICT(rom_id) "
+                     "DO UPDATE SET hiscore = excluded.hiscore, other_fields = excluded.other_fields")
+
+        splits_insert = ("INSERT INTO splits (label, score, 'index', rom_id) VALUES (:label, :score, :index, :rom_id) "
+                         "ON CONFLICT(label, rom_id) "
+                         "DO UPDATE SET label = excluded.label, score = excluded.score, 'index' = excluded.'index'")
 
         pb_rows = self.collate_pb_rows()
         split_rows = self.collate_split_rows()
