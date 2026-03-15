@@ -305,7 +305,7 @@ class MAMEStatesCore:
         self.cursor.execute(sql_statement, (rom_id, split_label))
         self.connection.commit()
 
-    # FIXME Use dict instead of tuple for row collation.
+
     def collate_pb_rows(self) -> list[dict]:
         """Serialize personal best hiscore and related information into rows for database insertion."""
         rows = []
