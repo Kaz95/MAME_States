@@ -872,7 +872,6 @@ class MainWindow(QMainWindow):
                     menu.addMenu(sub_menu)
         menu.exec(self.save_state_and_inp_tree.viewport().mapToGlobal(position))
 
-    # TODO Probably could use confirmation
     def delete_leaf_item(self, leaf_item: QTreeWidgetItem) -> None:
         """Delete a childless QTreeWidgetItem. The corresponding file is also deleted.
 
