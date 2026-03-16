@@ -708,7 +708,7 @@ class MainWindow(QMainWindow):
         if mame_exe.is_file():
             subprocess.Popen(mame_exe, cwd=rf'{mame_dir}')
         else:
-            self.remove_invalid_mame_dir(mame_path)
+            self.remove_invalid_mame_dir(mame_path=mame_path)
             print(f'File {mame_exe} not found')
 
     def delete_pb_field(self, item: QListWidgetItem, rom_description: str) -> None:
@@ -769,29 +769,27 @@ class MainWindow(QMainWindow):
         menu.exec(self.pb_fields_list.viewport().mapToGlobal(position))
 
 
-    def remove_invalid_mame_dir(self, mame_path: str) -> None:
-        """Remove MAME directory and all related info(saves, inps, ect) from GUI, in-memory datastructures, and DB"""
-        for _ in range(self.save_state_and_inp_tree.topLevelItemCount()):
-            if self.save_state_and_inp_tree.topLevelItem(_).text(0) == mame_path:
-                self.save_state_and_inp_tree.takeTopLevelItem(_)
-                break
+    def remove_invalid_mame_dir(self, *, mame_path: str | None=None, path_item: QTreeWidgetItem | None=None) -> None:
+        """Remove MAME directory and all related info(saves, inps, ect) from GUI, in-memory datastructures, and DB
+
+        Use path_item if called from context menu where item is available, then derive mame_path.
+        Use mame_path if called from anywhere else, then derive item from path.
+        """
+        if path_item:
+            mame_path = path_item.text(0)
+            root = self.save_state_and_inp_tree.invisibleRootItem()
+            selected_dir = self.save_state_and_inp_tree.selectedItems()[0]
+            root.removeChild(selected_dir)
+
+        elif mame_path:
+            for _ in range(self.save_state_and_inp_tree.topLevelItemCount()):
+                if self.save_state_and_inp_tree.topLevelItem(_).text(0) == mame_path:
+                    self.save_state_and_inp_tree.takeTopLevelItem(_)
+                    break
 
         self.core.new_remove_invalid_mame_dir(mame_path)
         QMessageBox.critical(self, 'Error', 'Invalid MAME Directory.\nDirectory has been removed. Please update it.')
 
-    # FIXME Might be redundant.
-    def delete_mame_dir_clicked(self, item: QTreeWidgetItem) -> None:
-        """Remove MAME directory and all related info(saves, inps, ect) from GUI, in-memory datastructures, and DB"""
-        path_str = item.text(0)
-        root = self.save_state_and_inp_tree.invisibleRootItem()
-        selected_dir = self.save_state_and_inp_tree.selectedItems()[0]
-        root.removeChild(selected_dir)
-        for mame_dir in self.core.mame_dirs:
-            if path_str == str(mame_dir.path):
-                self.core.mame_dirs.remove(mame_dir)
-        del self.core.save_states[path_str]
-        del self.core.input_files[path_str]
-        self.core.delete_mame_dir(path_str)
 
     def open_ini_actioned_clicked(self) -> None:
         """Attempt to open the .ini file for the selected MAME directory.
@@ -810,7 +808,7 @@ class MainWindow(QMainWindow):
                 if response == QMessageBox.StandardButton.Yes:
                     subprocess.run([core.get_abs_path(mame_path / 'mame.exe'), '-cc'], cwd=core.get_abs_path(mame_path))
         else:
-            self.remove_invalid_mame_dir(path_str)
+            self.remove_invalid_mame_dir(mame_path=path_str)
 
     def open_mame_dir_in_explorer(self, mame_dir_item: QTreeWidgetItem) -> None:
         """Attempt to open a given MAME directory in Windows explorer.
@@ -819,7 +817,7 @@ class MainWindow(QMainWindow):
         """
         mame_dir = Path(mame_dir_item.text(0))
         if not mame_dir.is_dir():
-            self.remove_invalid_mame_dir(str(mame_dir))
+            self.remove_invalid_mame_dir(mame_path=str(mame_dir))
             return
         os.startfile(mame_dir)
 
@@ -840,7 +838,7 @@ class MainWindow(QMainWindow):
             open_in_explorer = QAction('Open in Explorer')
 
             launch.triggered.connect(lambda: self.run_mame(tree_item.text(0)))
-            delete.triggered.connect(lambda: self.delete_mame_dir_clicked(tree_item))
+            delete.triggered.connect(lambda: self.remove_invalid_mame_dir(path_item=tree_item))
             open_ini.triggered.connect(self.open_ini_actioned_clicked)
             open_in_explorer.triggered.connect(lambda: self.open_mame_dir_in_explorer(tree_item))
 
@@ -887,7 +885,7 @@ class MainWindow(QMainWindow):
             mame_dir_str = direct_parent.parent().text(0)
             mame_dir = Path(mame_dir_str)
             if not mame_dir.is_dir():
-                self.remove_invalid_mame_dir(mame_dir_str)
+                self.remove_invalid_mame_dir(mame_path=mame_dir_str)
                 return
             input_file_dir = mame_dir / 'inp'
             input_file = input_file_dir / f'{leaf_item.text(0)}.inp'
@@ -901,7 +899,7 @@ class MainWindow(QMainWindow):
             mame_dir_str = mame_path_item.text(0)
             mame_dir = Path(mame_dir_str)
             if not mame_dir.is_dir():
-                self.remove_invalid_mame_dir(mame_dir_str)
+                self.remove_invalid_mame_dir(mame_path=mame_dir_str)
                 return
             save_states_dir = mame_dir / 'sta'
             rom_saves_dir = save_states_dir / f'{rom_name}'
@@ -914,7 +912,7 @@ class MainWindow(QMainWindow):
         """Opens a MAME directory's 'inp', and 'sta' folders in Windows explorer."""
         mame_dir = Path(category_item.parent().text(0))
         if not mame_dir.is_dir():
-            self.remove_invalid_mame_dir(str(mame_dir))
+            self.remove_invalid_mame_dir(mame_path=str(mame_dir))
             return
         if category_item.text(0) == 'Input Files':
             input_file_dir = mame_dir / 'inp'
@@ -991,7 +989,7 @@ class MainWindow(QMainWindow):
 
         mame_exe = Path(mame_dir) / 'mame.exe'
         if not mame_exe.is_file():
-            self.remove_invalid_mame_dir(mame_dir)
+            self.remove_invalid_mame_dir(mame_path=mame_dir)
             return
         rom = Path(mame_dir) / 'roms' / (rom_name + '.zip')
         hiscore_file = Path(mame_dir) / 'hiscore' / (rom_name + '.hi')
@@ -1175,7 +1173,7 @@ class MainWindow(QMainWindow):
             mame_dir_str = mame_dir_item.text(0)
             mame_dir = Path(mame_dir_str)
             if not mame_dir.is_dir():
-                self.remove_invalid_mame_dir(mame_dir_str)
+                self.remove_invalid_mame_dir(mame_path=mame_dir_str)
                 return
             old_input_file_path = mame_dir / 'inp' / f'{self.save_state_page_text_before_editing}.inp'
             new_input_file_path = old_input_file_path.with_stem(input_file_name)
@@ -1208,7 +1206,7 @@ class MainWindow(QMainWindow):
 
             mame_dir = Path(mame_dir_str)
             if not mame_dir.is_dir():
-                self.remove_invalid_mame_dir(mame_dir_str)
+                self.remove_invalid_mame_dir(mame_path=mame_dir_str)
                 return
             save_state_dir = mame_dir / 'sta' / rom_name
             old_save_state_path = save_state_dir / (self.save_state_page_text_before_editing + '.sta')
@@ -1230,7 +1228,7 @@ class MainWindow(QMainWindow):
     # --------------- #
     def menu_button_1_clicked(self) -> None:
         """Temporary, easily accessible, trigger for prototype methods."""
-        self.remove_invalid_mame_dir(r'C:\Users\kazac\Downloads\mame')
+        self.remove_invalid_mame_dir(mame_path=r'C:\Users\kazac\Downloads\mame')
         # self.save_state_and_inp_tree.hide()
 
     def menu_button_2_clicked(self) -> None:
