@@ -977,7 +977,6 @@ class MainWindow(QMainWindow):
         self.tabs.addTab(dialog.rom_search_popup, 'Rom Search')
         return dialog.rom_description_for_inp
 
-    # TODO Take another look at this.
     def run_rom(self, rom_name: str, record_input=False, play_back_input=False, input_file_name=None) -> None:
         """Attempt to run a rom, with a given MAME path.
 
