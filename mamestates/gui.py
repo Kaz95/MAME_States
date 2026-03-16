@@ -768,18 +768,15 @@ class MainWindow(QMainWindow):
         menu.addAction(add_pb_field)
         menu.exec(self.pb_fields_list.viewport().mapToGlobal(position))
 
-    # FIXME Probably should be on core.
-    # FIXME What in the holy hell was I thinking with that list comprehension???!!!
+
     def remove_invalid_mame_dir(self, mame_path: str) -> None:
         """Remove MAME directory and all related info(saves, inps, ect) from GUI, in-memory datastructures, and DB"""
-        items = [self.save_state_and_inp_tree.takeTopLevelItem(i) for i in range(self.save_state_and_inp_tree.topLevelItemCount()) if self.save_state_and_inp_tree.topLevelItem(i).text(0) == mame_path]
-        [print(item.text(0)) for item in items]
-        for mame_dir in self.core.mame_dirs:
-            if mame_path == str(mame_dir.path):
-                self.core.mame_dirs.remove(mame_dir)
-        del self.core.save_states[mame_path]
-        del self.core.input_files[mame_path]
-        self.core.delete_mame_dir(mame_path)
+        for _ in range(self.save_state_and_inp_tree.topLevelItemCount()):
+            if self.save_state_and_inp_tree.topLevelItem(_).text(0) == mame_path:
+                self.save_state_and_inp_tree.takeTopLevelItem(_)
+                break
+
+        self.core.new_remove_invalid_mame_dir(mame_path)
         QMessageBox.critical(self, 'Error', 'Invalid MAME Directory.\nDirectory has been removed. Please update it.')
 
     # FIXME Might be redundant.

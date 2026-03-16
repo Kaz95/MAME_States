@@ -334,3 +334,12 @@ class MAMEStatesCore:
                 rows.append(split)
 
         return rows
+
+    def new_remove_invalid_mame_dir(self, mame_path: str) -> None:
+        """Remove MAME directory and all related info(saves, inps, ect) from in-memory datastructures and DB"""
+        for mame_dir in self.mame_dirs:
+            if mame_path == str(mame_dir.path):
+                self.mame_dirs.remove(mame_dir)
+        del self.save_states[mame_path]
+        del self.input_files[mame_path]
+        self.delete_mame_dir(mame_path)
