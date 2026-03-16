@@ -996,15 +996,11 @@ class MainWindow(QMainWindow):
         hiscore_file = Path(mame_dir) / 'hiscore' / (rom_name + '.hi')
         hi2txt_compatible = hi2txt_wrapper.has_xml(rom_name)
         if hi2txt_compatible:
-            try:
-                # Need to do something in exception.
-                hi2txt_results = subprocess.run(
-                    [core.get_abs_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
-                    cwd=core.get_abs_path(r'../hi2txt'), capture_output=True, text=True,
-                    check=True, encoding='utf-8')
-                self.pre_hs_table = hi2txt_results.stdout
-            except FileNotFoundError:
-                print('whoops')
+            hi2txt_results = subprocess.run(
+                [core.get_abs_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
+                cwd=core.get_abs_path(r'../hi2txt'), capture_output=True, text=True,
+                check=True, encoding='utf-8')
+            self.pre_hs_table = hi2txt_results.stdout
 
         if rom_name not in list(self.core.descriptions_and_names.values()):
             rom_description = self.open_rom_for_inp_search()
