@@ -700,7 +700,6 @@ class MainWindow(QMainWindow):
         self.notes_window.raise_()
         self.notes_window.setFocus()
 
-    # TODO Consider moving to core.py
     def run_mame(self, mame_path: str):
         """Launch MAME.exe from given MAME directory. If MAME directory is found to be invalid, it is removed."""
         mame_dir = Path(mame_path)
