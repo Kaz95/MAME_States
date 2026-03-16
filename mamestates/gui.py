@@ -878,6 +878,9 @@ class MainWindow(QMainWindow):
 
         MAME paths are validated and removed if found to be invalid.
         """
+        answer = QMessageBox.question(self, 'Stop', f'Are you sure you wish to delete: {leaf_item.text(0)}?')
+        if answer == QMessageBox.StandardButton.No:
+            return
         direct_parent = leaf_item.parent()
 
         if direct_parent.text(0) == 'Input Files':
