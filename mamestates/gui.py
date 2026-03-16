@@ -1022,7 +1022,6 @@ class MainWindow(QMainWindow):
         If rom is hi2txt compatible, a new snapshot is taken of roms hiscore tables. Tables are compared to find PB.
         If new PB is found, user is prompted to add or discard new PB.
         """
-        post_hs_table = None
 
         hiscore_file = Path(self.mame_thread.mame_dir) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
         if results['return_code'] != 0:
@@ -1032,18 +1031,15 @@ class MainWindow(QMainWindow):
                 results['output'] = f'{self.mame_thread.rom_name} has close successfully.'
             QMessageBox.information(self, 'Rom Closed', f'{results['output']}')
             if self.pre_hs_table:
-                try:
-                    # FIXME Hardcoded slop
-                    hi2txt_results = subprocess.run(
-                        [core.get_abs_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
-                        cwd=core.get_abs_path(r'../hi2txt'), capture_output=True,
-                        text=True,
-                        check=True, encoding='utf-8')
-                    post_hs_table = hi2txt_results.stdout
-                except FileNotFoundError:
-                    print('whoops')
+                hi2txt_results = subprocess.run(
+                    [core.get_abs_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
+                    cwd=core.get_abs_path(r'../hi2txt'), capture_output=True,
+                    text=True,
+                    check=True, encoding='utf-8')
 
+                post_hs_table = hi2txt_results.stdout
                 new_pb = hi2txt_wrapper.get_new_pb(self.pre_hs_table, post_hs_table)
+
                 if new_pb:
                     response = QMessageBox.question(self, 'New PB Detected!',
                                                     f'A new personal best has been detected\n{new_pb['col']}\n{new_pb['row']}\nWould you like to add new PB?')
