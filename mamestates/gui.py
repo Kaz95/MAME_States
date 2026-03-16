@@ -413,6 +413,22 @@ class MainWindow(QMainWindow):
             for field_name in other_fields:
                 self.create_pb_field_item(field_name, other_fields[field_name])
 
+    @staticmethod
+    def paint_clone_rom_item(item: QTreeWidgetItem) -> None:
+        """Paint the given item light grey. """
+        color = QColor(211, 211, 211, 127)
+        brush = QBrush(color)
+        item.setForeground(0, brush)
+
+    def create_rom_search_item(self, rom_description, rom_name, weight=3) -> tuple[QTreeWidgetItem, int]:
+        """Create and return rom item, set tooltip to rom name, pain item if is clone."""
+        item = QTreeWidgetItem([rom_description])
+        item.setToolTip(0, rom_name)
+        parent = self.core.rom_info[rom_description].parent
+        if parent is not None:
+            self.paint_clone_rom_item(item)
+
+        return item, weight
     def create_pb_field_item(self, field_name: str, field_value: str | int) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
         pb_field = widgets.PBField(field_name, field_value)
@@ -426,6 +442,7 @@ class MainWindow(QMainWindow):
         self.pb_fields_list.setItemWidget(list_item, pb_field)
         list_item.setSizeHint(pb_field.sizeHint())
         return list_item
+
 
     def create_split_item(self, split: core.StageSplit, rom_description: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
@@ -1057,24 +1074,6 @@ class MainWindow(QMainWindow):
     def on_text_changed(self) -> None:
         """Start a timer used to delay rom search filtering."""
         self.debounce_timer.start(300)
-
-    # TODO Figure out where to put this.
-    def paint_clone_rom_item(self, item: QTreeWidgetItem) -> None:
-        """Paint the given item light grey. """
-        color = QColor(211, 211, 211, 127)
-        brush = QBrush(color)
-        item.setForeground(0, brush)
-
-    # TODO Figure out where to put this.
-    def create_rom_search_item(self, rom_description, rom_name, weight=3) -> tuple[QTreeWidgetItem, int]:
-        """Create and return rom item, set tooltip to rom name, pain item if is clone."""
-        item = QTreeWidgetItem([rom_description])
-        item.setToolTip(0, rom_name)
-        parent = self.core.rom_info[rom_description].parent
-        if parent is not None:
-            self.paint_clone_rom_item(item)
-
-        return item, weight
 
     def update_filter(self) -> None:
         """Filter the rom search list based on searchbar text.
