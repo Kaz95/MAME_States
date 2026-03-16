@@ -992,16 +992,12 @@ class MainWindow(QMainWindow):
         if not mame_exe.is_file():
             self.remove_invalid_mame_dir(mame_path=mame_dir)
             return
-        rom = Path(mame_dir) / 'roms' / (rom_name + '.zip')
+
         hiscore_file = Path(mame_dir) / 'hiscore' / (rom_name + '.hi')
-
-        print(rom)
-        print(rom.is_file())
-
         hi2txt_compatible = hi2txt_wrapper.has_xml(rom_name)
         if hi2txt_compatible:
             try:
-                # FIXME Hardcoded slop...is fine now? Think I fixed this already. Need to do something in exception.
+                # Need to do something in exception.
                 hi2txt_results = subprocess.run(
                     [core.get_abs_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
                     cwd=core.get_abs_path(r'../hi2txt'), capture_output=True, text=True,
