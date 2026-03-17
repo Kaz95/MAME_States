@@ -1104,9 +1104,7 @@ class MainWindow(QMainWindow):
     def rom_search_tree_selection_changed(self) -> None:
         """Clear and attempt to refill Rom Search Info Panel based on selected item.
 
-        Info Panel is cleared before refilling to account for no selected item.
-        TODO
-         I suppose I could clear only if not selected.
+        Info Panel is hidden/shown depending on if search tab is detached or not.
         """
         selected = self.rom_search_tree.selectedItems()
         if selected:
