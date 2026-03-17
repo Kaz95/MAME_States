@@ -3,7 +3,6 @@
 This module contains the graphical user interface for the MAMEStates application.
 
 TODO:
-    * Remove try/except blocks where the program should be allowed to fail.
     * Consider sizing policies and size hints
     * Decide on new features to add.
 """
