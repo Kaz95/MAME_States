@@ -1140,7 +1140,6 @@ class MainWindow(QMainWindow):
 
         If file name already in use, item has its text reverted and file is not renamed.
         """
-        # FIXME Pretty sure I can avoid toggling the signal by using a different signal. TextEdited or something...
         if not leaf_item.text(0):
             self.save_state_and_inp_tree.blockSignals(True)
             leaf_item.setText(0, self.save_state_page_text_before_editing)
