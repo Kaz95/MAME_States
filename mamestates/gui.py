@@ -177,7 +177,6 @@ class MainWindow(QMainWindow):
         self.personal_best_layout = QVBoxLayout()
         """Contains PB Info"""
 
-
         # Add widgets to layout. Setup signals and slots.
         self.setup_save_state_page()
         self.setup_hiscore_panel()
@@ -260,6 +259,8 @@ class MainWindow(QMainWindow):
         # ------------------- #
         # Finalize tab setup. #
         # ------------------- #
+        first_item = self.games_with_pb_tree.topLevelItem(0)
+        self.games_with_pb_tree.setCurrentItem(first_item)
         self.tabs.addTab(self.save_state_and_inp_page, 'Save States')
         self.tabs.addTab(self.high_score_page, 'High Scores')
         self.tabs.addTab(self.rom_search_page, 'Rom Search')
@@ -321,10 +322,6 @@ class MainWindow(QMainWindow):
 
         self.game_list_container.addWidget(self.games_with_pb_tree)
         self.game_list_container.addLayout(self.game_list_button_container)
-
-        # FIXME Can't focus right away. Causes incorrect size hint. Look into it.
-        # first_item = self.high_score_game_tree.topLevelItem(0)
-        # self.high_score_game_tree.setCurrentItem(first_item)
 
     def setup_pb_panel(self) -> None:
         """Personal Best Panel widget customization."""
@@ -428,6 +425,7 @@ class MainWindow(QMainWindow):
             self.paint_clone_rom_item(item)
 
         return item, weight
+
     def create_pb_field_item(self, field_name: str, field_value: str | int) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
         pb_field = widgets.PBField(field_name, field_value)
@@ -441,7 +439,6 @@ class MainWindow(QMainWindow):
         self.pb_fields_list.setItemWidget(list_item, pb_field)
         list_item.setSizeHint(pb_field.sizeHint())
         return list_item
-
 
     def create_split_item(self, split: core.StageSplit, rom_description: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
@@ -584,7 +581,8 @@ class MainWindow(QMainWindow):
             for field_name in self.temp_fields:
                 if field_name == 'high score':
                     continue
-                self.core.pb_info[rom_description].other_fields[field_name] = self.temp_fields[field_name].field_value.editor.text()
+                self.core.pb_info[rom_description].other_fields[field_name] = self.temp_fields[
+                    field_name].field_value.editor.text()
             self.core.save_pb_to_database()
 
     def hiscore_add_game_clicked(self) -> None:
@@ -784,8 +782,7 @@ class MainWindow(QMainWindow):
         menu.addAction(add_pb_field)
         menu.exec(self.pb_fields_list.viewport().mapToGlobal(position))
 
-
-    def remove_invalid_mame_dir(self, *, mame_path: str | None=None, path_item: QTreeWidgetItem | None=None) -> None:
+    def remove_invalid_mame_dir(self, *, mame_path: str | None = None, path_item: QTreeWidgetItem | None = None) -> None:
         """Remove MAME directory and all related info(saves, inps, ect) from GUI, in-memory datastructures, and DB
 
         Use path_item if called from context menu where item is available, then derive mame_path.
@@ -806,7 +803,6 @@ class MainWindow(QMainWindow):
         self.core.new_remove_invalid_mame_dir(mame_path)
         QMessageBox.critical(self, 'Error', 'Invalid MAME Directory.\nDirectory has been removed. Please update it.')
 
-
     def open_ini_actioned_clicked(self) -> None:
         """Attempt to open the .ini file for the selected MAME directory.
 
@@ -820,7 +816,8 @@ class MainWindow(QMainWindow):
             if mame_ini_file.is_file():
                 os.startfile(mame_ini_file)
             else:
-                response = QMessageBox.question(self, 'Directory Not Found', f'Could Not Find File: {mame_ini_file}\nWould you like to create a new ini file?')
+                response = QMessageBox.question(self, 'Directory Not Found',
+                                                f'Could Not Find File: {mame_ini_file}\nWould you like to create a new ini file?')
                 if response == QMessageBox.StandardButton.Yes:
                     subprocess.run([core.get_abs_path(mame_path / 'mame.exe'), '-cc'], cwd=core.get_abs_path(mame_path))
         else:
@@ -857,7 +854,6 @@ class MainWindow(QMainWindow):
             delete.triggered.connect(lambda: self.remove_invalid_mame_dir(path_item=tree_item))
             open_ini.triggered.connect(self.open_ini_actioned_clicked)
             open_in_explorer.triggered.connect(lambda: self.open_mame_dir_in_explorer(tree_item))
-
 
             menu.addAction(launch)
             menu.addAction(open_ini)
@@ -987,7 +983,7 @@ class MainWindow(QMainWindow):
         self.tabs.removeTab(2)
         self.rom_info_container.hide()
         dialog = widgets.RomSearchDialog(widgets.RomSearchWindow(self.rom_search_page, self.tabs), self.rom_search_tree,
-                                      parent=self)
+                                         parent=self)
         dialog.exec()
         self.rom_info_container.show()
         self.tabs.addTab(dialog.rom_search_popup, 'Rom Search')
