@@ -1108,17 +1108,13 @@ class MainWindow(QMainWindow):
         TODO
          I suppose I could clear only if not selected.
         """
-        self.rom_description_label.setText('')
-        self.rom_name_label.setText('')
-        self.rom_manufacturer_label.setText('')
-        self.rom_release_year_label.setText('')
-        self.rom_parent_label.setText('')
-        self.rom_video_info_label.setText('')
-        self.rom_video_driver_warnings_label.setText('')
-        self.rom_audio_driver_warnings_label.setText('')
-
         selected = self.rom_search_tree.selectedItems()
         if selected:
+            if self.tabs.count() == 3:
+                self.rom_info_container.show()
+            else:
+                if self.rom_info_container.isVisible():
+                    self.rom_info_container.hide()
             game_description = selected[0].text(0)
             rom_info = self.core.rom_info[game_description]
             self.rom_description_label.setText(f'Game: {game_description}')
@@ -1130,6 +1126,9 @@ class MainWindow(QMainWindow):
                 f'Video Info: {rom_info.hres}x{rom_info.vres}@{rom_info.refresh} - {rom_info.rotate}°')
             self.rom_video_driver_warnings_label.setText(f'Video Driver: {rom_info.video}')
             self.rom_audio_driver_warnings_label.setText(f'Sound Driver: {rom_info.sound}')
+
+        else:
+            self.rom_info_container.hide()
 
     # --------------------- #
     # Save State Page Slots #
