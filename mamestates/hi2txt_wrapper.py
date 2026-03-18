@@ -3,12 +3,15 @@ import pprint
 import sqlite3
 import subprocess
 from pathlib import Path
+from enum import Enum
 
 import zipfile
 import xmltodict
 
 import core
 
+class Hi2TxtError(Enum):
+    INCOMPATIBLE_TABLE_SCHEMA = 1
 
 def has_xml(rom_name: str) -> bool:
     """Check if a given rom has an XML file, and is therefore compatible with 'hi2txt'."""
@@ -80,7 +83,7 @@ def format_table(raw_hi2txt_table: str) -> dict[str, list | str]:
             return table
 
 
-def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
+def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | Hi2TxtError |None:
     """Compare two raw hi2txt tables to look for new, possible, personal best."""
     old_table = format_table(old_raw_table)
     new_table = format_table(new_raw_table)
@@ -94,10 +97,8 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | None:
     new_rows = new_table['rows']
     new_pb = {}
 
-    # TODO Move print downstream at usage and make messagebox.
     if old_columns != new_columns or old_leaderboard != new_leaderboard:
-        print('Incompatible table schemas.')
-        return
+        return Hi2TxtError.INCOMPATIBLE_TABLE_SCHEMA
 
     for index, line in enumerate(new_rows):
         if line != old_rows[index]:

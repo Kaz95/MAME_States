@@ -1051,7 +1051,11 @@ class MainWindow(QMainWindow):
 
                 post_hs_table = hi2txt_results.stdout
                 new_pb = hi2txt_wrapper.get_new_pb(self.pre_hs_table, post_hs_table)
-
+                if new_pb == hi2txt_wrapper.Hi2TxtError.INCOMPATIBLE_TABLE_SCHEMA:
+                    QMessageBox.critical(self, 'Error', "Incompatible hiscore table schema detected. Hi2txt may have "
+                                                        "been updated. Please manually remove previous hiscore entry "
+                                                        "and run a manual PB scan.")
+                    return
                 if new_pb:
                     response = QMessageBox.question(self, 'New PB Detected!',
                                                     f'A new personal best has been detected\n{new_pb['col']}\n{new_pb['row']}\nWould you like to add new PB?')
