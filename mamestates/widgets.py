@@ -181,8 +181,6 @@ class RomSearchWindow(QWidget):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used to detach and display the Rom Search Page tab for use as a popup search dialog.
     Buttons are made visible during initialization. Buttons are hidden when window closes and tab reattaches.
-    TODO I could probably move references to the buttons to the page widget and forgo the need to pass as args.
-            I probably don't need to pass the page widget either, as it can be derived from tabs widget.
     """
 
     def __init__(self, rom_search_page: QWidget, tabs_container: QTabWidget, add_game_button: QPushButton | None = None,
@@ -273,8 +271,8 @@ class NotesWindow(QWidget):
         """Extend closeEvent to save text edit data to notes.txt corresponding to this NotesWindow."""
         with open(Path(core.get_abs_path(r'./notes')) / (self.current_game + '.txt'), 'w') as notes:
             notes.write(self.text_edit.toPlainText())
-        # TODO Do I need to call super? What does close usually do?
-        # super().closeEvent(event)
+        event.accept()
+
 
 
 class ToggleableLabel(QWidget):
