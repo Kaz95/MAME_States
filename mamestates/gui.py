@@ -699,8 +699,9 @@ class MainWindow(QMainWindow):
         if self.notes_window.isHidden():
             self.notes_window.show()
 
-        notes_file = Path('../notes') / (rom_name + '.txt')
+        notes_file = Path('./notes') / (rom_name + '.txt')
         notes_file = core.get_abs_path(notes_file)
+        print(notes_file.resolve())
 
         if not notes_file.is_file():
             notes_file.touch()
@@ -1007,10 +1008,11 @@ class MainWindow(QMainWindow):
 
         hiscore_file = Path(mame_dir) / 'hiscore' / (rom_name + '.hi')
         hi2txt_compatible = hi2txt_wrapper.has_xml(rom_name)
+        print(core.get_abs_path(r'./hi2txt/hi2txt.exe'))
         if hi2txt_compatible:
             hi2txt_results = subprocess.run(
-                [core.get_abs_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
-                cwd=core.get_abs_path(r'../hi2txt'), capture_output=True, text=True,
+                [core.get_abs_path(r'./hi2txt/hi2txt.exe').resolve(), '-r', f'{hiscore_file}'],
+                cwd=core.get_abs_path(r'./hi2txt').resolve(), capture_output=True, text=True,
                 check=True, encoding='utf-8')
             self.pre_hs_table = hi2txt_results.stdout
 
@@ -1044,8 +1046,8 @@ class MainWindow(QMainWindow):
             QMessageBox.information(self, 'Rom Closed', f'{results['output']}')
             if self.pre_hs_table:
                 hi2txt_results = subprocess.run(
-                    [core.get_abs_path(r'../hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
-                    cwd=core.get_abs_path(r'../hi2txt'), capture_output=True,
+                    [core.get_abs_path(r'./hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
+                    cwd=core.get_abs_path(r'./hi2txt'), capture_output=True,
                     text=True,
                     check=True, encoding='utf-8')
 
