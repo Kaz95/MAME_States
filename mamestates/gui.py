@@ -1062,8 +1062,9 @@ class MainWindow(QMainWindow):
                     response = QMessageBox.question(self, 'New PB Detected!',
                                                     f'A new personal best has been detected\n{new_pb['col']}\n{new_pb['row']}\nWould you like to add new PB?')
                     if response == QMessageBox.StandardButton.Yes:
-                        new_pb = hi2txt_wrapper.prepare_pb_for_db(new_pb, self.mame_thread.rom_name)
-                        hi2txt_wrapper.save_pbs(new_pb, self.core.connection, self.core.cursor)
+                        # new_pb = hi2txt_wrapper.prepare_pb_for_db(new_pb, self.mame_thread.rom_name, self.core.cursor)
+                        # hi2txt_wrapper.save_pbs(new_pb, self.core.connection, self.core.cursor)
+                        hi2txt_wrapper.save_pb(new_pb, self.mame_thread.rom_name, self.core.connection, self.core.cursor)
                         QMessageBox.information(self, 'Ok', 'Pb Updated!')
                     else:
                         QMessageBox.information(self, 'Ok', 'PB discarded.')

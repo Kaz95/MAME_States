@@ -77,12 +77,12 @@ def format_table(raw_hi2txt_table: str) -> dict[str, list | str]:
             columns = leaderboard_lines.pop(0)
             table['col'] = columns
             table['name'] = leaderboard_name
-            table['rows'] = leaderboard_lines
+            table['row'] = leaderboard_lines
             return table
         else:
             columns = leaderboard_lines.pop(0)
             table['col'] = columns
-            table['rows'] = leaderboard_lines
+            table['row'] = leaderboard_lines
             return table
 
 
@@ -96,8 +96,8 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | Hi2Tx
     new_columns = new_table['col']
     old_leaderboard = old_table.get('name')
     new_leaderboard = new_table.get('name')
-    old_rows = old_table['rows']
-    new_rows = new_table['rows']
+    old_rows = old_table['row']
+    new_rows = new_table['row']
     new_pb = {}
 
     if old_columns != new_columns or old_leaderboard != new_leaderboard:
@@ -134,7 +134,8 @@ def serialize_hi2txt_to_pb(line: str, columns: str, rom_name: str, cursor: sqlit
     return pb
 
 
-def parse_leaderboard_lines(leaderboard_lines: list, default_table: dict, columns: str, rom_name: str, cursor: sqlite3.Cursor):
+def parse_leaderboard_lines(leaderboard_lines: list, default_table: dict, columns: str, rom_name: str,
+                            cursor: sqlite3.Cursor):
     """Parse a set of hi2txt lines and compare them against the default state of a roms hiscore table.
 
     If a discrepancy is found, it is serialized into a PersonalBest object and returned.
@@ -185,26 +186,6 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]], cursor: sqlite3.Cursor
     return new_pbs
 
 
-def prepare_pb_for_db(new_pb: dict[str, str], rom_name: str, cursor: sqlite3.Cursor) -> core.PersonalBests:
-    """Convert a single new PB entry, into the format used by multiple PB insertion function.
-
-    TODO This is lazy af.
-    """
-    all_pbs = {}
-    pb = {}
-    columns = new_pb['col'].split('|')
-    row = new_pb['row'].split('|')
-    for index, section in enumerate(row):
-        pb[columns[index]] = section
-    pb.pop('NAME', None)
-    pb.pop('RANK', None)
-    rom_id = id_from_rom_name(rom_name, cursor)
-    new_pb = core.PersonalBest(int(pb.pop('SCORE')), rom_id, pb)
-    pprint.pp(pb)
-    all_pbs[rom_name] = new_pb
-    return all_pbs
-
-
 def id_from_rom_name(name: str, cursor) -> int:
     """Retrieve the corresponding rom_id, for a given rom name, from the database."""
     sql_statement = "SELECT id FROM roms WHERE name = ?"
@@ -212,6 +193,20 @@ def id_from_rom_name(name: str, cursor) -> int:
     row = cursor.fetchone()
     rom_id = row['id']
     return rom_id
+
+
+def save_pb(new_pb: dict[str, str], rom_name: str, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
+    """Insert or update new PB entry into database, if new PB has a higher score."""
+    new_pb = serialize_hi2txt_to_pb(new_pb['row'], new_pb['col'], rom_name, cursor)
+    other_fields = json.dumps(new_pb.other_fields)
+    rom_id = id_from_rom_name(rom_name, cursor)
+
+    row = (new_pb.hiscore, other_fields, rom_id)
+    sql_statement = (
+        "INSERT INTO personal_bests (hiscore, other_fields, rom_id) VALUES (?, ?, ?) ON CONFLICT(rom_id) DO UPDATE SET hiscore = "
+        "excluded.hiscore, other_fields = excluded.other_fields WHERE excluded.hiscore > hiscore")
+    cursor.execute(sql_statement, row)
+    connection.commit()
 
 
 def save_pbs(new_pbs: core.PersonalBests, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
