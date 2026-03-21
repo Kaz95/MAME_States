@@ -1,6 +1,7 @@
 """Core Logic Package
 
 TODO:
+    * Read, and update all docstrings.
     * Programmatically change focus where appropriate. Raise and focus program where appropriate.
     * Add GUI 'updates' where appropriate(eg., new item added, personal bests updated)
     * Testing.
