@@ -1,10 +1,6 @@
 """MAMEStates GUI
 
 This module contains the graphical user interface for the MAMEStates application.
-
-TODO:
-    * Consider sizing policies and size hints
-    * Decide on new features to add.
 """
 import os
 import pprint
