@@ -81,6 +81,7 @@ class MAMEThread(QThread):
         self.mame_dir: Path = mame_dir
         """MAME directory containing the MAME.exe that will be used to launch rom"""
 
+    # TODO Don't need to get date and whatnot unless recording inp.
     def run(self) -> None:
         """Override and extend run function to run a rom and capture/emit its stdout, stderr, and return code."""
         date_object = datetime.now()
