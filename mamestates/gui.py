@@ -12,7 +12,7 @@ from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
 from PyQt6.QtGui import QAction, QFont, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, QTabWidget, \
     QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QListWidgetItem, \
-    QFileDialog, QMessageBox, QMenu, QListWidget, QInputDialog
+    QFileDialog, QMessageBox, QMenu, QListWidget, QInputDialog, QTextEdit
 
 import core, hi2txt_wrapper, widgets
 
@@ -115,13 +115,17 @@ class MainWindow(QMainWindow):
         self.save_state_and_inp_tree: QTreeWidget = QTreeWidget()
         """Main widget of the save state tab"""
 
+        self.terminal_output_box: QTextEdit = QTextEdit()
+        """Temporary widget for testing."""
+
         # Layouts
-        self.save_state_and_inp_layout: QHBoxLayout = QHBoxLayout()
+        self.save_state_and_inp_layout: QVBoxLayout = QVBoxLayout()
         """Top level page layout."""
 
         self.save_state_and_inp_layout.setContentsMargins(0, 0, 0, 0)
         self.save_state_and_inp_page.setLayout(self.save_state_and_inp_layout)
         self.save_state_and_inp_layout.addWidget(self.save_state_and_inp_tree)
+        self.save_state_and_inp_layout.addWidget(self.terminal_output_box)
 
         # ------------------#
         #   Hiscore Page  #
@@ -717,7 +721,8 @@ class MainWindow(QMainWindow):
         mame_dir = Path(mame_path)
         mame_exe = mame_dir / 'mame.exe'
         if mame_exe.is_file():
-            subprocess.Popen(mame_exe, cwd=rf'{mame_dir}')
+            widgets.MAMEProcess(str(mame_dir), self.terminal_output_box).start_external_process()
+            # subprocess.Popen(mame_exe, cwd=rf'{mame_dir}')
         else:
             self.remove_invalid_mame_dir(mame_path=mame_path)
             print(f'File {mame_exe} not found')

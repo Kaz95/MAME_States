@@ -7,7 +7,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize
+from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize, QProcess
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QTabWidget, QListWidgetItem, QDialogButtonBox, \
@@ -19,6 +19,37 @@ import hi2txt_wrapper, core
 ######################
 #   Save State Page  #
 ######################
+class MAMEProcess(QProcess):
+    def __init__(self, mame_path: str, text_box: QTextEdit):
+        super().__init__()
+        self.text_box: QTextEdit = text_box
+        self.mame_path: str = mame_path
+        self.setWorkingDirectory(self.mame_path)
+        # 2. Connect signals for real-time reading
+        self.readyReadStandardOutput.connect(self.handle_stdout)
+        self.readyReadStandardError.connect(self.handle_stderr)
+        self.finished.connect(self.process_finished)
+
+    def start_external_process(self):
+        print('idk m8')
+        print(Path.cwd())
+        self.start(self.mame_path + '\\mame.exe')
+
+    def handle_stdout(self):
+        # 3. Read and decode the data
+        data = self.readAllStandardOutput()
+        stdout = data.data().decode()
+        self.text_box.append(stdout)
+
+    def handle_stderr(self):
+        data = self.readAllStandardError()
+        stderr = data.data().decode()
+        self.text_box.append(f"Error: {stderr}")
+
+    def process_finished(self):
+        self.text_box.append("Process finished.")
+
+
 class MAMEThread(QThread):
     """Subclass and extend the QThread class of the PyQt6.QtCore module.
 
