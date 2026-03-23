@@ -12,7 +12,6 @@ TODO:
     * Derive roms dir from MAME ini, instead of assuming it is called roms.
     * Remove QMessageBpx when dir deleted via file menu.
     * Decide how terminal output will be displayed on front-end.
-        * Implement QProcesses to replace Popen usage.
     * Consider sizing policies and size hints
     * Decide on new features to add.
 """
