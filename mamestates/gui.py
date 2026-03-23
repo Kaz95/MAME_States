@@ -721,7 +721,7 @@ class MainWindow(QMainWindow):
         mame_dir = Path(mame_path)
         mame_exe = mame_dir / 'mame.exe'
         if mame_exe.is_file():
-            widgets.MAMEProcess(str(mame_dir), self.terminal_output_box).start_external_process()
+            self.mame_thread = widgets.MAMEProcess(mame_dir, self.terminal_output_box)
             # subprocess.Popen(mame_exe, cwd=rf'{mame_dir}')
         else:
             self.remove_invalid_mame_dir(mame_path=mame_path)
@@ -1004,6 +1004,7 @@ class MainWindow(QMainWindow):
         mame_dir = action.text()
 
         mame_exe = Path(mame_dir) / 'mame.exe'
+        # TODO This should explicitly check for dir or exe existence. Currently checks for exe, but deletes dir.
         if not mame_exe.is_file():
             self.remove_invalid_mame_dir(mame_path=mame_dir)
             return
@@ -1018,21 +1019,17 @@ class MainWindow(QMainWindow):
                 check=True, encoding='utf-8')
             self.pre_hs_table = hi2txt_results.stdout
 
+        # TODO This may need to be a value error. Shouldn't ever have an invalid name. At least not caused by anything the end user can do via GUI.
         if rom_name not in list(self.core.descriptions_and_names.values()):
-            rom_description = self.open_rom_for_inp_search()
-            if rom_description:
-                rom_name = self.core.descriptions_and_names[rom_description]
-            else:
-                QMessageBox.critical(self, 'Error', 'Input File cannot be played back without a valid rom.')
-                return
-        self.mame_thread = widgets.MAMEThread(mame_exe, rom_name, Path(mame_dir), record_input=record_input,
-                                              playback_input=play_back_input, input_file_name=input_file_name)
-        self.mame_thread.mame_exited.connect(self.rom_done)
-        self.mame_thread.start()
+            QMessageBox.critical(self, 'Error', 'Input File cannot be played back without a valid rom.')
+            return
+
+        self.mame_thread = widgets.MAMEProcess(Path(mame_dir), self.terminal_output_box, rom_name, record_input=record_input, playback_input=play_back_input, input_file_name=input_file_name)
+        self.mame_thread.finished.connect(self.rom_done)
 
         print(f'Running {rom_name}, from {action.text()}')
 
-    def rom_done(self, results: dict) -> None:
+    def rom_done(self) -> None:
         """Perform actions after rom finishes running.
 
         If rom is hi2txt compatible, a new snapshot is taken of roms hiscore tables. Tables are compared to find PB.
@@ -1040,37 +1037,31 @@ class MainWindow(QMainWindow):
         """
 
         hiscore_file = Path(self.mame_thread.mame_dir) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
-        if results['return_code'] != 0:
-            QMessageBox.critical(self, 'Rom Not Found', f'{results['err']}')
-        else:
-            if not results['output']:
-                results['output'] = f'{self.mame_thread.rom_name} has close successfully.'
-            QMessageBox.information(self, 'Rom Closed', f'{results['output']}')
-            if self.pre_hs_table:
-                hi2txt_results = subprocess.run(
-                    [core.get_abs_path(r'./hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
-                    cwd=core.get_abs_path(r'./hi2txt'), capture_output=True,
-                    text=True,
-                    check=True, encoding='utf-8')
 
-                post_hs_table = hi2txt_results.stdout
-                new_pb = hi2txt_wrapper.get_new_pb(self.pre_hs_table, post_hs_table)
-                if new_pb == hi2txt_wrapper.Hi2TxtError.INCOMPATIBLE_TABLE_SCHEMA:
-                    QMessageBox.critical(self, 'Error', "Incompatible hiscore table schema detected. Hi2txt may have "
-                                                        "been updated. Please manually remove previous hiscore entry "
-                                                        "and run a manual PB scan.")
-                    return
-                if new_pb:
-                    response = QMessageBox.question(self, 'New PB Detected!',
-                                                    f'A new personal best has been detected\n{new_pb['col']}\n{new_pb['row']}\nWould you like to add new PB?')
-                    if response == QMessageBox.StandardButton.Yes:
-                        # new_pb = hi2txt_wrapper.prepare_pb_for_db(new_pb, self.mame_thread.rom_name, self.core.cursor)
-                        # hi2txt_wrapper.save_pbs(new_pb, self.core.connection, self.core.cursor)
-                        hi2txt_wrapper.save_pb(new_pb, self.mame_thread.rom_name, self.core.connection, self.core.cursor)
-                        QMessageBox.information(self, 'Ok', 'Pb Updated!')
-                    else:
-                        QMessageBox.information(self, 'Ok', 'PB discarded.')
-        print(f'Return code is: {results['return_code']}')
+        if self.pre_hs_table:
+            hi2txt_results = subprocess.run(
+                [core.get_abs_path(r'./hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
+                cwd=core.get_abs_path(r'./hi2txt'), capture_output=True,
+                text=True,
+                check=True, encoding='utf-8')
+
+            post_hs_table = hi2txt_results.stdout
+            new_pb = hi2txt_wrapper.get_new_pb(self.pre_hs_table, post_hs_table)
+            if new_pb == hi2txt_wrapper.Hi2TxtError.INCOMPATIBLE_TABLE_SCHEMA:
+                QMessageBox.critical(self, 'Error', "Incompatible hiscore table schema detected. Hi2txt may have "
+                                                    "been updated. Please manually remove previous hiscore entry "
+                                                    "and run a manual PB scan.")
+                return
+            if new_pb:
+                response = QMessageBox.question(self, 'New PB Detected!',
+                                                f'A new personal best has been detected\n{new_pb['col']}\n{new_pb['row']}\nWould you like to add new PB?')
+                if response == QMessageBox.StandardButton.Yes:
+                    # new_pb = hi2txt_wrapper.prepare_pb_for_db(new_pb, self.mame_thread.rom_name, self.core.cursor)
+                    # hi2txt_wrapper.save_pbs(new_pb, self.core.connection, self.core.cursor)
+                    hi2txt_wrapper.save_pb(new_pb, self.mame_thread.rom_name, self.core.connection, self.core.cursor)
+                    QMessageBox.information(self, 'Ok', 'Pb Updated!')
+                else:
+                    QMessageBox.information(self, 'Ok', 'PB discarded.')
 
     # --------------------- #
     # Rom Search Page Slots #

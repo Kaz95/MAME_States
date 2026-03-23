@@ -19,21 +19,64 @@ import hi2txt_wrapper, core
 ######################
 #   Save State Page  #
 ######################
+# TODO Not sure if use Paths or str within function. Whatever I choose needs to be consistent across entire app.
 class MAMEProcess(QProcess):
-    def __init__(self, mame_path: str, text_box: QTextEdit):
+    def __init__(self, mame_dir: Path, text_box: QTextEdit, rom_name: str | None = None, *, record_input: bool = False, playback_input: bool = False, input_file_name: str | None = None):
         super().__init__()
         self.text_box: QTextEdit = text_box
-        self.mame_path: str = mame_path
-        self.setWorkingDirectory(self.mame_path)
+        self.mame_dir: Path = mame_dir
+        self.mame_exe: Path = self.mame_dir / 'mame.exe'
+        self.setWorkingDirectory(str(self.mame_dir))
         # 2. Connect signals for real-time reading
         self.readyReadStandardOutput.connect(self.handle_stdout)
         self.readyReadStandardError.connect(self.handle_stderr)
         self.finished.connect(self.process_finished)
+        self.rom_name = rom_name
+        self.record_input = record_input
+        self.playback_input = playback_input
+        self.input_file_name = input_file_name
 
-    def start_external_process(self):
-        print('idk m8')
-        print(Path.cwd())
-        self.start(self.mame_path + '\\mame.exe')
+        if self.playback_input is True and self.record_input is True:
+            raise ValueError('Record/Playback are mutually exclusive.')
+
+        if self.playback_input is True:
+            if not self.input_file_name:
+                raise ValueError("Input File Name is required when using 'playback_input' flag.")
+            self.run_mame_with_inp_playback()
+
+        elif self.record_input is True:
+            if self.input_file_name:
+                # TODO Not sure if ignore silently, or inform why it isn't working.
+                raise ValueError('This class is not currently setup to allow custom input file names.')
+            self.run_mame_with_inp_recording()
+
+        elif rom_name:
+            if self.input_file_name:
+                # TODO Not sure if ignore silently, or inform why it isn't working.
+                raise ValueError("This class does not make use of 'input_file_name' unless 'playback_input' flag is True.")
+            self.run_mame_with_rom()
+
+        else:
+            self.run_mame()
+
+    def run_mame(self):
+        self.start(str(self.mame_exe))
+
+    def run_mame_with_rom(self):
+        self.start(str(self.mame_exe), [self.rom_name])
+
+    def run_mame_with_inp_recording(self):
+        date_object = datetime.now()
+        formatted_date = date_object.strftime("%Y-%m-%d %H:%M")
+        formatted_date = formatted_date.replace(' ', '_')
+        formatted_date = formatted_date.replace(':', '-')
+        full_mame_version = core.get_mame_version(Path(self.mame_dir))
+        short_mame_version = full_mame_version.split()[0]
+
+        self.start(str(self.mame_exe), [self.rom_name, '-record', f'{self.rom_name}_{formatted_date}_{short_mame_version}.inp'])
+
+    def run_mame_with_inp_playback(self):
+        self.start(str(self.mame_exe), [self.rom_name, '-playback', f'{self.input_file_name}.inp'])
 
     def handle_stdout(self):
         # 3. Read and decode the data
@@ -48,71 +91,6 @@ class MAMEProcess(QProcess):
 
     def process_finished(self):
         self.text_box.append("Process finished.")
-
-
-class MAMEThread(QThread):
-    """Subclass and extend the QThread class of the PyQt6.QtCore module.
-
-    This class inherits most of its behavior from its parent class, while extending its functionality.
-    Used to spawn a MAME subprocess on a new thread. A new thread is needed to avoid blocking while waiting for return.
-    Subprocess output, errors, and return code are captured and emitted before thread dies.
-    """
-    mame_exited: pyqtSignal = pyqtSignal(dict)
-    """Custom 'finished' signal. Emitted when 'run' method finishes."""
-
-    def __init__(self, mame_exe: Path, rom_name: str, mame_dir: Path, record_input=False, playback_input=False,
-                 input_file_name=None) -> None:
-        super().__init__()
-        self.playback_input = playback_input
-        """Flag"""
-
-        self.record_input = record_input
-        """Flag"""
-
-        self.input_file_name = input_file_name
-        """Used if playback_input is True."""
-
-        self.mame_exe: Path = mame_exe
-        """Path object pointing to MAME.exe file."""
-
-        self.rom_name: str = rom_name
-        """Name of the rom being run."""
-
-        self.mame_dir: Path = mame_dir
-        """MAME directory containing the MAME.exe that will be used to launch rom"""
-
-    # TODO Don't need to get date and whatnot unless recording inp.
-    def run(self) -> None:
-        """Override and extend run function to run a rom and capture/emit its stdout, stderr, and return code."""
-        date_object = datetime.now()
-        formatted_date = date_object.strftime("%Y-%m-%d %H:%M")
-        formatted_date = formatted_date.replace(' ', '_')
-        formatted_date = formatted_date.replace(':', '-')
-        full_mame_version = core.get_mame_version(self.mame_dir)
-        short_mame_version = full_mame_version.split()[0]
-
-        print(f'{self.rom_name}_{formatted_date}.inp')
-        if self.record_input:
-            commands = [self.mame_exe, self.rom_name, '-record',
-                        f'{self.rom_name}_{formatted_date}_{short_mame_version}.inp']
-        elif self.playback_input:
-            if self.input_file_name:
-                commands = [self.mame_exe, self.rom_name, '-playback', f'{self.input_file_name}.inp']
-            else:
-                print('a warning or something.')
-                return
-        else:
-            commands = [self.mame_exe, self.rom_name]
-
-        process = subprocess.Popen(commands,
-                                   cwd=rf'{self.mame_dir}',
-                                   stdout=subprocess.PIPE,
-                                   stderr=subprocess.PIPE,
-                                   text=True)
-        output, err = process.communicate()
-        return_code = process.returncode
-        results = {'output': output, 'err': err, 'return_code': return_code, 'rom': self.rom_name}
-        self.mame_exited.emit(results)
 
 
 class PBScannerThread(QThread):
