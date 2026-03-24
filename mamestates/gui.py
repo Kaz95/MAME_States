@@ -982,7 +982,8 @@ class MainWindow(QMainWindow):
 
     def open_rom_for_inp_search(self) -> str:
         """Pop out the 'rom search' tab for use as a search dialog. Rom info is hidden until dialog closes."""
-        self.tabs.removeTab(2)
+        search_tab_index = self.tabs.indexOf(self.rom_search_page)
+        self.tabs.removeTab(search_tab_index)
         self.rom_info_container.hide()
         dialog = widgets.RomSearchDialog(widgets.RomSearchWindow(self.rom_search_page, self.tabs), self.rom_search_tree,
                                          parent=self)
