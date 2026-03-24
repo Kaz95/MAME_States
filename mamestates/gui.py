@@ -1168,6 +1168,7 @@ class MainWindow(QMainWindow):
                     leaf_item.setText(0, self.save_state_page_text_before_editing)
                     self.save_state_and_inp_tree.blockSignals(False)
                     return
+                self.save_state_page_text_before_editing = input_file_name
             else:
                 self.save_state_and_inp_tree.blockSignals(True)
                 leaf_item.setText(0, self.save_state_page_text_before_editing)
