@@ -145,7 +145,7 @@ class MainWindow(QMainWindow):
         self.hiscore_delete_game_button: QPushButton = QPushButton('Delete Game')
         """Allow user to, manually, remove game from hiscore tree."""
 
-        self.splits_list: widgets.StageSplitListWidget = widgets.StageSplitListWidget(self.core)
+        self.splits_list: widgets.NewStageSplitListWidget = widgets.NewStageSplitListWidget(self.core)
         """Contains stage splits for current PB."""
 
         self.pb_fields_list: QListWidget = QListWidget()
@@ -334,8 +334,8 @@ class MainWindow(QMainWindow):
         self.splits_tree_button_container.addWidget(self.add_split_button)
         self.splits_tree_button_container.addWidget(self.delete_split_button)
 
-        self.splits_list.itemDoubleClicked.connect(self.split_double_clicked)
-        self.splits_list.currentItemChanged.connect(self.split_current_item_changed)
+        # self.splits_list.itemDoubleClicked.connect(self.split_double_clicked)
+        # self.splits_list.currentItemChanged.connect(self.split_current_item_changed)
 
         self.add_split_button.clicked.connect(self.new_split)
         self.delete_split_button.clicked.connect(self.delete_split)
@@ -442,7 +442,7 @@ class MainWindow(QMainWindow):
 
     def create_split_item(self, split: core.StageSplit, rom_description: str) -> QListWidgetItem:
         """Create a new custom widget item and assign it to a list widget item."""
-        split_item = widgets.StageSplitItem(split, rom_description, self.splits_list, self.core)
+        split_item = widgets.NewStageSplitItem(split, rom_description, self.splits_list, self.core)
         list_item = QListWidgetItem(self.splits_list)
         self.splits_list.setItemWidget(list_item, split_item)
         list_item.setSizeHint(split_item.sizeHint())
@@ -556,20 +556,20 @@ class MainWindow(QMainWindow):
             for split in pb.splits:
                 self.create_split_item(split, rom_description)
 
-            self.splits_list.add_diffs(pb.splits)
+            # self.splits_list.add_diffs(pb.splits)
 
-    def split_double_clicked(self, item: QListWidgetItem) -> None:
-        """Show split item editors. Hide labels."""
-        item_widget = self.splits_list.itemWidget(item)
-        item_widget.toggle_editors()
+    # def split_double_clicked(self, item: QListWidgetItem) -> None:
+    #     """Show split item editors. Hide labels."""
+    #     item_widget = self.splits_list.itemWidget(item)
+    #     item_widget.toggle_editors()
 
-    def split_current_item_changed(self, current_selection: QListWidgetItem,
-                                   previous_selection: QListWidgetItem) -> None:
-        """Show split item labels. Hide editors."""
-        if previous_selection:
-            item_widget = self.splits_list.itemWidget(previous_selection)
-            if item_widget:
-                item_widget.toggle_labels()
+    # def split_current_item_changed(self, current_selection: QListWidgetItem,
+    #                                previous_selection: QListWidgetItem) -> None:
+    #     """Show split item labels. Hide editors."""
+    #     if previous_selection:
+    #         item_widget = self.splits_list.itemWidget(previous_selection)
+    #         if item_widget:
+    #             item_widget.toggle_labels()
 
     def update_high_score_pb(self) -> None:
         """Update in-memory representation and saves to database"""

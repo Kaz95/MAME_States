@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QS
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QTabWidget, QListWidgetItem, QDialogButtonBox, \
-    QTreeWidget
+    QTreeWidget, QStackedWidget
 
 import hi2txt_wrapper, core
 
@@ -284,6 +284,96 @@ class NotesWindow(QWidget):
         event.accept()
 
 
+class NewToggleableLabel(QStackedWidget):
+    """Subclass and extend the QWidget class of the PyQt6.QyWidgets module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    A normal QLabel instance is tied to a QlineEdit instance on initialization.
+    Double-clicking the label toggles the editor. Pressing enter or changing focus will toggle back to the label.
+    The current text persists when toggled. Changes are confirmed via dialog before actually changing.
+    The text reverts if the changes are not confirmed.
+    """
+
+    def __init__(self, text: str | int, parent=None):
+        super().__init__(parent)
+        if isinstance(text, int):
+            text = str(text)
+        self.label = QLabel(text)
+        self.editor = QLineEdit(text)
+
+        self.addWidget(self.label)
+        self.addWidget(self.editor)
+
+        self.editor.editingFinished.connect(self.save_text)
+
+
+        pass
+
+    def mouseDoubleClickEvent(self, event):
+        if event.button() == Qt.MouseButton.LeftButton:
+            self.setCurrentIndex(1)
+            self.editor.setFocus()
+
+    def save_text(self):
+        self.label.setText(self.editor.text())
+        self.setCurrentIndex(0)
+
+
+    #     self.layout: QHBoxLayout = QHBoxLayout(self)
+    #     # self.setMouseTracking(True)
+    #     if isinstance(text, int):
+    #         text = f'{text:,}'
+    #     self.label: QLabel = QLabel(text)
+    #     self.editor: QLineEdit = QLineEdit(text.replace(',', ''))
+    #
+    #     self.editor.hide()
+    #     self.layout.addWidget(self.label)
+    #     self.layout.addWidget(self.editor)
+    #     self.editor.setMinimumHeight(self.sizeHint().height())
+    #     self.editor.editingFinished.connect(self.toggle_label)
+    #
+    # def mouseDoubleClickEvent(self, event):
+    #     if event.button() == Qt.MouseButton.LeftButton:
+    #         self.toggle_editor()
+    #     super().mouseDoubleClickEvent(event)
+    #
+    # def toggle_editor(self) -> None:
+    #     """Show editor, hide label."""
+    #     self.label.hide()
+    #     self.editor.show()
+    #     self.editor.setFocus()
+    #
+    # def toggle_label(self) -> None:
+    #     """Show label, hide editor.
+    #
+    #     Confirms any changes made. If changes are not confirmed, text is reverted.
+    #     """
+    #     new_text = self.editor.text()
+    #     if new_text.isdigit():
+    #         new_text = f'{int(new_text):,}'
+    #     old_text = self.label.text()
+    #     stripped_label = old_text.split('(+')[0]
+    #     stripped_label = stripped_label.split('(-')[0]
+    #     print(stripped_label)
+    #
+    #     if new_text != stripped_label:
+    #         # Create confirmation box
+    #         reply = QMessageBox.question(self, 'Confirm Change',
+    #                                      f"Change text to '{new_text}' from {stripped_label}?",
+    #                                      QMessageBox.StandardButton.Yes |
+    #                                      QMessageBox.StandardButton.No)
+    #
+    #         if reply == QMessageBox.StandardButton.Yes:
+    #             self.label.setText(new_text)
+    #             if isinstance(self.parent(), StageSplitItem):
+    #                 widget = self.parent()
+    #                 widget._update_split_db()
+    #                 widget.parent_list.add_diffs(widget.core.pb_info[widget.rom_description].splits)
+    #         else:
+    #             self.editor.setText(self.label.text().replace(',', ''))  # Revert
+    #
+    #     self.editor.hide()
+    #     self.label.show()
 
 class ToggleableLabel(QWidget):
     """Subclass and extend the QWidget class of the PyQt6.QyWidgets module.
@@ -365,11 +455,90 @@ class PBField(QWidget):
         if isinstance(field_value, int):
             field_value = f'{field_value:,}'
         self.field_name = QLabel(field_name)
-        self.field_value = ToggleableLabel(field_value)
+        self.field_value = NewToggleableLabel(field_value)
         self.layout = QHBoxLayout()
         self.setLayout(self.layout)
         self.layout.addWidget(self.field_name)
         self.layout.addWidget(self.field_value)
+
+class NewStageSplitItem(QWidget):
+    """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Used as a customer item widget on a QListWidget instance.
+    """
+    def __init__(self, split: core.StageSplit, rom_description: str,
+                 parent_list: 'NewStageSplitListWidget', mcore: core.MAMEStatesCore) -> None:
+        """ Initialize the StageSplitItem subclass
+
+        The StageSplitItem subclass inherits most of its behavior from, and extends, its parent class QWidget.
+        The initialization process creates the widgets and layouts that will make up the custom item widget.
+        """
+        super().__init__()
+        pass
+        self.core = mcore
+
+        self.split = split
+        """The data that comprises a split. \n[index, stage, score]"""
+
+        self.parent_list: NewStageSplitListWidget = parent_list
+        """The list widget that contains this item."""
+
+        # self.pb_info = pb_info
+        # """In-memory representation of DB schema."""
+
+        self.rom_description: str = rom_description
+        """The name of the game which the split belongs to."""
+
+        self.stage: str = split.label
+        self.score: int = split.score
+
+        self.name_label: NewToggleableLabel = NewToggleableLabel(self.stage)
+        self.score_label: NewToggleableLabel = NewToggleableLabel(self.score)
+    #
+        self.name_label.editor.setPlaceholderText('Stage-69')
+        self.score_label.editor.setPlaceholderText('696969')
+    #
+    #     self.name_label.editor.hide()
+    #     self.score_label.editor.hide()
+    #     self.name_label.editor.editingFinished.connect(self._update_split_db)
+    #     # self.score_label.editor.editingFinished.connect(self._update_split_db)
+    #     self.name_label.editor.returnPressed.connect(self.toggle_labels)
+    #     self.score_label.editor.returnPressed.connect(self.toggle_labels)
+    #     self.score_label.editor.setValidator(QIntValidator())
+    #
+        self.layout = QHBoxLayout()
+        self.layout.addWidget(self.name_label)
+        self.layout.addWidget(self.score_label)
+
+        self.setLayout(self.layout)
+    #
+    # def toggle_editors(self) -> None:
+    #     """Show editors, hide labels. Text is persisted."""
+    #     self.name_label.toggle_editor()
+    #     self.score_label.toggle_editor()
+    #
+    # def toggle_labels(self):
+    #     """Show labels, hide editors. Text is persisted."""
+    #     self.name_label.toggle_label()
+    #     self.score_label.toggle_label()
+    #
+    # def _update_split_db(self) -> None:
+    #     """Update the 'in-memory' copy of the database and save to database.
+    #
+    #     Split order is preserved by the position of the in-memory representation of this item in the game's splits list.
+    #     Grabbing the index of the list that represents this item in memory allows you to act on the correct list.
+    #     Will no save empty pb label.
+    #     """
+    #     item_index = self.core.pb_info[self.rom_description].splits.index(self.split)
+    #     old_label = self.core.pb_info[self.rom_description].splits[item_index].label
+    #     self.core.pb_info[self.rom_description].splits[item_index].score = int(self.score_label.editor.text())
+    #     self.core.pb_info[self.rom_description].splits[item_index].label = self.name_label.editor.text()
+    #     print(f'here: {old_label}')
+    #
+    #     if self.name_label.editor.text():
+    #         self.core.delete_split(self.rom_description, old_label)
+    #         self.core.save_pb_to_database()
 
 
 class StageSplitItem(QWidget):
@@ -450,6 +619,76 @@ class StageSplitItem(QWidget):
             self.core.delete_split(self.rom_description, old_label)
             self.core.save_pb_to_database()
 
+class NewStageSplitListWidget(QListWidget):
+    """Subclass and extend the QListWidget class of the PyQt6.QtWidgets module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Internal movement is active. The order of splits is preserved.
+    The difference between splits is calculated and displayed.
+    """
+
+    def __init__(self, mcore: core.MAMEStatesCore):
+        """ The StageSplitListWidget subclass inherits most of its behavior from, and extends,
+        its parent class QListWidget.
+
+        The initialization process customizes the widget.
+        """
+        super().__init__()
+        # pass
+    #     self.core = mcore
+    #     self.last_row: int | None = None
+    #     """The previously selected row. Used internally to track split movement."""
+    #
+        self.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+    #     self.installEventFilter(self)
+    #     self.currentItemChanged.connect(self.selection_changed)
+    #
+    # def itemWidget(self, item) -> QWidget | StageSplitItem | None:
+    #     """Overloaded to extend typehint."""
+    #     return super().itemWidget(item)
+    #
+    # def eventFilter(self, sender, event):
+    #     """Event filter that listens for an item being moved in the list.
+    #
+    #     When an item is moved, the new order is preserved and the split differences are recalculated.
+    #     """
+    #     if event.type() == QEvent.Type.ChildRemoved:  # Child removed includes item deletion as well as movement.
+    #         items_that_moved = self.selectedItems()
+    #         if items_that_moved:
+    #             item_that_moved = items_that_moved[0]
+    #             rom_description = self.itemWidget(item_that_moved).rom_description
+    #             self.update_db(rom_description, self.last_row, self.row(item_that_moved))
+    #             splits = self.core.pb_info[rom_description].splits
+    #             self.add_diffs(splits)
+    #             # print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
+    #             self.last_row = self.row(item_that_moved)
+    #     return super().eventFilter(sender, event)
+    #
+    # def selection_changed(self, current_item: QListWidgetItem, previous_item: QListWidgetItem) -> None:
+    #     """Used internally to preserve split order."""
+    #     if current_item:
+    #         self.last_row = self.row(current_item)
+    #
+    # def update_db(self, rom_description: str, old_index: int, new_index: int) -> None:
+    #     """Mirror internal list changes to the in-memory representation. Save to database."""
+    #     splits = self.core.pb_info[rom_description].splits
+    #     if not (len(splits) - 1) < old_index:
+    #         split = splits.pop(old_index)
+    #         splits.insert(new_index, split)
+    #     self.core.save_pb_to_database()
+    #
+    # def add_diffs(self, splits: list[core.StageSplit]) -> None:
+    #     """Calculate and display the difference between a splits score, and the previous splits score."""
+    #     for index, split in enumerate(splits):
+    #         if index > 0:
+    #             diff = split.score - splits[index - 1].score
+    #             list_item = self.item(index)
+    #             widget_item = self.itemWidget(list_item)
+    #             widget_item.score_label.label.setText(f'{split.score:,}' + f'({diff:+d})')
+    #         else:
+    #             list_item = self.item(index)
+    #             widget_item = self.itemWidget(list_item)
+    #             widget_item.score_label.label.setText(f'{split.score:,}')
 
 class StageSplitListWidget(QListWidget):
     """Subclass and extend the QListWidget class of the PyQt6.QtWidgets module.
