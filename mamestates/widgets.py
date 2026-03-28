@@ -7,11 +7,11 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize, QProcess
+from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize, QProcess, QModelIndex
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QTabWidget, QListWidgetItem, QDialogButtonBox, \
-    QTreeWidget, QStackedWidget
+    QTreeWidget, QStackedWidget, QMenu, QInputDialog, QTreeWidgetItem, QStyleOptionViewItem
 
 import hi2txt_wrapper, core
 
@@ -461,86 +461,6 @@ class PBField(QWidget):
         self.layout.addWidget(self.field_name)
         self.layout.addWidget(self.field_value)
 
-class NewStageSplitItem(QWidget):
-    """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
-
-    This class inherits most of its behavior from its parent class, while extending its functionality.
-    Used as a customer item widget on a QListWidget instance.
-    """
-    def __init__(self, split: core.StageSplit, rom_description: str,
-                 parent_list: 'NewStageSplitListWidget', mcore: core.MAMEStatesCore) -> None:
-        """ Initialize the StageSplitItem subclass
-
-        The StageSplitItem subclass inherits most of its behavior from, and extends, its parent class QWidget.
-        The initialization process creates the widgets and layouts that will make up the custom item widget.
-        """
-        super().__init__()
-        pass
-        self.core = mcore
-
-        self.split = split
-        """The data that comprises a split. \n[index, stage, score]"""
-
-        self.parent_list: NewStageSplitListWidget = parent_list
-        """The list widget that contains this item."""
-
-        # self.pb_info = pb_info
-        # """In-memory representation of DB schema."""
-
-        self.rom_description: str = rom_description
-        """The name of the game which the split belongs to."""
-
-        self.stage: str = split.label
-        self.score: int = split.score
-
-        self.name_label: NewToggleableLabel = NewToggleableLabel(self.stage)
-        self.score_label: NewToggleableLabel = NewToggleableLabel(self.score)
-    #
-        self.name_label.editor.setPlaceholderText('Stage-69')
-        self.score_label.editor.setPlaceholderText('696969')
-    #
-    #     self.name_label.editor.hide()
-    #     self.score_label.editor.hide()
-    #     self.name_label.editor.editingFinished.connect(self._update_split_db)
-    #     # self.score_label.editor.editingFinished.connect(self._update_split_db)
-    #     self.name_label.editor.returnPressed.connect(self.toggle_labels)
-    #     self.score_label.editor.returnPressed.connect(self.toggle_labels)
-    #     self.score_label.editor.setValidator(QIntValidator())
-    #
-        self.layout = QHBoxLayout()
-        self.layout.addWidget(self.name_label)
-        self.layout.addWidget(self.score_label)
-
-        self.setLayout(self.layout)
-    #
-    # def toggle_editors(self) -> None:
-    #     """Show editors, hide labels. Text is persisted."""
-    #     self.name_label.toggle_editor()
-    #     self.score_label.toggle_editor()
-    #
-    # def toggle_labels(self):
-    #     """Show labels, hide editors. Text is persisted."""
-    #     self.name_label.toggle_label()
-    #     self.score_label.toggle_label()
-    #
-    # def _update_split_db(self) -> None:
-    #     """Update the 'in-memory' copy of the database and save to database.
-    #
-    #     Split order is preserved by the position of the in-memory representation of this item in the game's splits list.
-    #     Grabbing the index of the list that represents this item in memory allows you to act on the correct list.
-    #     Will no save empty pb label.
-    #     """
-    #     item_index = self.core.pb_info[self.rom_description].splits.index(self.split)
-    #     old_label = self.core.pb_info[self.rom_description].splits[item_index].label
-    #     self.core.pb_info[self.rom_description].splits[item_index].score = int(self.score_label.editor.text())
-    #     self.core.pb_info[self.rom_description].splits[item_index].label = self.name_label.editor.text()
-    #     print(f'here: {old_label}')
-    #
-    #     if self.name_label.editor.text():
-    #         self.core.delete_split(self.rom_description, old_label)
-    #         self.core.save_pb_to_database()
-
-
 class StageSplitItem(QWidget):
     """Subclass and extend the QWidget class of the PyQt6.QtWidgets module
 
@@ -619,7 +539,17 @@ class StageSplitItem(QWidget):
             self.core.delete_split(self.rom_description, old_label)
             self.core.save_pb_to_database()
 
-class NewStageSplitListWidget(QListWidget):
+class EditableDelegate(QStyledItemDelegate):
+    """Delegate to make only specific columns editable."""
+    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem,
+                     index: QModelIndex) -> QWidget | None:
+        # Allow editing only for the second column (index 1)
+        if index.column() == 1:
+            return super().createEditor(parent, option, index)
+        # Return None for other columns to prevent editing
+        return None
+
+class PBSplitTreeWidget(QTreeWidget):
     """Subclass and extend the QListWidget class of the PyQt6.QtWidgets module.
 
     This class inherits most of its behavior from its parent class, while extending its functionality.
@@ -627,7 +557,7 @@ class NewStageSplitListWidget(QListWidget):
     The difference between splits is calculated and displayed.
     """
 
-    def __init__(self, mcore: core.MAMEStatesCore):
+    def __init__(self, usage):
         """ The StageSplitListWidget subclass inherits most of its behavior from, and extends,
         its parent class QListWidget.
 
@@ -639,7 +569,43 @@ class NewStageSplitListWidget(QListWidget):
     #     self.last_row: int | None = None
     #     """The previously selected row. Used internally to track split movement."""
     #
-        self.setDragDropMode(QListWidget.DragDropMode.InternalMove)
+        self.setColumnCount(2)
+        # TODO Use enum
+        if usage == 'splits':
+            self.setHeaderLabels(['Stage', 'Score'])
+            self.setDragDropMode(QTreeWidget.DragDropMode.InternalMove)
+
+        elif usage == 'pb':
+            self.setHeaderLabels(['Field', 'Value'])
+            self.setItemDelegateForColumn(0, EditableDelegate())
+
+        else:
+            raise ValueError('"usage", must be "pb" or "splits"')
+
+        header = self.header()
+        header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        header.customContextMenuRequested.connect(self.show_header_menu)
+
+    def show_header_menu(self, pos):
+        column_index = self.header().logicalIndexAt(pos)
+        menu = QMenu(self)
+        rename_action = menu.addAction(f"Rename '{self.headerItem().text(column_index)}' Column ")
+
+        if menu.exec(self.header().mapToGlobal(pos)) == rename_action:
+            current_text = self.headerItem().text(column_index)
+            new_text, ok = QInputDialog.getText(self, "Rename Header", "New name:", text=current_text)
+            if ok and new_text:
+                self.headerItem().setText(column_index, new_text)
+
+    def add_editable_item(self, col1, col2):
+        col1 = str(col1)
+        col2 = str(col2)
+        item = QTreeWidgetItem([col1, col2])
+        # Allow editing for all columns in this row
+        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
+        self.addTopLevelItem(item)
+
+
     #     self.installEventFilter(self)
     #     self.currentItemChanged.connect(self.selection_changed)
     #

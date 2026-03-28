@@ -145,10 +145,10 @@ class MainWindow(QMainWindow):
         self.hiscore_delete_game_button: QPushButton = QPushButton('Delete Game')
         """Allow user to, manually, remove game from hiscore tree."""
 
-        self.splits_list: widgets.NewStageSplitListWidget = widgets.NewStageSplitListWidget(self.core)
+        self.split_tree: widgets.PBSplitTreeWidget = widgets.PBSplitTreeWidget('splits')
         """Contains stage splits for current PB."""
 
-        self.pb_fields_list: QListWidget = QListWidget()
+        self.pb_fields_tree: widgets.PBSplitTreeWidget = widgets.PBSplitTreeWidget('pb')
         """Contains the various fields that make up the current personal best."""
 
         self.add_split_button: QPushButton = QPushButton('Add Split')
@@ -183,11 +183,11 @@ class MainWindow(QMainWindow):
         self.setup_pb_panel()
         self.setup_split_panel()
 
-        self.personal_best_layout.addWidget(self.pb_fields_list)
+        self.personal_best_layout.addWidget(self.pb_fields_tree)
         self.info_layout.addLayout(self.personal_best_layout, 1)
         self.info_layout.addStretch()
 
-        self.info_layout.addWidget(self.splits_list, 1)
+        self.info_layout.addWidget(self.split_tree, 1)
         self.info_layout.addStretch()
 
         self.info_layout.addLayout(self.splits_tree_button_container)
@@ -325,9 +325,9 @@ class MainWindow(QMainWindow):
 
     def setup_pb_panel(self) -> None:
         """Personal Best Panel widget customization."""
-        self.pb_fields_list.setFont(self.small_font)
-        self.pb_fields_list.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.pb_fields_list.customContextMenuRequested.connect(self.show_pb_fields_context)
+        self.pb_fields_tree.setFont(self.small_font)
+        # self.pb_fields_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        # self.pb_fields_tree.customContextMenuRequested.connect(self.show_pb_fields_context)
 
     def setup_split_panel(self) -> None:
         """Split Panel widget customization."""
@@ -337,8 +337,8 @@ class MainWindow(QMainWindow):
         # self.splits_list.itemDoubleClicked.connect(self.split_double_clicked)
         # self.splits_list.currentItemChanged.connect(self.split_current_item_changed)
 
-        self.add_split_button.clicked.connect(self.new_split)
-        self.delete_split_button.clicked.connect(self.delete_split)
+        # self.add_split_button.clicked.connect(self.new_split)
+        # self.delete_split_button.clicked.connect(self.delete_split)
 
     def setup_search_page_layout(self):
         self.rom_search_container.setLayout(self.rom_search_panel)
@@ -404,10 +404,10 @@ class MainWindow(QMainWindow):
     def update_pb_panel(self, hiscore: int, other_fields: dict[str, str | int]) -> None:
         """Clear and refill PB Fields List."""
         self.temp_fields.clear()
-        self.create_pb_field_item('High Score', hiscore)
+        self.pb_fields_tree.add_editable_item('High Score', hiscore)
         if other_fields:
             for field_name in other_fields:
-                self.create_pb_field_item(field_name, other_fields[field_name])
+                self.pb_fields_tree.add_editable_item(field_name, other_fields[field_name])
 
     @staticmethod
     def paint_clone_rom_item(item: QTreeWidgetItem) -> None:
@@ -426,27 +426,27 @@ class MainWindow(QMainWindow):
 
         return item, weight
 
-    def create_pb_field_item(self, field_name: str, field_value: str | int) -> QListWidgetItem:
-        """Create a new custom widget item and assign it to a list widget item."""
-        pb_field = widgets.PBField(field_name, field_value)
-        if field_name == 'High Score':
-            self.temp_fields['high score'] = pb_field
-        else:
-            self.temp_fields[f'{field_name}'] = pb_field
-
-        pb_field.field_value.editor.editingFinished.connect(self.update_high_score_pb)
-        list_item = QListWidgetItem(self.pb_fields_list)
-        self.pb_fields_list.setItemWidget(list_item, pb_field)
-        list_item.setSizeHint(pb_field.sizeHint())
-        return list_item
-
-    def create_split_item(self, split: core.StageSplit, rom_description: str) -> QListWidgetItem:
-        """Create a new custom widget item and assign it to a list widget item."""
-        split_item = widgets.NewStageSplitItem(split, rom_description, self.splits_list, self.core)
-        list_item = QListWidgetItem(self.splits_list)
-        self.splits_list.setItemWidget(list_item, split_item)
-        list_item.setSizeHint(split_item.sizeHint())
-        return list_item
+    # def create_pb_field_item(self, field_name: str, field_value: str | int) -> QListWidgetItem:
+    #     """Create a new custom widget item and assign it to a list widget item."""
+    #     pb_field = widgets.PBField(field_name, field_value)
+    #     if field_name == 'High Score':
+    #         self.temp_fields['high score'] = pb_field
+    #     else:
+    #         self.temp_fields[f'{field_name}'] = pb_field
+    #
+    #     pb_field.field_value.editor.editingFinished.connect(self.update_high_score_pb)
+    #     list_item = QListWidgetItem(self.pb_fields_list)
+    #     self.pb_fields_list.setItemWidget(list_item, pb_field)
+    #     list_item.setSizeHint(pb_field.sizeHint())
+    #     return list_item
+    #
+    # def create_split_item(self, split: core.StageSplit, rom_description: str) -> QListWidgetItem:
+    #     """Create a new custom widget item and assign it to a list widget item."""
+    #     split_item = widgets.NewStageSplitItem(split, rom_description, self.splits_list, self.core)
+    #     list_item = QListWidgetItem(self.splits_list)
+    #     self.splits_list.setItemWidget(list_item, split_item)
+    #     list_item.setSizeHint(split_item.sizeHint())
+    #     return list_item
 
     def valid_path(self, mame_dir: Path) -> bool | None:
         """Validate the given MAME path.
@@ -545,8 +545,9 @@ class MainWindow(QMainWindow):
 
         Split diffs are calculated and displayed.
         """
-        self.pb_fields_list.clear()
-        self.splits_list.clear()
+        self.pb_fields_tree.clear()
+        self.split_tree.clear()
+
         selected = self.games_with_pb_tree.selectedItems()
         if selected:
             rom_description = selected[0].text(0)
@@ -554,9 +555,15 @@ class MainWindow(QMainWindow):
 
             self.update_pb_panel(pb.hiscore, pb.other_fields)
             for split in pb.splits:
-                self.create_split_item(split, rom_description)
+                self.split_tree.add_editable_item(split.label, split.score)
+        # After adding all items
+        for i in range(self.pb_fields_tree.columnCount()):
+            self.pb_fields_tree.resizeColumnToContents(i)
 
-            # self.splits_list.add_diffs(pb.splits)
+        for i in range(self.split_tree.columnCount()):
+            self.split_tree.resizeColumnToContents(i)
+        #
+        #     self.splits_list.add_diffs(pb.splits)
 
     # def split_double_clicked(self, item: QListWidgetItem) -> None:
     #     """Show split item editors. Hide labels."""
@@ -652,40 +659,40 @@ class MainWindow(QMainWindow):
             game_row = game_item_index.row()
             self.games_with_pb_tree.takeTopLevelItem(game_row)
 
-    def delete_split(self) -> None:
-        """Delete a split in the split list. Also deleted from in-memory database representation and database.
-
-        Row is used instead of .selectedItems() so that it can be used for deleting from in-memory data structure.
-        """
-        selected = self.games_with_pb_tree.selectedItems()
-        if selected:
-            rom_description = selected[0].text(0)
-            # Row becomes -1 when nothing selected...I think.
-            row = self.splits_list.currentRow()
-            if row != -1:
-                self.splits_list.takeItem(row)
-                splits = self.core.pb_info[rom_description].splits
-                split_name = splits[row].label
-                del splits[row]
-                self.core.delete_split(rom_description, split_name)
-                self.core.save_pb_to_database()
-
-    def new_split(self) -> None:
-        """Create a new, blank split item. Add it to the list widget and the in memory database representation.
-
-        The new split item has its editor toggled on, and is set as the focus.
-        """
-        selected = self.games_with_pb_tree.selectedItems()
-        if selected:
-            game_item = selected[0]
-            rom_description = game_item.text(0)
-            rom_id = self.core.id_from_description(rom_description)
-            game_splits = self.core.pb_info[rom_description].splits
-            new_split = core.StageSplit('', 0, rom_id)
-            game_splits.append(new_split)
-            new_split_item = self.create_split_item(new_split, rom_description)
-            self.splits_list.setCurrentItem(new_split_item)
-            self.split_double_clicked(new_split_item)
+    # def delete_split(self) -> None:
+    #     """Delete a split in the split list. Also deleted from in-memory database representation and database.
+    #
+    #     Row is used instead of .selectedItems() so that it can be used for deleting from in-memory data structure.
+    #     """
+    #     selected = self.games_with_pb_tree.selectedItems()
+    #     if selected:
+    #         rom_description = selected[0].text(0)
+    #         # Row becomes -1 when nothing selected...I think.
+    #         row = self.split_tree.currentRow()
+    #         if row != -1:
+    #             self.split_tree.takeItem(row)
+    #             splits = self.core.pb_info[rom_description].splits
+    #             split_name = splits[row].label
+    #             del splits[row]
+    #             self.core.delete_split(rom_description, split_name)
+    #             self.core.save_pb_to_database()
+    #
+    # def new_split(self) -> None:
+    #     """Create a new, blank split item. Add it to the list widget and the in memory database representation.
+    #
+    #     The new split item has its editor toggled on, and is set as the focus.
+    #     """
+    #     selected = self.games_with_pb_tree.selectedItems()
+    #     if selected:
+    #         game_item = selected[0]
+    #         rom_description = game_item.text(0)
+    #         rom_id = self.core.id_from_description(rom_description)
+    #         game_splits = self.core.pb_info[rom_description].splits
+    #         new_split = core.StageSplit('', 0, rom_id)
+    #         game_splits.append(new_split)
+    #         new_split_item = self.create_split_item(new_split, rom_description)
+    #         self.split_tree.setCurrentItem(new_split_item)
+    #         self.split_double_clicked(new_split_item)
 
     def open_notes(self, some_list: QTreeWidget) -> None:
         """Open notes widget.
@@ -727,62 +734,62 @@ class MainWindow(QMainWindow):
             self.remove_invalid_mame_dir(mame_path=mame_path)
             print(f'File {mame_exe} not found')
 
-    def delete_pb_field(self, item: QListWidgetItem, rom_description: str) -> None:
-        """Attempt to delete a personal best field from the pb fields list.
-
-        Attempting to delete 'High Score' field fails to prevent PB with no fields.
-        """
-        row = self.pb_fields_list.row(item)
-        pb_field = self.pb_fields_list.itemWidget(item)
-        field_name = pb_field.field_name.text()
-        field_name = field_name.strip(':')
-        if field_name == 'High Score':
-            QMessageBox.critical(self, 'Error', 'Field required.')
-            return
-
-        self.pb_fields_list.takeItem(row)
-        del self.core.pb_info[rom_description].other_fields[field_name]
-        self.temp_fields.pop(field_name)
-        del item
-        self.core.save_pb_to_database()
-
-    def add_pb_field(self, rom_description: str) -> None:
-        """Create a new PB field entry in the pb fields list.
-
-        User input is used for field name, and repeated field names are disallowed.
-        """
-        text, ok = QInputDialog.getText(self, 'New Personal Best Field.', 'Please enter the name of the new field:')
-        if text == 'High Score':
-            QMessageBox.critical(self, 'Error', 'Name already in use.')
-            return
-        if self.core.pb_info[rom_description].other_fields:
-            if text in self.core.pb_info[rom_description].other_fields:
-                QMessageBox.critical(self, 'Error', 'Name already in use.')
-                return
-        if ok:
-            self.create_pb_field_item(f'{text}', 0)
-            self.core.pb_info[rom_description].other_fields[text] = 0
-            self.core.save_pb_to_database()
-
-    def show_pb_fields_context(self, position: QPoint) -> None:
-        """Create and show context menu in PB fields list. Context changes depending on if item is clicked or not."""
-        pb_field_list_item = self.pb_fields_list.itemAt(position)
-        rom_items = self.games_with_pb_tree.selectedItems()
-        if rom_items:
-            selected_rom = rom_items[0]
-            rom_description = selected_rom.text(0)
-
-        menu = QMenu()
-
-        if pb_field_list_item:
-            delete_pb_field = QAction('Delete PB Field')
-            delete_pb_field.triggered.connect(lambda: self.delete_pb_field(pb_field_list_item, rom_description))
-            menu.addAction(delete_pb_field)
-
-        add_pb_field = QAction('Add New PB Field')
-        add_pb_field.triggered.connect(lambda: self.add_pb_field(rom_description))
-        menu.addAction(add_pb_field)
-        menu.exec(self.pb_fields_list.viewport().mapToGlobal(position))
+    # def delete_pb_field(self, item: QListWidgetItem, rom_description: str) -> None:
+    #     """Attempt to delete a personal best field from the pb fields list.
+    #
+    #     Attempting to delete 'High Score' field fails to prevent PB with no fields.
+    #     """
+    #     row = self.pb_fields_list.row(item)
+    #     pb_field = self.pb_fields_list.itemWidget(item)
+    #     field_name = pb_field.field_name.text()
+    #     field_name = field_name.strip(':')
+    #     if field_name == 'High Score':
+    #         QMessageBox.critical(self, 'Error', 'Field required.')
+    #         return
+    #
+    #     self.pb_fields_list.takeItem(row)
+    #     del self.core.pb_info[rom_description].other_fields[field_name]
+    #     self.temp_fields.pop(field_name)
+    #     del item
+    #     self.core.save_pb_to_database()
+    #
+    # def add_pb_field(self, rom_description: str) -> None:
+    #     """Create a new PB field entry in the pb fields list.
+    #
+    #     User input is used for field name, and repeated field names are disallowed.
+    #     """
+    #     text, ok = QInputDialog.getText(self, 'New Personal Best Field.', 'Please enter the name of the new field:')
+    #     if text == 'High Score':
+    #         QMessageBox.critical(self, 'Error', 'Name already in use.')
+    #         return
+    #     if self.core.pb_info[rom_description].other_fields:
+    #         if text in self.core.pb_info[rom_description].other_fields:
+    #             QMessageBox.critical(self, 'Error', 'Name already in use.')
+    #             return
+    #     if ok:
+    #         self.create_pb_field_item(f'{text}', 0)
+    #         self.core.pb_info[rom_description].other_fields[text] = 0
+    #         self.core.save_pb_to_database()
+    #
+    # def show_pb_fields_context(self, position: QPoint) -> None:
+    #     """Create and show context menu in PB fields list. Context changes depending on if item is clicked or not."""
+    #     pb_field_list_item = self.pb_fields_list.itemAt(position)
+    #     rom_items = self.games_with_pb_tree.selectedItems()
+    #     if rom_items:
+    #         selected_rom = rom_items[0]
+    #         rom_description = selected_rom.text(0)
+    #
+    #     menu = QMenu()
+    #
+    #     if pb_field_list_item:
+    #         delete_pb_field = QAction('Delete PB Field')
+    #         delete_pb_field.triggered.connect(lambda: self.delete_pb_field(pb_field_list_item, rom_description))
+    #         menu.addAction(delete_pb_field)
+    #
+    #     add_pb_field = QAction('Add New PB Field')
+    #     add_pb_field.triggered.connect(lambda: self.add_pb_field(rom_description))
+    #     menu.addAction(add_pb_field)
+    #     menu.exec(self.pb_fields_list.viewport().mapToGlobal(position))
 
     def remove_invalid_mame_dir(self, *, mame_path: str | None = None, path_item: QTreeWidgetItem | None = None) -> None:
         """Remove MAME directory and all related info(saves, inps, ect) from GUI, in-memory datastructures, and DB
@@ -978,7 +985,7 @@ class MainWindow(QMainWindow):
 
         menu.addMenu(open_with_submenu)
         menu.addMenu(open_with_inp_submenu)
-        menu.exec(self.sender().viewport().mapToGlobal(position))
+        menu.exec(self.sender().mapToGlobal(position))
 
     def open_rom_for_inp_search(self) -> str:
         """Pop out the 'rom search' tab for use as a search dialog. Rom info is hidden until dialog closes."""
