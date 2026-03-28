@@ -602,7 +602,7 @@ class PBSplitTreeWidget(QTreeWidget):
         col2 = str(col2)
         item = QTreeWidgetItem([col1, col2])
         # Allow editing for all columns in this row
-        item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
+        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsDropEnabled | Qt.ItemFlag.ItemIsEditable)
         self.addTopLevelItem(item)
 
 
