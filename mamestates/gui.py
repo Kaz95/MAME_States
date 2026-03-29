@@ -1033,7 +1033,10 @@ class MainWindow(QMainWindow):
         # TODO This may need to be a value error. Shouldn't ever have an invalid name. At least not caused by anything the end user can do via GUI.
         if rom_name not in list(self.core.descriptions_and_names.values()):
             QMessageBox.critical(self, 'Error', 'Input File cannot be played back without a valid rom.')
-            return
+            rom_description = self.open_rom_for_inp_search()
+            if rom_description:
+                rom_name = self.core.descriptions_and_names[rom_description]
+
 
         self.mame_thread = widgets.MAMEProcess(Path(mame_dir), self.terminal_output_box, rom_name, record_input=record_input, playback_input=play_back_input, input_file_name=input_file_name)
         self.mame_thread.finished.connect(self.rom_done)
