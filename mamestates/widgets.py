@@ -7,7 +7,7 @@ import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize, QProcess, QModelIndex
+from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize, QProcess, QModelIndex, QLocale
 from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
 from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QTabWidget, QListWidgetItem, QDialogButtonBox, \
@@ -180,6 +180,17 @@ class SaveStateNameInputValidator(QStyledItemDelegate):
                 return True
 
         return super().eventFilter(watched, event)
+
+
+class NumericDelegate(QStyledItemDelegate):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        # Create a specific locale that definitely uses thousands separators
+        self.formatting_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+
+    def displayText(self, value, locale):
+        return self.formatting_locale.toString(value)
+
 
 
 #####################
@@ -557,7 +568,7 @@ class PBSplitTreeWidget(QTreeWidget):
     The difference between splits is calculated and displayed.
     """
 
-    def __init__(self, usage):
+    def __init__(self, mcore: core.MAMEStatesCore, hs_game_tree: QTreeWidget, usage):
         """ The StageSplitListWidget subclass inherits most of its behavior from, and extends,
         its parent class QListWidget.
 
@@ -565,17 +576,23 @@ class PBSplitTreeWidget(QTreeWidget):
         """
         super().__init__()
         # pass
-    #     self.core = mcore
-    #     self.last_row: int | None = None
-    #     """The previously selected row. Used internally to track split movement."""
-    #
-        self.setColumnCount(2)
+        self.usage = usage
+        self.core = mcore
+        self.hs_game_tree: QTreeWidget = hs_game_tree
+        self.last_row: int | None = None
+        """The previously selected row. Used internally to track split movement."""
+
+
         # TODO Use enum
         if usage == 'splits':
-            self.setHeaderLabels(['Stage', 'Score'])
+            self.setColumnCount(3)
+            self.setHeaderLabels(['Stage', 'Score', 'Difference'])
             self.setDragDropMode(QTreeWidget.DragDropMode.InternalMove)
+            self.setItemDelegateForColumn(1, NumericDelegate(self))
+            self.setItemDelegateForColumn(2, EditableDelegate())
 
         elif usage == 'pb':
+            self.setColumnCount(2)
             self.setHeaderLabels(['Field', 'Value'])
             self.setItemDelegateForColumn(0, EditableDelegate())
 
@@ -585,6 +602,9 @@ class PBSplitTreeWidget(QTreeWidget):
         header = self.header()
         header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         header.customContextMenuRequested.connect(self.show_header_menu)
+
+        self.itemPressed.connect(self.item_pressed)
+        self.itemChanged.connect(self.item_changed)
 
     def show_header_menu(self, pos):
         column_index = self.header().logicalIndexAt(pos)
@@ -598,63 +618,74 @@ class PBSplitTreeWidget(QTreeWidget):
                 self.headerItem().setText(column_index, new_text)
 
     def add_editable_item(self, col1, col2):
-        col1 = str(col1)
-        col2 = str(col2)
-        item = QTreeWidgetItem([col1, col2])
+        item = QTreeWidgetItem(self)
+        item.setData(0, Qt.ItemDataRole.DisplayRole, col1)
+        item.setData(1, Qt.ItemDataRole.DisplayRole, col2)
+
         # Allow editing for all columns in this row
         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsDropEnabled | Qt.ItemFlag.ItemIsEditable)
         self.addTopLevelItem(item)
 
+    def dropEvent(self, event):
+        items_that_moved = self.selectedItems() # Get items before drop completes
+        super().dropEvent(event)
+        hs_game_item = self.hs_game_tree.selectedItems()[0]
+        rom_description = hs_game_item.text(0)
+        if items_that_moved:
+            item_that_moved = items_that_moved[0]
+            self.update_split_order(rom_description, self.last_row, self.indexOfTopLevelItem(item_that_moved))
+            splits = self.core.pb_info[rom_description].splits
+            self.add_diffs(splits)
+            self.last_row = self.indexOfTopLevelItem(item_that_moved)
 
-    #     self.installEventFilter(self)
-    #     self.currentItemChanged.connect(self.selection_changed)
-    #
-    # def itemWidget(self, item) -> QWidget | StageSplitItem | None:
-    #     """Overloaded to extend typehint."""
-    #     return super().itemWidget(item)
-    #
-    # def eventFilter(self, sender, event):
-    #     """Event filter that listens for an item being moved in the list.
-    #
-    #     When an item is moved, the new order is preserved and the split differences are recalculated.
-    #     """
-    #     if event.type() == QEvent.Type.ChildRemoved:  # Child removed includes item deletion as well as movement.
-    #         items_that_moved = self.selectedItems()
-    #         if items_that_moved:
-    #             item_that_moved = items_that_moved[0]
-    #             rom_description = self.itemWidget(item_that_moved).rom_description
-    #             self.update_db(rom_description, self.last_row, self.row(item_that_moved))
-    #             splits = self.core.pb_info[rom_description].splits
-    #             self.add_diffs(splits)
-    #             # print(f'{moved.text()} was moved to row {self.row(moved) + 1} from row {self.last_row + 1}')
-    #             self.last_row = self.row(item_that_moved)
-    #     return super().eventFilter(sender, event)
-    #
-    # def selection_changed(self, current_item: QListWidgetItem, previous_item: QListWidgetItem) -> None:
-    #     """Used internally to preserve split order."""
-    #     if current_item:
-    #         self.last_row = self.row(current_item)
-    #
-    # def update_db(self, rom_description: str, old_index: int, new_index: int) -> None:
-    #     """Mirror internal list changes to the in-memory representation. Save to database."""
-    #     splits = self.core.pb_info[rom_description].splits
-    #     if not (len(splits) - 1) < old_index:
-    #         split = splits.pop(old_index)
-    #         splits.insert(new_index, split)
-    #     self.core.save_pb_to_database()
-    #
-    # def add_diffs(self, splits: list[core.StageSplit]) -> None:
-    #     """Calculate and display the difference between a splits score, and the previous splits score."""
-    #     for index, split in enumerate(splits):
-    #         if index > 0:
-    #             diff = split.score - splits[index - 1].score
-    #             list_item = self.item(index)
-    #             widget_item = self.itemWidget(list_item)
-    #             widget_item.score_label.label.setText(f'{split.score:,}' + f'({diff:+d})')
-    #         else:
-    #             list_item = self.item(index)
-    #             widget_item = self.itemWidget(list_item)
-    #             widget_item.score_label.label.setText(f'{split.score:,}')
+    def item_pressed(self, item: QTreeWidgetItem, column: int) -> None:
+        """Used internally to preserve split order."""
+        self.last_row = self.indexOfTopLevelItem(item)
+
+    def item_changed(self, item: QTreeWidgetItem, column: int):
+        if self.usage == 'pb':
+            return
+        item_index = self.indexOfTopLevelItem(item)
+        rom_description = self.hs_game_tree.selectedItems()[0].text(0)
+        old_label = self.core.pb_info[rom_description].splits[item_index].label
+        if column == 0:
+            self.core.pb_info[rom_description].splits[item_index].label = item.text(column)
+            self.core.delete_split(rom_description, old_label)
+            self.core.save_pb_to_database()
+            # update label
+            pass
+        elif column == 1:
+            self.core.pb_info[rom_description].splits[item_index].score = int(item.text(column))
+            self.core.delete_split(rom_description, old_label)
+            self.core.save_pb_to_database()
+            splits = self.core.pb_info[rom_description].splits
+            self.add_diffs(splits)
+            # Update score
+            pass
+        else:
+            # Out of range
+            pass
+
+
+
+    def update_split_order(self, rom_description: str, old_index: int, new_index: int) -> None:
+        """Mirror internal list changes to the in-memory representation. Save to database."""
+        splits = self.core.pb_info[rom_description].splits
+        if not (len(splits) - 1) < old_index:
+            split = splits.pop(old_index)
+            splits.insert(new_index, split)
+        self.core.save_pb_to_database()
+
+    def add_diffs(self, splits: list[core.StageSplit]) -> None:
+        """Calculate and display the difference between a splits score, and the previous splits score."""
+        for index, split in enumerate(splits):
+            if index > 0:
+                diff = split.score - splits[index - 1].score
+                tree_item = self.topLevelItem(index)
+                tree_item.setText(2, f'{diff:+,}')
+            else:
+                tree_item = self.topLevelItem(index)
+                tree_item.setText(2, f'')
 
 class StageSplitListWidget(QListWidget):
     """Subclass and extend the QListWidget class of the PyQt6.QtWidgets module.

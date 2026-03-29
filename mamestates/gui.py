@@ -8,7 +8,7 @@ import sqlite3
 import subprocess
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
+from PyQt6.QtCore import Qt, QSize, QTimer, QPoint, QLocale
 from PyQt6.QtGui import QAction, QFont, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, QTabWidget, \
     QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QListWidgetItem, \
@@ -145,10 +145,10 @@ class MainWindow(QMainWindow):
         self.hiscore_delete_game_button: QPushButton = QPushButton('Delete Game')
         """Allow user to, manually, remove game from hiscore tree."""
 
-        self.split_tree: widgets.PBSplitTreeWidget = widgets.PBSplitTreeWidget('splits')
+        self.split_tree: widgets.PBSplitTreeWidget = widgets.PBSplitTreeWidget(self.core, self.games_with_pb_tree, 'splits')
         """Contains stage splits for current PB."""
 
-        self.pb_fields_tree: widgets.PBSplitTreeWidget = widgets.PBSplitTreeWidget('pb')
+        self.pb_fields_tree: widgets.PBSplitTreeWidget = widgets.PBSplitTreeWidget(self.core, self.games_with_pb_tree, 'pb')
         """Contains the various fields that make up the current personal best."""
 
         self.add_split_button: QPushButton = QPushButton('Add Split')
@@ -555,15 +555,18 @@ class MainWindow(QMainWindow):
 
             self.update_pb_panel(pb.hiscore, pb.other_fields)
             for split in pb.splits:
+                self.split_tree.blockSignals(True)
                 self.split_tree.add_editable_item(split.label, split.score)
+                self.split_tree.blockSignals(False)
+            self.split_tree.add_diffs(pb.splits)
         # After adding all items
         for i in range(self.pb_fields_tree.columnCount()):
             self.pb_fields_tree.resizeColumnToContents(i)
 
         for i in range(self.split_tree.columnCount()):
             self.split_tree.resizeColumnToContents(i)
-        #
-        #     self.splits_list.add_diffs(pb.splits)
+
+
 
     # def split_double_clicked(self, item: QListWidgetItem) -> None:
     #     """Show split item editors. Hide labels."""
