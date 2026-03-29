@@ -500,8 +500,8 @@ class StageSplitItem(QWidget):
         self.rom_description: str = rom_description
         """The name of the game which the split belongs to."""
 
-        self.stage: str = split.label
-        self.score: int = split.score
+    def createEditor(self, parent, option, index):
+        return QLineEdit(parent)
 
         self.name_label: ToggleableLabel = ToggleableLabel(self.stage)
         self.score_label: ToggleableLabel = ToggleableLabel(self.score)
