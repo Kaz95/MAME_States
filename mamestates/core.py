@@ -314,7 +314,6 @@ class MAMEStatesCore:
             other_fields = pb.other_fields
             other_fields = json.dumps(other_fields)
             row = {'id': None, 'hiscore': pb.hiscore, 'other_fields': other_fields, 'rom_id': pb.rom_id}
-            # row = (None, pb.hiscore, other_fields, pb.rom_id)
             rows.append(row)
         return rows
 
