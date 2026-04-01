@@ -295,9 +295,9 @@ class NumericDelegate(QStyledItemDelegate):
         # Create a specific locale that definitely uses thousands separators
         self.formatting_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
 
-    def createEditor(self, parent, option, index):
-        editor = QLineEdit(parent)
-        return editor
+    # def createEditor(self, parent, option, index):
+    #     editor = QLineEdit(parent)
+    #     return editor
 
     def displayText(self, value, locale):
         return self.formatting_locale.toString(value)
