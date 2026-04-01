@@ -3,17 +3,17 @@
 This module houses all pyqt6 widgets that have been subclassed and extended.
 """
 import sqlite3
-import subprocess
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, pyqtSignal, QSize, QProcess, QModelIndex, QLocale
-from PyQt6.QtGui import QIntValidator, QRegularExpressionValidator, QCloseEvent
-from PyQt6.QtWidgets import QLabel, QLineEdit, QListWidget, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
-    QVBoxLayout, QPushButton, QDialog, QProgressBar, QMessageBox, QTabWidget, QListWidgetItem, QDialogButtonBox, \
-    QTreeWidget, QStackedWidget, QMenu, QInputDialog, QTreeWidgetItem, QStyleOptionViewItem
+from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, QSize, QProcess, QModelIndex, QLocale
+from PyQt6.QtGui import QRegularExpressionValidator, QCloseEvent
+from PyQt6.QtWidgets import QLabel, QLineEdit, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
+    QVBoxLayout, QPushButton, QDialog, QProgressBar, QTabWidget, QDialogButtonBox, \
+    QTreeWidget, QMenu, QInputDialog, QTreeWidgetItem, QStyleOptionViewItem
 
-import hi2txt_wrapper, core
+import core
+import hi2txt_wrapper
 
 
 ######################

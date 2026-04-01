@@ -8,13 +8,14 @@ import sqlite3
 import subprocess
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QSize, QTimer, QPoint, QLocale
+from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
 from PyQt6.QtGui import QAction, QFont, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, QTabWidget, \
-    QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QListWidgetItem, \
-    QFileDialog, QMessageBox, QMenu, QListWidget, QInputDialog, QTextEdit
+    QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QFileDialog, QMessageBox, QMenu, QTextEdit
 
-import core, hi2txt_wrapper, widgets
+import core
+import hi2txt_wrapper
+import widgets
 
 
 class MainWindow(QMainWindow):
