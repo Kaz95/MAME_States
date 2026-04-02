@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, QSize, QProcess, QModelIndex, QLocale
-from PyQt6.QtGui import QRegularExpressionValidator, QCloseEvent
+from PyQt6.QtGui import QRegularExpressionValidator, QCloseEvent, QColor, QIntValidator
 from PyQt6.QtWidgets import QLabel, QLineEdit, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QTabWidget, QDialogButtonBox, \
     QTreeWidget, QMenu, QInputDialog, QTreeWidgetItem, QStyleOptionViewItem
@@ -293,14 +293,50 @@ class NumericDelegate(QStyledItemDelegate):
     def __init__(self, parent=None):
         super().__init__(parent)
         # Create a specific locale that definitely uses thousands separators
-        self.formatting_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+        # self.formatting_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
 
-    # def createEditor(self, parent, option, index):
-    #     editor = QLineEdit(parent)
-    #     return editor
+    def createEditor(self, parent, option, index):
+        if self.parent().usage == 'pb':
+            if index.column() == 1:
+                return QLineEdit(parent)
+            # Return None for other columns to prevent editing
+            return None
+        else:
+            if index.column() == 0 or index.column() == 1:
+                editor = QLineEdit(parent)
+                editor.setValidator(QIntValidator())
+                return editor
+            return None
 
-    def displayText(self, value, locale):
-        return self.formatting_locale.toString(value)
+    def initStyleOption(self, option, index):
+        super().initStyleOption(option, index)
+        value = index.data(Qt.ItemDataRole.DisplayRole)
+
+        if isinstance(value, int):
+            option.text = QLocale().toString(value)
+            if value < 0:
+                red = QColor("red")
+                option.palette.setColor(option.palette.ColorRole.Text, red)
+                option.palette.setColor(option.palette.ColorRole.HighlightedText, red)
+
+        else:
+            option.text = value
+
+    def setEditorData(self, editor, index):
+        # Retrieve the raw integer data
+        value = index.data(Qt.ItemDataRole.EditRole)
+        # Convert to string for the QLineEdit
+        editor.setText(str(value))
+
+    def setModelData(self, editor, model, index):
+        # Get the string from the editor
+        text = editor.text()
+        # Convert back to integer
+        try:
+            value = int(text)
+            model.setData(index, value, Qt.ItemDataRole.EditRole)
+        except ValueError:
+            model.setData(index, text, Qt.ItemDataRole.EditRole)
 
 
 class EditableDelegate(QStyledItemDelegate):
@@ -343,12 +379,13 @@ class PBSplitTreeWidget(QTreeWidget):
             self.setHeaderLabels(['Stage', 'Score', 'Difference'])
             self.setDragDropMode(QTreeWidget.DragDropMode.InternalMove)
             self.setItemDelegateForColumn(1, NumericDelegate(self))
-            self.setItemDelegateForColumn(2, EditableDelegate())
+            self.setItemDelegateForColumn(2, NumericDelegate(self))
 
         elif usage == 'pb':
             self.setColumnCount(2)
             self.setHeaderLabels(['Field', 'Value'])
-            self.setItemDelegateForColumn(0, EditableDelegate())
+            self.setItemDelegateForColumn(0, NumericDelegate(self))
+            self.setItemDelegateForColumn(1, NumericDelegate(self))
 
         else:
             raise ValueError('"usage", must be "pb" or "splits"')
