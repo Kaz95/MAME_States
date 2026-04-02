@@ -314,12 +314,15 @@ class NumericDelegate(QStyledItemDelegate):
 
         if isinstance(value, int):
             option.text = QLocale().toString(value)
-            if value < 0:
+        else:
+            if value.startswith('-'):
                 red = QColor("red")
                 option.palette.setColor(option.palette.ColorRole.Text, red)
                 option.palette.setColor(option.palette.ColorRole.HighlightedText, red)
-
-        else:
+            if value.startswith('+'):
+                green = QColor("green")
+                option.palette.setColor(option.palette.ColorRole.Text, green)
+                option.palette.setColor(option.palette.ColorRole.HighlightedText, green)
             option.text = value
 
     def setEditorData(self, editor, index):
