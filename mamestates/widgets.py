@@ -438,7 +438,15 @@ class PBSplitTreeWidget(QTreeWidget):
 
     def item_changed(self, item: QTreeWidgetItem, column: int):
         if self.usage == 'pb':
+            rom_description = self.hs_game_tree.selectedItems()[0].text(0)
+            field_name = item.text(0)
+            if field_name == 'High Score':
+                self.core.pb_info[rom_description].hiscore = int(item.text(column))
+            else:
+                self.core.pb_info[rom_description].other_fields[field_name] = item.text(column)
+            self.core.save_pb_to_database()
             return
+
         item_index = self.indexOfTopLevelItem(item)
         rom_description = self.hs_game_tree.selectedItems()[0].text(0)
         old_label = self.core.pb_info[rom_description].splits[item_index].label
@@ -447,7 +455,7 @@ class PBSplitTreeWidget(QTreeWidget):
             self.core.delete_split(rom_description, old_label)
             self.core.save_pb_to_database()
             # update label
-            pass
+
         elif column == 1:
             self.core.pb_info[rom_description].splits[item_index].score = int(item.text(column))
             self.core.delete_split(rom_description, old_label)
@@ -455,7 +463,7 @@ class PBSplitTreeWidget(QTreeWidget):
             splits = self.core.pb_info[rom_description].splits
             self.add_diffs(splits)
             # Update score
-            pass
+
         else:
             # Out of range
             pass
