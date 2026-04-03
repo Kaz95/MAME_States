@@ -8,7 +8,7 @@ import sqlite3
 import subprocess
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QSize, QTimer, QPoint
+from PyQt6.QtCore import Qt, QSize, QTimer, QPoint, QSignalBlocker
 from PyQt6.QtGui import QAction, QFont, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, QTabWidget, \
     QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QFileDialog, QMessageBox, QMenu, QTextEdit
@@ -399,10 +399,11 @@ class MainWindow(QMainWindow):
     def update_pb_panel(self, hiscore: int, other_fields: dict[str, str | int]) -> None:
         """Clear and refill PB Fields List."""
         self.temp_fields.clear()
-        self.pb_fields_tree.add_editable_item('High Score', hiscore)
-        if other_fields:
-            for field_name in other_fields:
-                self.pb_fields_tree.add_editable_item(field_name, other_fields[field_name])
+        with QSignalBlocker(self.pb_fields_tree):
+            self.pb_fields_tree.add_editable_item('High Score', hiscore)
+            if other_fields:
+                for field_name in other_fields:
+                    self.pb_fields_tree.add_editable_item(field_name, other_fields[field_name])
 
     @staticmethod
     def paint_clone_rom_item(item: QTreeWidgetItem) -> None:
@@ -528,9 +529,8 @@ class MainWindow(QMainWindow):
 
             self.update_pb_panel(pb.hiscore, pb.other_fields)
             for split in pb.splits:
-                self.split_tree.blockSignals(True)
-                self.split_tree.add_editable_item(split.label, split.score)
-                self.split_tree.blockSignals(False)
+                with QSignalBlocker(self.split_tree):
+                    self.split_tree.add_editable_item(split.label, split.score)
             self.split_tree.add_diffs(pb.splits)
         # After adding all items
         for i in range(self.pb_fields_tree.columnCount()):
