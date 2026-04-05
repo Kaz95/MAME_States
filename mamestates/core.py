@@ -75,17 +75,17 @@ class MAMEStatesCore:
         self.connection = connection
         self.cursor = self.connection.cursor()
         self.cursor.row_factory = sqlite3.Row
-        self.mame_dirs: list[MAMEDir] = self.get_mame_dirs()
+        self.mame_dirs: list[MAMEDir] = self._get_mame_dirs()
         self.input_files: dict[str, list[str]] = self.get_input_files()
         self.save_states: dict[str, dict[str, list[str]]] = self.get_save_states()
-        self.descriptions_and_names: dict[str, str] = self.get_descriptions_and_names()
-        self.rom_info: dict[str, RomInfo] = self.get_formatted_rom_info()
+        self.descriptions_and_names: dict[str, str] = self._get_descriptions_and_names()
+        self.rom_info: dict[str, RomInfo] = self._get_formatted_rom_info()
         self.pb_info: dict[str, PersonalBest] = self.get_personal_bests()
 
     ########################
     # Descriptions & Names #
     ########################
-    def get_descriptions_and_names(self) -> dict[str, str]:
+    def _get_descriptions_and_names(self) -> dict[str, str]:
         """Construct {rom_description:rom_name} dictionary.
 
         This dictionary is used as a quick in-memory reference that binds a roms description, to its name.
@@ -109,9 +109,9 @@ class MAMEStatesCore:
     ############
     # Rom Info #
     ############
-    def get_formatted_rom_info(self) -> dict[str, RomInfo]:
+    def _get_formatted_rom_info(self) -> dict[str, RomInfo]:
         """Retrieve and format raw rom info, from the database."""
-        raw_rom_info = self.get_raw_rom_info()
+        raw_rom_info = self._get_raw_rom_info()
         formatted_rom_info = self._serialize_rom_info(raw_rom_info)
         return formatted_rom_info
 
@@ -136,7 +136,7 @@ class MAMEStatesCore:
 
         return formatted_rom_info
 
-    def get_raw_rom_info(self) -> list[sqlite3.Row]:
+    def _get_raw_rom_info(self) -> list[sqlite3.Row]:
         """Retrieve all rom information from database and return it raw."""
         sql_statement = "SELECT * FROM roms"
         self.cursor.execute(sql_statement)
@@ -154,7 +154,7 @@ class MAMEStatesCore:
     #########
     # Paths #
     #########
-    def get_mame_dirs(self) -> list[MAMEDir]:
+    def _get_mame_dirs(self) -> list[MAMEDir]:
         """Load paths as strings from database. Convert to Path objects before returning them.
 
         Prune invalid MAME directories from the database.
@@ -166,7 +166,7 @@ class MAMEStatesCore:
         for row in rows:
             mame_path = Path(row['path'])
             if not mame_path.is_dir():
-                self.delete_mame_dir(row['path'])
+                self._delete_mame_dir(row['path'])
                 continue
             mame_version = row['version']
             mame_dir = MAMEDir(mame_path, mame_version)
@@ -174,7 +174,7 @@ class MAMEStatesCore:
         return mame_dirs
 
     def save_mame_dirs(self) -> None:
-        """Format list of MAMEDirs as rows. Insert them into database. """
+        """Format list of MAMEDirs as rows. Insert them into database."""
         sql_statement = """INSERT OR IGNORE INTO paths (path, version) VALUES (:path, :version);"""
         rows = []
         for mame_dir in self.mame_dirs:
@@ -186,7 +186,7 @@ class MAMEStatesCore:
         self.cursor.executemany(sql_statement, rows)
         self.connection.commit()
 
-    def delete_mame_dir(self, mame_path: str) -> None:
+    def _delete_mame_dir(self, mame_path: str) -> None:
         """Remove a given mame directory from the database."""
         sql_statement = "DELETE FROM paths WHERE path = ?"
         self.cursor.execute(sql_statement, (mame_path,))
@@ -277,8 +277,8 @@ class MAMEStatesCore:
                          "ON CONFLICT(label, rom_id) "
                          "DO UPDATE SET label = excluded.label, score = excluded.score, 'index' = excluded.'index'")
 
-        pb_rows = self.collate_pb_rows()
-        split_rows = self.collate_split_rows()
+        pb_rows = self._collate_pb_rows()
+        split_rows = self._collate_split_rows()
 
         self.cursor.executemany(pb_insert, pb_rows)
         self.cursor.executemany(splits_insert, split_rows)
@@ -307,7 +307,7 @@ class MAMEStatesCore:
         self.connection.commit()
 
 
-    def collate_pb_rows(self) -> list[dict]:
+    def _collate_pb_rows(self) -> list[dict]:
         """Serialize personal best hiscore and related information into rows for database insertion."""
         rows = []
         for rom_description in self.pb_info:
@@ -318,7 +318,7 @@ class MAMEStatesCore:
             rows.append(row)
         return rows
 
-    def collate_split_rows(self) -> list:
+    def _collate_split_rows(self) -> list:
         """Serialize splits information into rows for database insertion.
 
         Split order is preserved by using the splits current position in its perspective splits list.
@@ -342,4 +342,4 @@ class MAMEStatesCore:
                 self.mame_dirs.remove(mame_dir)
         del self.save_states[mame_path]
         del self.input_files[mame_path]
-        self.delete_mame_dir(mame_path)
+        self._delete_mame_dir(mame_path)
