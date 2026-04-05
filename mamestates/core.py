@@ -68,18 +68,19 @@ def get_mame_version(mame_dir: Path) -> str | None:
         return results.stdout
 
 
+# TODO Consider if some of these typehints are complex enough to warrant a dataclass or type alias...something.
 class MAMEStatesCore:
     """Encapsulates the internal state and logic of the MAMEStates Application."""
     def __init__(self, connection: sqlite3.Connection):
         self.connection = connection
         self.cursor = self.connection.cursor()
         self.cursor.row_factory = sqlite3.Row
-        self.mame_dirs = self.get_mame_dirs()
-        self.input_files = self.get_input_files()
-        self.save_states = self.get_save_states()
-        self.descriptions_and_names = self.get_descriptions_and_names()
-        self.rom_info = self.get_formatted_rom_info()
-        self.pb_info = self.get_personal_bests()
+        self.mame_dirs: list[MAMEDir] = self.get_mame_dirs()
+        self.input_files: dict[str, list[str]] = self.get_input_files()
+        self.save_states: dict[str, dict[str, list[str]]] = self.get_save_states()
+        self.descriptions_and_names: dict[str, str] = self.get_descriptions_and_names()
+        self.rom_info: dict[str, RomInfo] = self.get_formatted_rom_info()
+        self.pb_info: dict[str, PersonalBest] = self.get_personal_bests()
 
     ########################
     # Descriptions & Names #
