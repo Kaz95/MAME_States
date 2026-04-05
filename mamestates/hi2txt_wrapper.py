@@ -28,7 +28,7 @@ def has_xml(rom_name: str) -> bool:
             return False
 
 
-def get_games_with_hs(mame_dirs: list[core.MAMEDir]) -> dict[str, list[Path]]:
+def _get_games_with_hs(mame_dirs: list[core.MAMEDir]) -> dict[str, list[Path]]:
     """Retrieve and return all hiscore files with compatible hi2txt xml files, based on the given list of MAME directories."""
     hi2txt_compatible_hi_scores: dict[str, list[Path]] = {}
     for mame_dir in mame_dirs:
@@ -50,7 +50,7 @@ def get_games_with_hs(mame_dirs: list[core.MAMEDir]) -> dict[str, list[Path]]:
     return hi2txt_compatible_hi_scores
 
 
-def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[str, dict[str, str]]:
+def _get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[str, dict[str, str]]:
     """Retrieve raw hi2txt leaderboard table output for compatible games with .hi file."""
     hi2txt_tables: dict[str, dict[str, str]] = {}
     for mame_dir in hi2txt_compatible_hi_scores:
@@ -65,7 +65,7 @@ def get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[st
     return hi2txt_tables
 
 
-def format_table(raw_hi2txt_table: str) -> dict[str, list | str]:
+def _format_table(raw_hi2txt_table: str) -> dict[str, list | str]:
     """Split raw hi2txt leaderboard tables into usable python representations."""
     table = {}
     leaderboards = raw_hi2txt_table.split('\n#')
@@ -88,8 +88,8 @@ def format_table(raw_hi2txt_table: str) -> dict[str, list | str]:
 
 def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | Hi2TxtError | None:
     """Compare two raw hi2txt tables to look for new, possible, personal best."""
-    old_table = format_table(old_raw_table)
-    new_table = format_table(new_raw_table)
+    old_table = _format_table(old_raw_table)
+    new_table = _format_table(new_raw_table)
     pprint.pp(old_table)
     pprint.pp(new_table)
     old_columns = old_table['col']
@@ -112,7 +112,7 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | Hi2Tx
             return new_pb
 
 
-def get_default_tables(rom_name: str) -> dict:
+def _get_default_tables(rom_name: str) -> dict:
     """Retrieve the default hiscore table for a particular rom. Convert to python dict and return."""
     defaults_xml = Path(core.get_abs_path(r'.\hi2txt\hi2txt_doc\hi2txt_defaults'))
     with open(defaults_xml / f'{rom_name}.xml', 'r') as xml_file:
@@ -122,20 +122,20 @@ def get_default_tables(rom_name: str) -> dict:
         return default_tables
 
 
-def serialize_hi2txt_to_pb(line: str, columns: str, rom_name: str, cursor: sqlite3.Cursor) -> core.PersonalBest:
+def _serialize_hi2txt_to_pb(line: str, columns: str, rom_name: str, cursor: sqlite3.Cursor) -> core.PersonalBest:
     """Serialize a single hi2txt line into a PersonalBest object."""
     temp_pb = {}
     for index, section in enumerate(line.split('|')):
         temp_pb[columns.split('|')[index]] = section
     temp_pb.pop('NAME', None)
     temp_pb.pop('RANK', None)
-    rom_id = id_from_rom_name(rom_name, cursor)
+    rom_id = _id_from_rom_name(rom_name, cursor)
     pb = core.PersonalBest(int(temp_pb.pop('SCORE')), rom_id, temp_pb)
     return pb
 
 
-def parse_leaderboard_lines(leaderboard_lines: list, default_table: dict, columns: str, rom_name: str,
-                            cursor: sqlite3.Cursor):
+def _parse_leaderboard_lines(leaderboard_lines: list, default_table: dict, columns: str, rom_name: str,
+                             cursor: sqlite3.Cursor):
     """Parse a set of hi2txt lines and compare them against the default state of a roms hiscore table.
 
     If a discrepancy is found, it is serialized into a PersonalBest object and returned.
@@ -143,15 +143,15 @@ def parse_leaderboard_lines(leaderboard_lines: list, default_table: dict, column
     for index, line in enumerate(leaderboard_lines):
         if isinstance(default_table['row'], list) is True:
             if line.split('|') != default_table['row'][index]['cell']:
-                pb = serialize_hi2txt_to_pb(line, columns, rom_name, cursor)
+                pb = _serialize_hi2txt_to_pb(line, columns, rom_name, cursor)
                 return pb
         else:
             if line.split('|') != default_table['row']['cell']:
-                pb = serialize_hi2txt_to_pb(line, columns, rom_name, cursor)
+                pb = _serialize_hi2txt_to_pb(line, columns, rom_name, cursor)
                 return pb
 
 
-def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]], cursor: sqlite3.Cursor) -> core.PersonalBests:
+def _get_new_pbs(hi2txt_tables: dict[str, dict[str, str]], cursor: sqlite3.Cursor) -> core.PersonalBests:
     """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
     new_pbs = {}
     for mame_dir in hi2txt_tables:
@@ -163,30 +163,30 @@ def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]], cursor: sqlite3.Cursor
                 if leaderboard_lines[0].startswith('#') or leaderboard_lines[0].startswith(' '):
                     leaderboard_name = leaderboard_lines.pop(0).strip('# ')
                     columns = leaderboard_lines.pop(0)
-                    default_tables = get_default_tables(rom_name)
+                    default_tables = _get_default_tables(rom_name)
 
                     for table in default_tables:
                         if table['@id'] == leaderboard_name:
                             default_table = table
                             leaderboard_lines = [line for line in leaderboard_lines if line]
-                            new_pb = parse_leaderboard_lines(leaderboard_lines, default_table, columns, rom_name,
-                                                             cursor)
+                            new_pb = _parse_leaderboard_lines(leaderboard_lines, default_table, columns, rom_name,
+                                                              cursor)
                             if new_pb:
                                 new_pbs[rom_name] = new_pb
 
                 else:
                     columns = leaderboard_lines.pop(0)
-                    default_table = get_default_tables(rom_name)
+                    default_table = _get_default_tables(rom_name)
 
                     leaderboard_lines = [line for line in leaderboard_lines if line]
-                    new_pb = parse_leaderboard_lines(leaderboard_lines, default_table, columns, rom_name, cursor)
+                    new_pb = _parse_leaderboard_lines(leaderboard_lines, default_table, columns, rom_name, cursor)
                     if new_pb:
                         new_pbs[rom_name] = new_pb
 
     return new_pbs
 
 
-def id_from_rom_name(name: str, cursor) -> int:
+def _id_from_rom_name(name: str, cursor) -> int:
     """Retrieve the corresponding rom_id, for a given rom name, from the database."""
     sql_statement = "SELECT id FROM roms WHERE name = ?"
     cursor.execute(sql_statement, (name,))
@@ -197,9 +197,9 @@ def id_from_rom_name(name: str, cursor) -> int:
 
 def save_pb(new_pb: dict[str, str], rom_name: str, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
     """Insert or update new PB entry into database, if new PB has a higher score."""
-    new_pb = serialize_hi2txt_to_pb(new_pb['row'], new_pb['col'], rom_name, cursor)
+    new_pb = _serialize_hi2txt_to_pb(new_pb['row'], new_pb['col'], rom_name, cursor)
     other_fields = json.dumps(new_pb.other_fields)
-    rom_id = id_from_rom_name(rom_name, cursor)
+    rom_id = _id_from_rom_name(rom_name, cursor)
 
     row = (new_pb.hiscore, other_fields, rom_id)
     sql_statement = (
@@ -209,12 +209,12 @@ def save_pb(new_pb: dict[str, str], rom_name: str, connection: sqlite3.Connectio
     connection.commit()
 
 
-def save_pbs(new_pbs: core.PersonalBests, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
+def _save_pbs(new_pbs: core.PersonalBests, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
     """Insert or update new PB entries into database, if new PB has a higher score."""
     for rom_name in new_pbs:
         pb = new_pbs[rom_name]
         other_fields = json.dumps(pb.other_fields)
-        rom_id = id_from_rom_name(rom_name, cursor)
+        rom_id = _id_from_rom_name(rom_name, cursor)
 
         row = (pb.hiscore, other_fields, rom_id)
         sql_statement = (
@@ -226,7 +226,7 @@ def save_pbs(new_pbs: core.PersonalBests, connection: sqlite3.Connection, cursor
 
 def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dirs: list[core.MAMEDir]) -> None:
     """Scan hi score tables, parse for possible PB entries and insert or update PB table in database."""
-    hi_scores = get_games_with_hs(mame_dirs)
-    hi2txt_tables = get_hs_tables(hi_scores)
-    new_pbs = get_new_pbs(hi2txt_tables, cursor)
-    save_pbs(new_pbs, connection, cursor)
+    hi_scores = _get_games_with_hs(mame_dirs)
+    hi2txt_tables = _get_hs_tables(hi_scores)
+    new_pbs = _get_new_pbs(hi2txt_tables, cursor)
+    _save_pbs(new_pbs, connection, cursor)
