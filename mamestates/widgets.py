@@ -6,11 +6,11 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, QSize, QProcess, QModelIndex, QLocale
-from PyQt6.QtGui import QRegularExpressionValidator, QCloseEvent, QColor, QIntValidator
+from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, QSize, QProcess, QModelIndex, QLocale, QSignalBlocker
+from PyQt6.QtGui import QRegularExpressionValidator, QCloseEvent, QColor, QIntValidator, QAction
 from PyQt6.QtWidgets import QLabel, QLineEdit, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QTabWidget, QDialogButtonBox, \
-    QTreeWidget, QMenu, QInputDialog, QTreeWidgetItem, QStyleOptionViewItem
+    QTreeWidget, QMenu, QInputDialog, QTreeWidgetItem, QStyleOptionViewItem, QMessageBox
 
 import core
 import hi2txt_wrapper
@@ -376,6 +376,11 @@ class PBSplitTreeWidget(QTreeWidget):
         self.last_row: int | None = None
         """The previously selected row. Used internally to track split movement."""
 
+
+        self.add_pb_field = QAction('Add Field')
+        self.delete_pb_field = QAction('Delete Field')
+
+
         # TODO Use enum
         if usage == 'splits':
             self.setColumnCount(3)
@@ -385,6 +390,10 @@ class PBSplitTreeWidget(QTreeWidget):
             self.setItemDelegateForColumn(2, NumericDelegate(self))
 
         elif usage == 'pb':
+            self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+            self.customContextMenuRequested.connect(self.show_body_menu)
+            self.add_pb_field.triggered.connect(self.add_pb_field_triggered)
+            self.delete_pb_field.triggered.connect(self.delete_pb_field_triggered)
             self.setColumnCount(2)
             self.setHeaderLabels(['Field', 'Value'])
             self.setItemDelegateForColumn(0, NumericDelegate(self))
@@ -397,8 +406,41 @@ class PBSplitTreeWidget(QTreeWidget):
         header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         header.customContextMenuRequested.connect(self.show_header_menu)
 
+
+
         self.itemPressed.connect(self.item_pressed)
         self.itemChanged.connect(self.item_changed)
+
+
+    def add_pb_field_triggered(self) -> None:
+        rom_description = self.hs_game_tree.selectedItems()[0].text(0)
+        field_name, ok = QInputDialog.getText(self, 'User Input', 'Field Name', text='Placeholder')
+        if field_name and ok:
+            other_fields = self.core.pb_info[rom_description].other_fields
+            if field_name in other_fields.keys() or field_name == 'High Score':
+                QMessageBox.critical(self, 'Error', 'Name already in use for this rom. Try again.')
+                self.add_pb_field_triggered()
+            else:
+                other_fields[field_name] = None
+                new_item = self.add_editable_item(field_name, '')
+                self.editItem(new_item, 1)
+
+    def delete_pb_field_triggered(self) -> None:
+        rom_description = self.hs_game_tree.currentItem().text(0)
+        item_to_be_deleted = self.currentItem()
+        item_above = self.itemAbove(item_to_be_deleted)
+        item_below = self.itemBelow(item_to_be_deleted)
+        pb_field_name = item_to_be_deleted.text(0)
+        item_to_be_deleted_index = self.indexOfTopLevelItem(item_to_be_deleted)
+        self.takeTopLevelItem(item_to_be_deleted_index)
+        del self.core.pb_info[rom_description].other_fields[pb_field_name]
+        self.core.save_pb_to_database()
+
+        if item_above:
+            self.setCurrentItem(item_above)
+        elif item_below:
+            self.setCurrentItem(item_below)
+
 
     def show_header_menu(self, pos):
         column_index = self.header().logicalIndexAt(pos)
@@ -411,6 +453,19 @@ class PBSplitTreeWidget(QTreeWidget):
             if ok and new_text:
                 self.headerItem().setText(column_index, new_text)
 
+    def show_body_menu(self, pos):
+        tree_item = self.itemAt(pos)
+        menu = QMenu(self)
+        menu.addAction(self.add_pb_field)
+        if tree_item:
+            menu.addAction(self.delete_pb_field)
+
+        menu.exec(self.viewport().mapToGlobal(pos))
+
+
+
+
+    # TODO Consider checking for empty string on col 1. Maybe raise value error. Blank item saved to DB == Bad.
     def add_editable_item(self, col1, col2):
         item = QTreeWidgetItem(self)
         item.setData(0, Qt.ItemDataRole.DisplayRole, col1)
@@ -419,6 +474,7 @@ class PBSplitTreeWidget(QTreeWidget):
         # Allow editing for all columns in this row
         item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsDropEnabled | Qt.ItemFlag.ItemIsEditable)
         self.addTopLevelItem(item)
+        return item
 
     def dropEvent(self, event):
         items_that_moved = self.selectedItems()  # Get items before drop completes
@@ -447,26 +503,33 @@ class PBSplitTreeWidget(QTreeWidget):
             self.core.save_pb_to_database()
             return
 
-        item_index = self.indexOfTopLevelItem(item)
-        rom_description = self.hs_game_tree.selectedItems()[0].text(0)
-        old_label = self.core.pb_info[rom_description].splits[item_index].label
-        if column == 0:
-            self.core.pb_info[rom_description].splits[item_index].label = item.text(column)
-            self.core.delete_split(rom_description, old_label)
-            self.core.save_pb_to_database()
-            # update label
-
-        elif column == 1:
-            self.core.pb_info[rom_description].splits[item_index].score = int(item.text(column))
-            self.core.delete_split(rom_description, old_label)
-            self.core.save_pb_to_database()
-            splits = self.core.pb_info[rom_description].splits
-            self.add_diffs(splits)
-            # Update score
-
         else:
-            # Out of range
-            pass
+            item_index = self.indexOfTopLevelItem(item)
+            rom_description = self.hs_game_tree.selectedItems()[0].text(0)
+            old_label = self.core.pb_info[rom_description].splits[item_index].label
+            if column == 0:
+                split_names = [split.label for split in self.core.pb_info[rom_description].splits]
+                if item.text(column) in split_names:
+                    QMessageBox.critical(self, 'Error', 'Name already in use. Try Again.')
+                    with QSignalBlocker(self):
+                        item.setText(column, old_label)
+                        return
+                self.core.pb_info[rom_description].splits[item_index].label = item.text(column)
+                self.core.delete_split(rom_description, old_label)
+                self.core.save_pb_to_database()
+                # update label
+
+            elif column == 1:
+                self.core.pb_info[rom_description].splits[item_index].score = int(item.text(column))
+                self.core.delete_split(rom_description, old_label)
+                self.core.save_pb_to_database()
+                splits = self.core.pb_info[rom_description].splits
+                self.add_diffs(splits)
+                # Update score
+
+            else:
+                # Out of range
+                pass
 
     def update_split_order(self, rom_description: str, old_index: int, new_index: int) -> None:
         """Mirror internal list changes to the in-memory representation. Save to database."""
