@@ -409,7 +409,7 @@ class PBSplitTreeWidget(QTreeWidget):
 
 
         self.itemPressed.connect(self.item_pressed)
-        self.itemChanged.connect(self.item_changed)
+        self.itemChanged.connect(self.item_changed, Qt.ConnectionType.QueuedConnection)
 
 
     def add_pb_field_triggered(self) -> None:
@@ -519,6 +519,7 @@ class PBSplitTreeWidget(QTreeWidget):
                     QMessageBox.critical(self, 'Error', 'Blank split names are not allowed. try Again.')
                     with QSignalBlocker(self):
                         item.setText(column, old_label)
+                        self.editItem(item, column)
                         return
 
                 self.core.pb_info[rom_description].splits[item_index].label = item.text(column)
