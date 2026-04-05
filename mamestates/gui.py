@@ -11,7 +11,7 @@ from pathlib import Path
 from PyQt6.QtCore import Qt, QSize, QTimer, QPoint, QSignalBlocker
 from PyQt6.QtGui import QAction, QFont, QColor, QBrush
 from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetItem, QLineEdit, QTabWidget, \
-    QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QFileDialog, QMessageBox, QMenu, QTextEdit
+    QHBoxLayout, QWidget, QVBoxLayout, QLabel, QPushButton, QFileDialog, QMessageBox, QMenu, QTextEdit, QInputDialog
 
 import core
 import hi2txt_wrapper
@@ -335,6 +335,9 @@ class MainWindow(QMainWindow):
         self.splits_tree_button_container.addWidget(self.add_split_button)
         self.splits_tree_button_container.addWidget(self.delete_split_button)
 
+        self.add_split_button.clicked.connect(self.add_split_clicked)
+        self.delete_split_button.clicked.connect(self.delete_split_clicked)
+
     def setup_search_page_layout(self):
         self.rom_search_container.setLayout(self.rom_search_panel)
 
@@ -606,6 +609,42 @@ class MainWindow(QMainWindow):
             game_item_index = self.games_with_pb_tree.indexFromItem(game_item)
             game_row = game_item_index.row()
             self.games_with_pb_tree.takeTopLevelItem(game_row)
+
+    def add_split_clicked(self) -> None:
+        rom_description = self.games_with_pb_tree.selectedItems()[0].text(0)
+        split_name, ok = QInputDialog.getText(self, 'User Input', 'Split Name', text='Placeholder')
+        if split_name and ok:
+            splits = self.core.pb_info[rom_description].splits
+            split_names = [split.label for split in splits]
+            if split_name in split_names:
+                QMessageBox.critical(self, 'Error', 'Name already in use for this rom. Try again.')
+                self.add_split_clicked()
+            else:
+                rom_id = self.core.id_from_description(rom_description)
+                new_split = core.StageSplit(split_name, 0, rom_id)
+                self.core.pb_info[rom_description].splits.append(new_split)
+                new_item = self.split_tree.add_editable_item(new_split.label, new_split.score)
+                self.split_tree.editItem(new_item, 1)
+
+    def delete_split_clicked(self) -> None:
+        rom_description = self.games_with_pb_tree.selectedItems()[0].text(0)
+        selected_split_item = self.split_tree.selectedItems()[0]
+        item_above = self.split_tree.itemAbove(selected_split_item)
+        item_below = self.split_tree.itemBelow(selected_split_item)
+
+        if item_above:
+            self.split_tree.setCurrentItem(item_above)
+        elif item_below:
+            self.split_tree.setCurrentItem(item_below)
+
+
+        split_index = self.split_tree.indexOfTopLevelItem(selected_split_item)
+
+        split = self.core.pb_info[rom_description].splits.pop(split_index)
+        self.core.delete_split(rom_description, split.label)
+        self.split_tree.takeTopLevelItem(split_index)
+        self.split_tree.add_diffs(self.core.pb_info[rom_description].splits)
+
 
 
     def open_notes(self, some_list: QTreeWidget) -> None:
