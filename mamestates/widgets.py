@@ -514,6 +514,13 @@ class PBSplitTreeWidget(QTreeWidget):
                     with QSignalBlocker(self):
                         item.setText(column, old_label)
                         return
+
+                if not item.text(column):
+                    QMessageBox.critical(self, 'Error', 'Blank split names are not allowed. try Again.')
+                    with QSignalBlocker(self):
+                        item.setText(column, old_label)
+                        return
+
                 self.core.pb_info[rom_description].splits[item_index].label = item.text(column)
                 self.core.delete_split(rom_description, old_label)
                 self.core.save_pb_to_database()
