@@ -703,10 +703,12 @@ class MainWindow(QMainWindow):
             for _ in range(self.save_state_and_inp_tree.topLevelItemCount()):
                 if self.save_state_and_inp_tree.topLevelItem(_).text(0) == mame_path:
                     self.save_state_and_inp_tree.takeTopLevelItem(_)
+                    QMessageBox.critical(self, 'Error',
+                                         'Invalid MAME Directory.\nDirectory has been removed. Please update it.')
                     break
 
         self.core.new_remove_invalid_mame_dir(mame_path)
-        QMessageBox.critical(self, 'Error', 'Invalid MAME Directory.\nDirectory has been removed. Please update it.')
+
 
     def open_ini_actioned_clicked(self) -> None:
         """Attempt to open the .ini file for the selected MAME directory.
