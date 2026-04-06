@@ -532,6 +532,7 @@ class PBSplitTreeWidget(QTreeWidget):
                     QMessageBox.critical(self, 'Error', 'Name already in use. Try Again.')
                     with QSignalBlocker(self):
                         item.setText(column, old_label)
+                        self.editItem(item, column)
                         return
 
                 if not item.text(column):
