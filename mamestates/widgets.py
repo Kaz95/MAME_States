@@ -486,14 +486,15 @@ class PBSplitTreeWidget(QTreeWidget):
 
     # TODO Consider checking for empty string on col 1. Maybe raise value error. Blank item saved to DB == Bad.
     def add_editable_item(self, col1, col2):
-        item = QTreeWidgetItem(self)
-        item.setData(0, Qt.ItemDataRole.DisplayRole, col1)
-        item.setData(1, Qt.ItemDataRole.DisplayRole, col2)
+        with QSignalBlocker(self):
+            item = QTreeWidgetItem(self)
+            item.setData(0, Qt.ItemDataRole.DisplayRole, col1)
+            item.setData(1, Qt.ItemDataRole.DisplayRole, col2)
 
-        # Allow editing for all columns in this row
-        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsDropEnabled | Qt.ItemFlag.ItemIsEditable)
-        self.addTopLevelItem(item)
-        return item
+            # Allow editing for all columns in this row
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsDropEnabled | Qt.ItemFlag.ItemIsEditable)
+            self.addTopLevelItem(item)
+            return item
 
     def dropEvent(self, event):
         item_that_moved = self.currentItem()  # Get items before drop completes

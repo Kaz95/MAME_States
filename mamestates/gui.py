@@ -401,11 +401,11 @@ class MainWindow(QMainWindow):
     def update_pb_panel(self, hiscore: int, other_fields: dict[str, str | int]) -> None:
         """Clear and refill PB Fields List."""
         self.temp_fields.clear()
-        with QSignalBlocker(self.pb_fields_tree):
-            self.pb_fields_tree.add_editable_item('Hi Score', hiscore)
-            if other_fields:
-                for field_name in other_fields:
-                    self.pb_fields_tree.add_editable_item(field_name, other_fields[field_name])
+        # with QSignalBlocker(self.pb_fields_tree):
+        self.pb_fields_tree.add_editable_item('Hi Score', hiscore)
+        if other_fields:
+            for field_name in other_fields:
+                self.pb_fields_tree.add_editable_item(field_name, other_fields[field_name])
 
     @staticmethod
     def paint_clone_rom_item(item: QTreeWidgetItem) -> None:
@@ -531,8 +531,8 @@ class MainWindow(QMainWindow):
 
             self.update_pb_panel(pb.hiscore, pb.other_fields)
             for split in pb.splits:
-                with QSignalBlocker(self.split_tree):
-                    self.split_tree.add_editable_item(split.label, split.score)
+                # with QSignalBlocker(self.split_tree):
+                self.split_tree.add_editable_item(split.label, split.score)
             self.split_tree.add_diffs(pb.splits)
         # After adding all items
         for i in range(self.pb_fields_tree.columnCount()):
@@ -622,6 +622,8 @@ class MainWindow(QMainWindow):
                 rom_id = self.core.id_from_description(rom_description)
                 new_split = core.StageSplit(split_name, 0, rom_id)
                 self.core.pb_info[rom_description].splits.append(new_split)
+                # with QSignalBlocker(self.split_tree):
+                #     new_item = self.split_tree.add_editable_item(new_split.label, new_split.score)
                 new_item = self.split_tree.add_editable_item(new_split.label, new_split.score)
                 self.split_tree.editItem(new_item, 1)
 
