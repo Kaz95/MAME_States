@@ -625,6 +625,7 @@ class MainWindow(QMainWindow):
                 # with QSignalBlocker(self.split_tree):
                 #     new_item = self.split_tree.add_editable_item(new_split.label, new_split.score)
                 new_item = self.split_tree.add_editable_item(new_split.label, new_split.score)
+                self.split_tree.add_diffs(splits)
                 self.split_tree.editItem(new_item, 1)
 
     def delete_split_clicked(self) -> None:
