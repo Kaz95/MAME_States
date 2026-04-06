@@ -18,6 +18,7 @@ import hi2txt_wrapper
 import widgets
 
 
+# TODO Consider moving MainWindow to widgets, as it is technically no different then any other QWidget.
 class MainWindow(QMainWindow):
     """Subclasses and extends the QQMainWindow class of the PyQt6.QtWidgets Module
 
@@ -327,8 +328,6 @@ class MainWindow(QMainWindow):
     def setup_pb_panel(self) -> None:
         """Personal Best Panel widget customization."""
         self.pb_fields_tree.setFont(self.small_font)
-        # self.pb_fields_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        # self.pb_fields_tree.customContextMenuRequested.connect(self.show_pb_fields_context)
 
     def setup_split_panel(self) -> None:
         """Split Panel widget customization."""

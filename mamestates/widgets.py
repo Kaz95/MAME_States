@@ -16,9 +16,6 @@ import core
 import hi2txt_wrapper
 
 
-######################
-#   Save State Page  #
-######################
 # TODO Not sure if use Paths or str within function. Whatever I choose needs to be consistent across entire app.
 class MAMEProcess(QProcess):
     """Subclass and extend the QProcess class of the PyQt6.QtCore module.
@@ -174,6 +171,9 @@ class ProgressBarWidget(QDialog):
         self.setLayout(layout)
 
 
+######################
+#   Save State Page  #
+######################
 class SaveStateNameInputValidator(QStyledItemDelegate):
     """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.
 
@@ -310,11 +310,17 @@ class NotesWindow(QWidget):
         event.accept()
 
 
-class NumericDelegate(QStyledItemDelegate):
-    def __init__(self, parent=None):
-        super().__init__(parent)
-        # Create a specific locale that definitely uses thousands separators
-        # self.formatting_locale = QLocale(QLocale.Language.English, QLocale.Country.UnitedStates)
+class PBSplitTreeDelegate(QStyledItemDelegate):
+    """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Dictate which columns are editable based on flags set in parent tree. Add separators to numerals.
+    Color positive and negative numbers respectively in the 'diff' column. Cast values to and fro strings/ints as
+    needed.
+    """
+    # def __init__(self, parent=None):
+    #     super().__init__(parent)
+
 
     def createEditor(self, parent, option, index):
         if self.parent().usage == 'pb':
@@ -363,24 +369,14 @@ class NumericDelegate(QStyledItemDelegate):
             model.setData(index, text, Qt.ItemDataRole.EditRole)
 
 
-class EditableDelegate(QStyledItemDelegate):
-    """Delegate to make only specific columns editable."""
-
-    def createEditor(self, parent: QWidget, option: QStyleOptionViewItem,
-                     index: QModelIndex) -> QWidget | None:
-        # Allow editing only for the second column (index 1)
-        if index.column() == 1:
-            return super().createEditor(parent, option, index)
-        # Return None for other columns to prevent editing
-        return None
-
-
 class PBSplitTreeWidget(QTreeWidget):
-    """Subclass and extend the QListWidget class of the PyQt6.QtWidgets module.
+    """Subclass and extend the QTreeWidget class of the PyQt6.QtWidgets module.
 
     This class inherits most of its behavior from its parent class, while extending its functionality.
-    Internal movement is active. The order of splits is preserved.
-    The difference between splits is calculated and displayed.
+    When used for splits, internal movement is active, the order of splits is preserved, and
+    the difference between splits is calculated and displayed.
+
+    When used for PBs, internal movement is not active, list order is static.
     """
 
     def __init__(self, mcore: core.MAMEStatesCore, hs_game_tree: QTreeWidget, usage):
@@ -403,12 +399,13 @@ class PBSplitTreeWidget(QTreeWidget):
 
 
         # TODO Use enum
+        # TODO Delegate should be used across entire tree. Should be fine as its behavior is customized internally.
         if usage == 'splits':
             self.setColumnCount(3)
             self.setHeaderLabels(['Stage', 'Score', 'Difference'])
             self.setDragDropMode(QTreeWidget.DragDropMode.InternalMove)
-            self.setItemDelegateForColumn(1, NumericDelegate(self))
-            self.setItemDelegateForColumn(2, NumericDelegate(self))
+            self.setItemDelegateForColumn(1, PBSplitTreeDelegate(self))
+            self.setItemDelegateForColumn(2, PBSplitTreeDelegate(self))
 
         elif usage == 'pb':
             self.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
@@ -417,8 +414,8 @@ class PBSplitTreeWidget(QTreeWidget):
             self.delete_pb_field.triggered.connect(self.delete_pb_field_triggered)
             self.setColumnCount(2)
             self.setHeaderLabels(['Field', 'Value'])
-            self.setItemDelegateForColumn(0, NumericDelegate(self))
-            self.setItemDelegateForColumn(1, NumericDelegate(self))
+            self.setItemDelegateForColumn(0, PBSplitTreeDelegate(self))
+            self.setItemDelegateForColumn(1, PBSplitTreeDelegate(self))
 
         else:
             raise ValueError('"usage", must be "pb" or "splits"')
@@ -430,6 +427,8 @@ class PBSplitTreeWidget(QTreeWidget):
 
 
         self.itemPressed.connect(self.item_pressed)
+
+        # QueuedConnection allows editor to be reopened after the close event finishes.
         self.itemChanged.connect(self.item_changed, Qt.ConnectionType.QueuedConnection)
 
 
