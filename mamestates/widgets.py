@@ -529,7 +529,7 @@ class PBSplitTreeWidget(QTreeWidget):
             if column == 0:
                 split_names = [split.label for split in self.core.pb_info[rom_description].splits]
                 if item.text(column) in split_names:
-                    QMessageBox.critical(self, 'Error', 'Name already in use. Try Again.')
+                    QMessageBox.critical(self, 'Error', 'Name already in use. Try Again.(1)')
                     with QSignalBlocker(self):
                         item.setText(column, old_label)
                         self.editItem(item, column)
