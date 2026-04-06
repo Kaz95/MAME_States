@@ -436,7 +436,7 @@ class PBSplitTreeWidget(QTreeWidget):
         field_name, ok = QInputDialog.getText(self, 'User Input', 'Field Name', text='Placeholder')
         if field_name and ok:
             other_fields = self.core.pb_info[rom_description].other_fields
-            if field_name in other_fields.keys() or field_name == 'High Score':
+            if field_name in other_fields.keys() or field_name == 'Hi Score':
                 QMessageBox.critical(self, 'Error', 'Name already in use for this rom. Try again.')
                 self.add_pb_field_triggered()
             else:
@@ -514,7 +514,7 @@ class PBSplitTreeWidget(QTreeWidget):
         if self.usage == 'pb':
             rom_description = self.hs_game_tree.currentItem().text(0)
             field_name = item.text(0)
-            if field_name == 'High Score':
+            if field_name == 'Hi Score':
                 self.core.pb_info[rom_description].hiscore = int(item.text(column))
             else:
                 self.core.pb_info[rom_description].other_fields[field_name] = item.text(column)

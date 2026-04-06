@@ -103,7 +103,7 @@ class MainWindow(QMainWindow):
         self.save_state_and_inp_page: QWidget = QWidget()
         """Container widget. Corresponding layout is applied. Added to corresponding container tab widget."""
 
-        self.high_score_page: QWidget = QWidget()
+        self.hiscore_page: QWidget = QWidget()
         """Container widget. Corresponding layout is applied. Added to corresponding container tab widget."""
 
         self.rom_search_page: QWidget = QWidget()
@@ -161,7 +161,7 @@ class MainWindow(QMainWindow):
 
         # Layouts
 
-        self.high_score_page_layout: QHBoxLayout = QHBoxLayout()
+        self.hiscore_page_layout: QHBoxLayout = QHBoxLayout()
         """Top level page layout."""
 
         self.game_list_button_container: QHBoxLayout = QHBoxLayout()
@@ -194,10 +194,10 @@ class MainWindow(QMainWindow):
 
         self.info_layout.addLayout(self.splits_tree_button_container)
 
-        self.high_score_page_layout.addLayout(self.game_list_container)
-        self.high_score_page_layout.addLayout(self.info_layout)
-        self.high_score_page.setLayout(self.high_score_page_layout)
-        self.high_score_page.setFont(self.big_font)
+        self.hiscore_page_layout.addLayout(self.game_list_container)
+        self.hiscore_page_layout.addLayout(self.info_layout)
+        self.hiscore_page.setLayout(self.hiscore_page_layout)
+        self.hiscore_page.setFont(self.big_font)
 
         # --------------- #
         # Rom Search Page #
@@ -264,7 +264,7 @@ class MainWindow(QMainWindow):
         first_item = self.games_with_pb_tree.topLevelItem(0)
         self.games_with_pb_tree.setCurrentItem(first_item)
         self.tabs.addTab(self.save_state_and_inp_page, 'Save States')
-        self.tabs.addTab(self.high_score_page, 'High Scores')
+        self.tabs.addTab(self.hiscore_page, 'Hi Score')
         self.tabs.addTab(self.rom_search_page, 'Rom Search')
         self.setCentralWidget(self.tabs)
 
@@ -306,7 +306,7 @@ class MainWindow(QMainWindow):
         self.save_state_and_inp_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
 
     def setup_hiscore_panel(self) -> None:
-        """High Score Panel widget customization"""
+        """Hi Score Panel widget customization"""
         self.notes_window.hide()
         # Fill Game List
         self.fill_hiscore_game_list()
@@ -314,7 +314,7 @@ class MainWindow(QMainWindow):
         self.games_with_pb_tree.setHeaderLabels(['Games'])
         self.games_with_pb_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.games_with_pb_tree.customContextMenuRequested.connect(self.show_rom_item_context)
-        self.games_with_pb_tree.itemSelectionChanged.connect(self.high_score_tree_selection_changed)
+        self.games_with_pb_tree.itemSelectionChanged.connect(self.hi_score_tree_selection_changed)
 
         self.hiscore_add_game_button.clicked.connect(self.hiscore_add_game_clicked)
         self.hiscore_delete_game_button.clicked.connect(self.delete_game)
@@ -402,7 +402,7 @@ class MainWindow(QMainWindow):
         """Clear and refill PB Fields List."""
         self.temp_fields.clear()
         with QSignalBlocker(self.pb_fields_tree):
-            self.pb_fields_tree.add_editable_item('High Score', hiscore)
+            self.pb_fields_tree.add_editable_item('Hi Score', hiscore)
             if other_fields:
                 for field_name in other_fields:
                     self.pb_fields_tree.add_editable_item(field_name, other_fields[field_name])
@@ -463,7 +463,7 @@ class MainWindow(QMainWindow):
         return path_validity
 
     def fill_hiscore_game_list(self) -> None:
-        """Clear and refill High Score Game Tree, based on personal best info."""
+        """Clear and refill Hi Score Game Tree, based on personal best info."""
         self.games_with_pb_tree.clear()
         for rom_description in self.core.pb_info:
             QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
@@ -516,7 +516,7 @@ class MainWindow(QMainWindow):
         """
         self.rom_search_popup.close()
 
-    def high_score_tree_selection_changed(self) -> None:
+    def hi_score_tree_selection_changed(self) -> None:
         """Clear and refill 'splits list' and 'pb panel' based on currently selected item.
 
         Split diffs are calculated and displayed.
@@ -555,7 +555,7 @@ class MainWindow(QMainWindow):
         self.setEnabled(False)
 
     def rom_search_add_game_clicked(self) -> None:
-        """Create new High Score Game Tree item, based on user selection. Game is added to pb info and database.
+        """Create new Hi Score Game Tree item, based on user selection. Game is added to pb info and database.
 
         Duplicate games are disallowed. Popup closes upon valid selection. New game is focused.
         """
@@ -899,7 +899,7 @@ class MainWindow(QMainWindow):
     def run_rom(self, rom_name: str, record_input=False, play_back_input=False, input_file_name=None) -> None:
         """Attempt to run a rom, with a given MAME path.
 
-        If the rom is hi2txt compatible, a snapshot is taken of current high score tables.
+        If the rom is hi2txt compatible, a snapshot is taken of current hi score tables.
         This function does not currently check for a roms existence before trying to run it. MAME errors used instead.
         MAME is run in by spawning a subprocess. The subprocess is spawned in a separate thread to avoid blocking GUI.
         """
