@@ -21,21 +21,33 @@ import hi2txt_wrapper
 ######################
 # TODO Not sure if use Paths or str within function. Whatever I choose needs to be consistent across entire app.
 class MAMEProcess(QProcess):
+    """Subclass and extend the QProcess class of the PyQt6.QtCore module.
+
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Used when launching any type of MAME process. Stdout and stderr are piped to the main process in real time.
+    """
     def __init__(self, mame_dir: Path, text_box: QTextEdit, rom_name: str | None = None, *, record_input: bool = False,
                  playback_input: bool = False, input_file_name: str | None = None):
+        """If no flags are 'True' during init, the default action is to run the mame.exe file in the given mame_dir."""
         super().__init__()
+
         self.text_box: QTextEdit = text_box
+        """Acts as read-only terminal viewer within app."""
+
         self.mame_dir: Path = mame_dir
         self.mame_exe: Path = self.mame_dir / 'mame.exe'
+        self.rom_name: str | None = rom_name
+        self.record_input: bool = record_input
+        self.playback_input: bool = playback_input
+        self.input_file_name: str | None = input_file_name
+
         self.setWorkingDirectory(str(self.mame_dir))
-        # 2. Connect signals for real-time reading
+
         self.readyReadStandardOutput.connect(self.handle_stdout)
         self.readyReadStandardError.connect(self.handle_stderr)
         self.finished.connect(self.process_finished)
-        self.rom_name = rom_name
-        self.record_input = record_input
-        self.playback_input = playback_input
-        self.input_file_name = input_file_name
+
 
         if self.playback_input is True and self.record_input is True:
             raise ValueError('Record/Playback are mutually exclusive.')
@@ -61,13 +73,19 @@ class MAMEProcess(QProcess):
         else:
             self.run_mame()
 
-    def run_mame(self):
+    def run_mame(self) -> None:
+        """Run mame.exe file."""
         self.start(str(self.mame_exe))
 
-    def run_mame_with_rom(self):
+    def run_mame_with_rom(self) -> None:
+        """Open a given rom file, with a given mame.exe file."""
         self.start(str(self.mame_exe), [self.rom_name])
 
-    def run_mame_with_inp_recording(self):
+    def run_mame_with_inp_recording(self) -> None:
+        """Open a given rom file with input file recording, with a given mame.exe file.
+
+        The input file is named in the following format: [rom_name]_Y-m-d_H-M-[mame_version].inp
+        """
         date_object = datetime.now()
         formatted_date = date_object.strftime("%Y-%m-%d %H:%M")
         formatted_date = formatted_date.replace(' ', '_')
@@ -78,21 +96,24 @@ class MAMEProcess(QProcess):
         self.start(str(self.mame_exe),
                    [self.rom_name, '-record', f'{self.rom_name}_{formatted_date}_{short_mame_version}.inp'])
 
-    def run_mame_with_inp_playback(self):
+    def run_mame_with_inp_playback(self) -> None:
+        """Playback a given rom file, for a particular game, using a particular mame.exe."""
         self.start(str(self.mame_exe), [self.rom_name, '-playback', f'{self.input_file_name}.inp'])
 
-    def handle_stdout(self):
-        # 3. Read and decode the data
+    def handle_stdout(self) -> None:
+        """Decode stdout and append to apps 'terminal'."""
         data = self.readAllStandardOutput()
         stdout = data.data().decode()
         self.text_box.append(stdout)
 
-    def handle_stderr(self):
+    def handle_stderr(self) -> None:
+        """Decode stderr and append to apps 'terminal'."""
         data = self.readAllStandardError()
         stderr = data.data().decode()
         self.text_box.append(f"Error: {stderr}")
 
-    def process_finished(self):
+    def process_finished(self) -> None:
+        """Alert user when process closes. Not strictly needed."""
         self.text_box.append("Process finished.")
 
 
