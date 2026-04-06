@@ -524,9 +524,9 @@ class MainWindow(QMainWindow):
         self.pb_fields_tree.clear()
         self.split_tree.clear()
 
-        selected = self.games_with_pb_tree.selectedItems()
-        if selected:
-            rom_description = selected[0].text(0)
+        selected_item = self.games_with_pb_tree.currentItem()
+        if selected_item:
+            rom_description = selected_item.text(0)
             pb = self.core.pb_info[rom_description]
 
             self.update_pb_panel(pb.hiscore, pb.other_fields)
@@ -559,10 +559,10 @@ class MainWindow(QMainWindow):
 
         Duplicate games are disallowed. Popup closes upon valid selection. New game is focused.
         """
-        selected = self.rom_search_tree.selectedItems()
-        if selected:
-            item = selected[0]
-            rom_description = item.text(0)
+        selected_item = self.rom_search_tree.currentItem()
+        if selected_item:
+
+            rom_description = selected_item.text(0)
             if rom_description in self.core.pb_info:
                 QMessageBox.critical(self, 'Error', 'That Game already has a PB entry.')
                 self.rom_search_popup.raise_()
@@ -583,11 +583,11 @@ class MainWindow(QMainWindow):
 
         Item selection is moved programmatically before deleting.
         """
-        selected = self.games_with_pb_tree.selectedItems()
-        if selected:
-            game_item = selected[0]
-            previous_item = self.games_with_pb_tree.itemAbove(game_item)
-            next_item = self.games_with_pb_tree.itemBelow(game_item)
+        selected_item = self.games_with_pb_tree.currentItem()
+        if selected_item:
+
+            previous_item = self.games_with_pb_tree.itemAbove(selected_item)
+            next_item = self.games_with_pb_tree.itemBelow(selected_item)
 
             # Move selection before deleting.
             if previous_item:
@@ -597,7 +597,7 @@ class MainWindow(QMainWindow):
             else:
                 self.games_with_pb_tree.clearSelection()
 
-            rom_description = game_item.text(0)
+            rom_description = selected_item.text(0)
             # Delete from in-memory database representation.
             del self.core.pb_info[rom_description]
             # Delete from database.
@@ -605,12 +605,12 @@ class MainWindow(QMainWindow):
             self.core.delete_splits(rom_description)
 
             # Finally, remove item from Hiscore Game Tree.
-            game_item_index = self.games_with_pb_tree.indexFromItem(game_item)
+            game_item_index = self.games_with_pb_tree.indexFromItem(selected_item)
             game_row = game_item_index.row()
             self.games_with_pb_tree.takeTopLevelItem(game_row)
 
     def add_split_clicked(self) -> None:
-        rom_description = self.games_with_pb_tree.selectedItems()[0].text(0)
+        rom_description = self.games_with_pb_tree.currentItem().text(0)
         split_name, ok = QInputDialog.getText(self, 'User Input', 'Split Name', text='Placeholder')
         if split_name and ok:
             splits = self.core.pb_info[rom_description].splits
@@ -626,8 +626,8 @@ class MainWindow(QMainWindow):
                 self.split_tree.editItem(new_item, 1)
 
     def delete_split_clicked(self) -> None:
-        rom_description = self.games_with_pb_tree.selectedItems()[0].text(0)
-        selected_split_item = self.split_tree.selectedItems()[0]
+        rom_description = self.games_with_pb_tree.currentItem().text(0)
+        selected_split_item = self.split_tree.currentItem()
         item_above = self.split_tree.itemAbove(selected_split_item)
         item_below = self.split_tree.itemBelow(selected_split_item)
 
@@ -653,7 +653,7 @@ class MainWindow(QMainWindow):
         If [rom_name].txt exists, copy data into the notes widget. Otherwise, create [rom_name].txt. Focus notes widget.
         A reference is held to the notes widget to avoid it being automatically deleted. Cannot open multiple notes.
         """
-        rom_description = some_list.selectedItems()[0].text(0)
+        rom_description = some_list.currentItem().text(0)
         rom_name = self.core.descriptions_and_names[rom_description]
         if self.notes_window.isHidden():
             self.notes_window.show()
@@ -696,7 +696,7 @@ class MainWindow(QMainWindow):
         if path_item:
             mame_path = path_item.text(0)
             root = self.save_state_and_inp_tree.invisibleRootItem()
-            selected_dir = self.save_state_and_inp_tree.selectedItems()[0]
+            selected_dir = self.save_state_and_inp_tree.currentItem()
             root.removeChild(selected_dir)
 
         elif mame_path:
@@ -713,7 +713,7 @@ class MainWindow(QMainWindow):
 
         If a .ini file does not exist, user is given the choice to create a new one.
         """
-        mame_dir_item = self.save_state_and_inp_tree.selectedItems()[0]
+        mame_dir_item = self.save_state_and_inp_tree.currentItem()
         path_str = mame_dir_item.text(0)
         mame_path = Path(path_str)
         if Path(path_str).is_dir():
@@ -1013,16 +1013,16 @@ class MainWindow(QMainWindow):
 
         Info Panel is hidden/shown depending on if search tab is detached or not.
         """
-        selected = self.rom_search_tree.selectedItems()
-        if selected:
+        selected_item = self.rom_search_tree.currentItem()
+        if selected_item:
             if self.tabs.count() == 3:
                 self.rom_info_container.show()
             else:
                 if self.rom_info_container.isVisible():
                     self.rom_info_container.hide()
-            game_description = selected[0].text(0)
-            rom_info = self.core.rom_info[game_description]
-            self.rom_description_label.setText(f'Game: {game_description}')
+            rom_description = selected_item.text(0)
+            rom_info = self.core.rom_info[rom_description]
+            self.rom_description_label.setText(f'Game: {rom_description}')
             self.rom_name_label.setText(f'Rom Name: {rom_info.name}')
             self.rom_manufacturer_label.setText(f'Manufacturer: {rom_info.manufacturer}')
             self.rom_release_year_label.setText(f'Year: {rom_info.year}')

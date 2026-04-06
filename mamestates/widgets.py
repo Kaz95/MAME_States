@@ -268,10 +268,9 @@ class RomSearchDialog(QDialog):
 
     def select_rom(self) -> None:
         """Select a rom and set class attribute to roms description. Will be retrieved after dialog closes."""
-        selected = self.rom_search_tree.selectedItems()
-        if selected:
-            rom_item = selected[0]
-            rom_description = rom_item.text(0)
+        selected_item = self.rom_search_tree.currentItem()
+        if selected_item:
+            rom_description = selected_item.text(0)
             self.rom_description_for_inp = rom_description
 
     def sizeHint(self):
@@ -433,7 +432,7 @@ class PBSplitTreeWidget(QTreeWidget):
 
 
     def add_pb_field_triggered(self) -> None:
-        rom_description = self.hs_game_tree.selectedItems()[0].text(0)
+        rom_description = self.hs_game_tree.currentItem().text(0)
         field_name, ok = QInputDialog.getText(self, 'User Input', 'Field Name', text='Placeholder')
         if field_name and ok:
             other_fields = self.core.pb_info[rom_description].other_fields
@@ -497,12 +496,11 @@ class PBSplitTreeWidget(QTreeWidget):
         return item
 
     def dropEvent(self, event):
-        items_that_moved = self.selectedItems()  # Get items before drop completes
+        item_that_moved = self.currentItem()  # Get items before drop completes
         super().dropEvent(event)
-        hs_game_item = self.hs_game_tree.selectedItems()[0]
+        hs_game_item = self.hs_game_tree.currentItem()
         rom_description = hs_game_item.text(0)
-        if items_that_moved:
-            item_that_moved = items_that_moved[0]
+        if item_that_moved:
             self.update_split_order(rom_description, self.last_row, self.indexOfTopLevelItem(item_that_moved))
             splits = self.core.pb_info[rom_description].splits
             self.add_diffs(splits)
@@ -514,7 +512,7 @@ class PBSplitTreeWidget(QTreeWidget):
 
     def item_changed(self, item: QTreeWidgetItem, column: int):
         if self.usage == 'pb':
-            rom_description = self.hs_game_tree.selectedItems()[0].text(0)
+            rom_description = self.hs_game_tree.currentItem().text(0)
             field_name = item.text(0)
             if field_name == 'High Score':
                 self.core.pb_info[rom_description].hiscore = int(item.text(column))
@@ -525,7 +523,7 @@ class PBSplitTreeWidget(QTreeWidget):
 
         else:
             item_index = self.indexOfTopLevelItem(item)
-            rom_description = self.hs_game_tree.selectedItems()[0].text(0)
+            rom_description = self.hs_game_tree.currentItem().text(0)
             old_label = self.core.pb_info[rom_description].splits[item_index].label
             if column == 0:
                 split_names = [split.label for split in self.core.pb_info[rom_description].splits]
