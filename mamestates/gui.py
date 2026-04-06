@@ -1171,6 +1171,16 @@ class MainWindow(QMainWindow):
         self.setEnabled(True)
         self.progress_bar.hide()
 
+    # TODO Look into all the ways you can manipulate geometry.
+    def center(self):
+        # Get the geometry of the main window including frames
+        frame = self.frameGeometry()
+        # Get the center point of the available screen geometry
+        center_of_screen = self.screen().availableGeometry().center()
+        # Move the rectangle's center to the screen's center
+        frame.moveCenter(center_of_screen)
+        # Move the window's top-left to the rectangle's top-left
+        self.move(frame.topLeft())
 
 def main() -> None:
     """MAMEStates program entry point.
@@ -1202,8 +1212,10 @@ def main() -> None:
         app = QApplication([])
 
         window = MainWindow(mame_states_core)
-        window.show()
 
+        window.show()
+        # Can't center before show, window does not know its own dimensions yet.
+        window.center()
         app.exec()
 
 
