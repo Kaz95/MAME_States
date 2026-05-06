@@ -9,7 +9,6 @@ TODO:
         * DoubleClick rom to launch in default MAME.
     * Add program default location.
     * Derive roms dir from MAME ini, instead of assuming it is called roms.
-    * Remove QMessageBpx when dir deleted via file menu.
     * Consider sizing policies and size hints
     * Decide on new features to add.
 """
