@@ -35,6 +35,7 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
+        self.pb_scanner = None
         self.core = mame_states_core
         """Entry point for accessing DB and in-memory data structures."""
 
@@ -1164,9 +1165,9 @@ class MainWindow(QMainWindow):
         self.setEnabled(False)
         self.progress_bar = widgets.ProgressBarWidget(self)
         self.progress_bar.show()
-        pb_scanner = widgets.PBScannerThread(self.core.mame_dirs)
-        pb_scanner.finished.connect(self.scan_finished)
-        pb_scanner.start()
+        self.pb_scanner = widgets.PBScannerThread(self.core.mame_dirs)
+        self.pb_scanner.finished.connect(self.scan_finished)
+        self.pb_scanner.start()
 
 
     def scan_finished(self) -> None:
