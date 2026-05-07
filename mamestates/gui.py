@@ -818,7 +818,10 @@ class MainWindow(QMainWindow):
                 return
             input_file_dir = mame_dir / 'inp'
             input_file = input_file_dir / f'{leaf_item.text(0)}.inp'
-            input_file.unlink()
+            if input_file.is_file():
+                input_file.unlink()
+            else:
+                QMessageBox.critical(self, 'Error', 'File does not exist.')
 
         else:
             rom_description = direct_parent.text(0)
@@ -833,7 +836,10 @@ class MainWindow(QMainWindow):
             save_states_dir = mame_dir / 'sta'
             rom_saves_dir = save_states_dir / f'{rom_name}'
             save_state_file = rom_saves_dir / f'{leaf_item.text(0)}.sta'
-            save_state_file.unlink()
+            if save_state_file.is_file():
+                save_state_file.unlink()
+            else:
+                QMessageBox.critical(self, 'Error', 'File does not exist.')
 
         direct_parent.removeChild(leaf_item)
 
