@@ -961,6 +961,9 @@ class MainWindow(QMainWindow):
 
         hiscore_file = Path(self.mame_thread.mame_dir) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
         if not hiscore_file.is_file():
+            self.showNormal()
+            self.raise_()
+            self.activateWindow()
             return
         hi2txt_results = subprocess.run(
             [core.get_abs_path(r'./hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
@@ -1005,6 +1008,9 @@ class MainWindow(QMainWindow):
 
         self.core.pb_info = self.core.get_personal_bests()
         self.fill_hiscore_game_list()
+        self.showNormal()
+        self.raise_()
+        self.activateWindow()
     # --------------------- #
     # Rom Search Page Slots #
     # --------------------- #
