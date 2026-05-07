@@ -954,15 +954,18 @@ class MainWindow(QMainWindow):
         """
 
         hiscore_file = Path(self.mame_thread.mame_dir) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
+        if not hiscore_file.is_file():
+            return
+        hi2txt_results = subprocess.run(
+            [core.get_abs_path(r'./hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
+            cwd=core.get_abs_path(r'./hi2txt'), capture_output=True,
+            text=True,
+            check=True, encoding='utf-8')
 
+        post_hs_table = hi2txt_results.stdout
+        test_dic = {self.mame_thread.mame_dir: {self.mame_thread.rom_name: post_hs_table}}
         if self.pre_hs_table:
-            hi2txt_results = subprocess.run(
-                [core.get_abs_path(r'./hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
-                cwd=core.get_abs_path(r'./hi2txt'), capture_output=True,
-                text=True,
-                check=True, encoding='utf-8')
 
-            post_hs_table = hi2txt_results.stdout
             new_pb = hi2txt_wrapper.get_new_pb(self.pre_hs_table, post_hs_table)
             if new_pb == hi2txt_wrapper.Hi2TxtError.INCOMPATIBLE_TABLE_SCHEMA:
                 QMessageBox.critical(self, 'Error', "Incompatible hiscore table schema detected. Hi2txt may have "
@@ -980,6 +983,22 @@ class MainWindow(QMainWindow):
                 else:
                     QMessageBox.information(self, 'Ok', 'PB discarded.')
 
+        else:
+            new_pb = hi2txt_wrapper._get_new_pbs(test_dic, self.core.cursor)
+            pprint.pp(new_pb)
+            if new_pb:
+                response = QMessageBox.question(self, 'New PB Detected!',
+                                                f'A new personal best has been detected\n{new_pb}\nWould you like to add new PB?')
+                if response == QMessageBox.StandardButton.Yes:
+                    # new_pb = hi2txt_wrapper.prepare_pb_for_db(new_pb, self.mame_thread.rom_name, self.core.cursor)
+                    # hi2txt_wrapper.save_pbs(new_pb, self.core.connection, self.core.cursor)
+                    hi2txt_wrapper._save_pbs(new_pb, self.core.connection, self.core.cursor)
+                    QMessageBox.information(self, 'Ok', 'Pb Updated!')
+                else:
+                    QMessageBox.information(self, 'Ok', 'PB discarded.')
+
+        self.core.pb_info = self.core.get_personal_bests()
+        self.fill_hiscore_game_list()
     # --------------------- #
     # Rom Search Page Slots #
     # --------------------- #
