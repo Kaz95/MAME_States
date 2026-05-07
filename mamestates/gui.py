@@ -1163,13 +1163,14 @@ class MainWindow(QMainWindow):
         pb_scanner = widgets.PBScannerThread(self.core.mame_dirs)
         pb_scanner.finished.connect(self.scan_finished)
         pb_scanner.start()
-        self.core.pb_info = self.core.get_personal_bests()
-        self.fill_hiscore_game_list()
+
 
     def scan_finished(self) -> None:
         """Personal Best Scanner cleanup. Hide progress bar and re-enable GUI."""
         self.setEnabled(True)
         self.progress_bar.hide()
+        self.core.pb_info = self.core.get_personal_bests()
+        self.fill_hiscore_game_list()
 
     # TODO Look into all the ways you can manipulate geometry.
     def center(self):
