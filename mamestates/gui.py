@@ -586,6 +586,10 @@ class MainWindow(QMainWindow):
         selected_item = self.games_with_pb_tree.currentItem()
         if selected_item:
 
+            confirmation = QMessageBox.question(self, 'Confirm.', f'Are you sure you would like to delete PB entry for: {selected_item.text(0)}')
+            if confirmation != QMessageBox.StandardButton.Yes:
+                return
+
             previous_item = self.games_with_pb_tree.itemAbove(selected_item)
             next_item = self.games_with_pb_tree.itemBelow(selected_item)
 
