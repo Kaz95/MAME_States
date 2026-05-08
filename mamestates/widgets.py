@@ -7,7 +7,7 @@ from datetime import datetime
 from pathlib import Path
 
 from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, QSize, QProcess, QModelIndex, QLocale, QSignalBlocker
-from PyQt6.QtGui import QRegularExpressionValidator, QCloseEvent, QColor, QIntValidator, QAction
+from PyQt6.QtGui import QRegularExpressionValidator, QCloseEvent, QColor, QIntValidator, QAction, QValidator
 from PyQt6.QtWidgets import QLabel, QLineEdit, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QTabWidget, QDialogButtonBox, \
     QTreeWidget, QMenu, QInputDialog, QTreeWidgetItem, QStyleOptionViewItem, QMessageBox
@@ -308,6 +308,15 @@ class NotesWindow(QWidget):
             notes.write(self.text_edit.toPlainText())
         event.accept()
 
+class NotEmptyValidator(QValidator):
+    def validate(self, text, pos):
+        # Strip whitespace to ensure it's not just spaces
+        if text.strip():
+            return QValidator.State.Acceptable, text, pos
+        else:
+            # Return Intermediate instead of Invalid to allow
+            # temporary emptiness while editing
+            return QValidator.State.Intermediate, text, pos
 
 class PBSplitTreeDelegate(QStyledItemDelegate):
     """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.
@@ -324,7 +333,9 @@ class PBSplitTreeDelegate(QStyledItemDelegate):
     def createEditor(self, parent, option, index):
         if self.parent().usage == 'pb':
             if index.column() == 1:
-                return QLineEdit(parent)
+                editor = QLineEdit(parent)
+                editor.setValidator(NotEmptyValidator())
+                return editor
             # Return None for other columns to prevent editing
             return None
         else:
