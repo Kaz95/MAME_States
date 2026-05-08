@@ -440,8 +440,8 @@ class PBSplitTreeWidget(QTreeWidget):
                 QMessageBox.critical(self, 'Error', 'Name already in use for this rom. Try again.')
                 self.add_pb_field_triggered()
             else:
-                other_fields[field_name] = None
-                new_item = self.add_editable_item(field_name, '')
+                other_fields[field_name] = 0
+                new_item = self.add_editable_item(field_name, other_fields[field_name])
                 self.editItem(new_item, 1)
 
     def delete_pb_field_triggered(self) -> None:
