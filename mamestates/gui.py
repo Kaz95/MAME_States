@@ -500,7 +500,7 @@ class MainWindow(QMainWindow):
 
                 # Add savestate items.
                 for save_state in self.core.save_states[str(mame_dir.path)][rom_name]:
-                    save_state_item = QTreeWidgetItem(game_item, [save_state])
+                    save_state_item = QTreeWidgetItem(game_item, [save_state.stem])
                     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
                     save_state_item.setFont(0, self.small_font)
 
@@ -1088,6 +1088,7 @@ class MainWindow(QMainWindow):
 
         If file name already in use, item has its text reverted and file is not renamed.
         """
+        # TODO Should probably be using the NotEmpty custom validator here. Would remove need to track text before editing.
         if not leaf_item.text(0):
             self.save_state_and_inp_tree.blockSignals(True)
             leaf_item.setText(0, self.save_state_page_text_before_editing)

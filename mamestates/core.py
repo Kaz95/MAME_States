@@ -77,7 +77,7 @@ class MAMEStatesCore:
         self.cursor.row_factory = sqlite3.Row
         self.mame_dirs: list[MAMEDir] = self._get_mame_dirs()
         self.input_files: dict[str, list[str]] = self.get_input_files()
-        self.save_states: dict[str, dict[str, list[str]]] = self.get_save_states()
+        self.save_states: dict[str, dict[str, list[Path]]] = self.new_get_save_states()
         self.descriptions_and_names: dict[str, str] = self._get_descriptions_and_names()
         self.rom_info: dict[str, RomInfo] = self._get_formatted_rom_info()
         self.pb_info: dict[str, PersonalBest] = self.get_personal_bests()
@@ -210,27 +210,28 @@ class MAMEStatesCore:
         rom_names = os.listdir(mame_dir / 'sta')
         return rom_names
 
+
     @staticmethod
-    def _get_save_state_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list[str]]:
+    def _new_get_save_state_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list[Path]]:
         """Return all save files, and their respective roms."""
         save_states = {}
         for rom_name in roms_with_saves:
             if not rom_name:
                 continue
-            save_state_files = (mame_dir / 'sta' / rom_name).iterdir()
-            save_state_file_names = [x.stem for x in save_state_files]
-            save_states[rom_name] = save_state_file_names
+            save_state_paths = (mame_dir / 'sta' / rom_name).iterdir()
+            save_state_file_paths = [x for x in save_state_paths]
+            save_states[rom_name] = save_state_file_paths
         return save_states
 
-    def get_save_states(self) -> dict[str, dict[str, list[str]]]:
+    def new_get_save_states(self) -> dict[str, dict[str, list[Path]]]:
         """Retrieve and return save state file names, for each path in the mame_dirs list. File extensions are stripped."""
-        all_save_state_names = {}
+        all_save_state_paths = {}
         for mame_dir in self.mame_dirs:
             roms_with_saves = self._get_roms_with_saves(mame_dir.path)
-            save_state_names = self._get_save_state_names(roms_with_saves, mame_dir.path)
-            all_save_state_names[str(mame_dir.path)] = save_state_names
+            save_state_names = self._new_get_save_state_names(roms_with_saves, mame_dir.path)
+            all_save_state_paths[str(mame_dir.path)] = save_state_names
 
-        return all_save_state_names
+        return all_save_state_paths
 
     ##################
     # Personal Bests #
