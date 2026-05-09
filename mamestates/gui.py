@@ -312,7 +312,10 @@ class MainWindow(QMainWindow):
 
         self.fill_save_state_tree()
         self.save_state_and_inp_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
-        self.save_state_and_inp_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
+        # self.save_state_and_inp_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
+
+        self.new_save_state_and_inp_tree.currentItemChanged.connect(self.new_save_state_tree_selection_changed)
+        self.new_save_state_and_inp_tree.itemChanged.connect(self.ss_or_inp_changed)
 
     def setup_hiscore_panel(self) -> None:
         """Hi Score Panel widget customization"""
@@ -1105,33 +1108,37 @@ class MainWindow(QMainWindow):
     # --------------------- #
     # Save State Page Slots #
     # --------------------- #
+    def new_save_state_tree_selection_changed(self, current_item: QTreeWidgetItem) -> None:
+        if current_item:
+            self.save_state_page_text_before_editing = current_item.text(0)
+
     def save_state_tree_selection_changed(self, current_item: QTreeWidgetItem) -> None:
         """Used internally for renaming."""
         self.new_save_state_and_inp_tree.clear()
         self.new_save_state_and_inp_tree.setHeaderLabel('It Could Be Anything...Even an Empty List!')
-        self.save_state_page_text_before_editing = current_item.text(0)
+        self.new_save_state_and_inp_tree.blockSignals(True)
         if current_item.parent():
             if current_item.parent().text(0) == 'Save States':
                 self.fill_saves(f'{current_item.parent().parent().text(0)}', current_item.text(0))
             elif current_item.text(0) == 'Input Files':
                 self.fill_inps(current_item.parent().text(0))
+        self.new_save_state_and_inp_tree.blockSignals(False)
 
-
-    def save_state_tree_leaf_item_changed(self, leaf_item: QTreeWidgetItem) -> None:
+    def ss_or_inp_changed(self, item_that_changed: QTreeWidgetItem) -> None:
         """Rename save state or input file corresponding to leaf item in tree.
 
         If file name already in use, item has its text reverted and file is not renamed.
         """
         # TODO Should probably be using the NotEmpty custom validator here. Would remove need to track text before editing.
-        if not leaf_item.text(0):
-            self.save_state_and_inp_tree.blockSignals(True)
-            leaf_item.setText(0, self.save_state_page_text_before_editing)
-            self.save_state_and_inp_tree.blockSignals(False)
+        if not item_that_changed.text(0):
+            self.new_save_state_and_inp_tree.blockSignals(True)
+            item_that_changed.setText(0, self.save_state_page_text_before_editing)
+            self.new_save_state_and_inp_tree.blockSignals(False)
             return
 
-        if leaf_item.childCount() == 0 and leaf_item.parent().text(0) == 'Input Files':
-            input_file_name = leaf_item.text(0)
-            mame_dir_item = leaf_item.parent().parent()
+        if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Input Files':
+            input_file_name = item_that_changed.text(0)
+            mame_dir_item = self.save_state_and_inp_tree.currentItem().parent()
             mame_dir_str = mame_dir_item.text(0)
             mame_dir = Path(mame_dir_str)
             if not mame_dir.is_dir():
@@ -1146,25 +1153,25 @@ class MainWindow(QMainWindow):
                     old_input_file_path.rename(new_input_file_path)
                 except FileExistsError:
                     QMessageBox.critical(self, 'Error', 'Sorry, that name is already in use.')
-                    self.save_state_and_inp_tree.blockSignals(True)
-                    leaf_item.setText(0, self.save_state_page_text_before_editing)
-                    self.save_state_and_inp_tree.blockSignals(False)
+                    self.new_save_state_and_inp_tree.blockSignals(True)
+                    item_that_changed.setText(0, self.save_state_page_text_before_editing)
+                    self.new_save_state_and_inp_tree.blockSignals(False)
                     return
                 self.save_state_page_text_before_editing = input_file_name
             else:
-                self.save_state_and_inp_tree.blockSignals(True)
-                leaf_item.setText(0, self.save_state_page_text_before_editing)
-                self.save_state_and_inp_tree.blockSignals(False)
+                self.new_save_state_and_inp_tree.blockSignals(True)
+                item_that_changed.setText(0, self.save_state_page_text_before_editing)
+                self.new_save_state_and_inp_tree.blockSignals(False)
                 return
 
-        if leaf_item.childCount() == 0 and leaf_item.parent().parent().text(0) == 'Save States':
-            save_state_name = leaf_item.text(0)
-            rom_item = leaf_item.parent()
+        if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Save States':
+            save_state_name = item_that_changed.text(0)
+            rom_item = self.save_state_and_inp_tree.currentItem()
             rom_description = rom_item.text(0)
 
             rom_name = self.core.descriptions_and_names[rom_description]
 
-            mame_dir_item = rom_item.parent().parent()
+            mame_dir_item = self.save_state_and_inp_tree.currentItem().parent().parent()
             mame_dir_str = mame_dir_item.text(0)
 
             mame_dir = Path(mame_dir_str)
@@ -1179,12 +1186,14 @@ class MainWindow(QMainWindow):
                 old_save_state_path.rename(new_save_state_path)
             except FileExistsError:
                 QMessageBox.critical(self, 'Error', 'Sorry, that name is already in use.')
-                self.save_state_and_inp_tree.blockSignals(True)
-                leaf_item.setText(0, self.save_state_page_text_before_editing)
-                self.save_state_and_inp_tree.blockSignals(False)
+                self.new_save_state_and_inp_tree.blockSignals(True)
+                item_that_changed.setText(0, self.save_state_page_text_before_editing)
+                self.new_save_state_and_inp_tree.blockSignals(False)
                 return
             # Have to set this to new save_state_name so multiple renames can take place without reselection.
             self.save_state_page_text_before_editing = save_state_name
+        self.core.save_states = self.core.new_get_save_states()
+        self.core.input_files = self.core.get_input_files()
 
     # --------------- #
     # File Menu Slots #
