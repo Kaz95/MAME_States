@@ -118,6 +118,8 @@ class MainWindow(QMainWindow):
         self.save_state_and_inp_tree: QTreeWidget = QTreeWidget()
         """Main widget of the save state tab"""
 
+        self.new_save_state_and_inp_tree: QTreeWidget = QTreeWidget()
+
         self.terminal_output_box: QTextEdit = QTextEdit()
         """Temporary widget for testing."""
 
@@ -125,9 +127,15 @@ class MainWindow(QMainWindow):
         self.save_state_and_inp_layout: QVBoxLayout = QVBoxLayout()
         """Top level page layout."""
 
+        self.tree_container: QHBoxLayout = QHBoxLayout()
+        self.tree_container.addWidget(self.save_state_and_inp_tree)
+        self.tree_container.addWidget(self.new_save_state_and_inp_tree)
+
+
         self.save_state_and_inp_layout.setContentsMargins(0, 0, 0, 0)
         self.save_state_and_inp_page.setLayout(self.save_state_and_inp_layout)
-        self.save_state_and_inp_layout.addWidget(self.save_state_and_inp_tree)
+        # self.save_state_and_inp_layout.addWidget(self.save_state_and_inp_tree)
+        self.save_state_and_inp_layout.addLayout(self.tree_container)
         self.save_state_and_inp_layout.addWidget(self.terminal_output_box)
 
         # ------------------#
@@ -479,7 +487,7 @@ class MainWindow(QMainWindow):
 
         # Add path items.
         for mame_dir in self.core.mame_dirs:
-            mame_dir_item = QTreeWidgetItem(self.save_state_and_inp_tree, [str(mame_dir.path)])
+            mame_dir_item = QTreeWidgetItem(self.save_state_and_inp_tree, [str(mame_dir.path )])
             mame_dir_item.setFont(0, self.big_font)
             save_states_container_item = QTreeWidgetItem(mame_dir_item, ['Save States'])
             save_states_container_item.setFont(0, self.big_font)
@@ -487,10 +495,10 @@ class MainWindow(QMainWindow):
             if input_files:
                 input_files_container_item = QTreeWidgetItem(mame_dir_item, ['Input Files'])
                 input_files_container_item.setFont(0, self.big_font)
-                for file in input_files:
-                    item = QTreeWidgetItem(input_files_container_item, [file])
-                    item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
-                    item.setFont(0, self.small_font)
+                # for file in input_files:
+                #     item = QTreeWidgetItem(input_files_container_item, [file])
+                #     item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
+                #     item.setFont(0, self.small_font)
 
             # Add game items.
             for rom_name in self.core.save_states[str(mame_dir.path)]:
@@ -498,11 +506,29 @@ class MainWindow(QMainWindow):
                 game_item = QTreeWidgetItem(save_states_container_item, [game_description])
                 game_item.setFont(0, self.big_font)
 
-                # Add savestate items.
-                for save_state in self.core.save_states[str(mame_dir.path)][rom_name]:
-                    save_state_item = QTreeWidgetItem(game_item, [save_state.stem])
-                    save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
-                    save_state_item.setFont(0, self.small_font)
+                # # Add savestate items.
+                # for save_state in self.core.save_states[str(mame_dir.path)][rom_name]:
+                #     save_state_item = QTreeWidgetItem(game_item, [save_state.stem])
+                #     save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
+                #     save_state_item.setFont(0, self.small_font)
+
+    def fill_inps(self, mame_dir: str) -> None:
+        self.new_save_state_and_inp_tree.setHeaderLabel('Input Files')
+        input_files = self.core.input_files.get(str(mame_dir))
+        for file in input_files:
+            item = QTreeWidgetItem(self.new_save_state_and_inp_tree, [file])
+            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
+            item.setFont(0, self.small_font)
+
+    def fill_saves(self, mame_dir: str, rom_description: str) -> None:
+        self.new_save_state_and_inp_tree.setHeaderLabel('Save States')
+
+        rom_name = self.core.descriptions_and_names[rom_description]
+        for save_state in self.core.save_states[mame_dir][rom_name]:
+            save_state_item = QTreeWidgetItem(self.new_save_state_and_inp_tree, [save_state.stem])
+            save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
+            save_state_item.setFont(0, self.small_font)
+
 
     #########
     # Slots #
@@ -1081,7 +1107,15 @@ class MainWindow(QMainWindow):
     # --------------------- #
     def save_state_tree_selection_changed(self, current_item: QTreeWidgetItem) -> None:
         """Used internally for renaming."""
+        self.new_save_state_and_inp_tree.clear()
+        self.new_save_state_and_inp_tree.setHeaderLabel('It Could Be Anything...Even an Empty List!')
         self.save_state_page_text_before_editing = current_item.text(0)
+        if current_item.parent():
+            if current_item.parent().text(0) == 'Save States':
+                self.fill_saves(f'{current_item.parent().parent().text(0)}', current_item.text(0))
+            elif current_item.text(0) == 'Input Files':
+                self.fill_inps(current_item.parent().text(0))
+
 
     def save_state_tree_leaf_item_changed(self, leaf_item: QTreeWidgetItem) -> None:
         """Rename save state or input file corresponding to leaf item in tree.
