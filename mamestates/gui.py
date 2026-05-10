@@ -815,8 +815,27 @@ class MainWindow(QMainWindow):
             menu.addAction(open_in_explorer)
 
         else:
-            if tree_item.childCount() > 0:  # Lazy way to ensure rom items don't spawn menu.
-                return
+            if tree_item.parent().text(0) == 'Save States':  # Lazy way to ensure rom items don't spawn menu.
+                rom_description = tree_item.text(0)
+                rom_name = self.core.descriptions_and_names[rom_description]
+                open_notes = QAction('Open Notes')
+                open_notes.triggered.connect(lambda: self.open_notes(self.save_state_and_inp_tree))
+                menu.addAction(open_notes)
+
+                open_with_submenu = QMenu('Open with...')
+                for mame_dir in self.core.mame_dirs:
+                    run = QAction(str(mame_dir.path), self)
+                    run.triggered.connect(lambda: self.run_rom(rom_name))
+                    open_with_submenu.addAction(run)
+
+                open_with_inp_submenu = QMenu('Open with input file...')
+                for mame_dir in self.core.mame_dirs:
+                    run_and_record_inp = QAction(str(mame_dir.path), self)
+                    run_and_record_inp.triggered.connect(lambda: self.run_rom(rom_name, record_input=True))
+                    open_with_inp_submenu.addAction(run_and_record_inp)
+
+                menu.addMenu(open_with_submenu)
+                menu.addMenu(open_with_inp_submenu)
             # delete = QAction('Delete')
             # delete.triggered.connect(lambda: self.delete_leaf_item(tree_item))
             # menu.addAction(delete)
