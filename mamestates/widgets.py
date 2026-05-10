@@ -225,13 +225,16 @@ class SaveStateInputFileTree(QTreeWidget):
         for file in save_states:
             file_index = save_states.index(file)
             os.utime(file, (file_index, file_index))
-
-
         # splits = self.core.pb_info[rom_description].splits
         # if not (len(splits) - 1) < old_index:
         #     split = splits.pop(old_index)
         #     splits.insert(new_index, split)
         # self.core.save_pb_to_database()
+
+
+
+
+
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
     """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.

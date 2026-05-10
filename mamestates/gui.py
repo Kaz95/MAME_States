@@ -316,6 +316,9 @@ class MainWindow(QMainWindow):
 
         self.new_save_state_and_inp_tree.currentItemChanged.connect(self.new_save_state_tree_selection_changed)
         self.new_save_state_and_inp_tree.itemChanged.connect(self.ss_or_inp_changed)
+        self.new_save_state_and_inp_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.new_save_state_and_inp_tree.customContextMenuRequested.connect(self.show_new_save_state_tree_context)
+
 
     def setup_hiscore_panel(self) -> None:
         """Hi Score Panel widget customization"""
@@ -814,22 +817,86 @@ class MainWindow(QMainWindow):
         else:
             if tree_item.childCount() > 0:  # Lazy way to ensure rom items don't spawn menu.
                 return
-            delete = QAction('Delete')
-            delete.triggered.connect(lambda: self.delete_leaf_item(tree_item))
-            menu.addAction(delete)
+            # delete = QAction('Delete')
+            # delete.triggered.connect(lambda: self.delete_leaf_item(tree_item))
+            # menu.addAction(delete)
 
-            if tree_item.parent().text(0) == 'Input Files':
-                input_file_name = tree_item.text(0)
-                rom_name = input_file_name.split('_')[0]  # inp files created by program will have rom name at start.
-
-                sub_menu = QMenu('Playback with...')
-                for mame_dir in self.core.mame_dirs:
-                    run = QAction(str(mame_dir.path), self)
-                    run.triggered.connect(
-                        lambda: self.run_rom(rom_name, play_back_input=True, input_file_name=input_file_name))
-                    sub_menu.addAction(run)
-                    menu.addMenu(sub_menu)
+            # if tree_item.parent().text(0) == 'Input Files':
+            #     input_file_name = tree_item.text(0)
+            #     rom_name = input_file_name.split('_')[0]  # inp files created by program will have rom name at start.
+            #
+            #     sub_menu = QMenu('Playback with...')
+            #     for mame_dir in self.core.mame_dirs:
+            #         run = QAction(str(mame_dir.path), self)
+            #         run.triggered.connect(
+            #             lambda: self.run_rom(rom_name, play_back_input=True, input_file_name=input_file_name))
+            #         sub_menu.addAction(run)
+            #         menu.addMenu(sub_menu)
         menu.exec(self.save_state_and_inp_tree.viewport().mapToGlobal(position))
+
+    def show_new_save_state_tree_context(self, position: QPoint):
+        menu = QMenu()
+        delete = QAction('Delete')
+        delete.triggered.connect(lambda: self.delete_ss_or_inp(tree_item))
+        menu.addAction(delete)
+        tree_item = self.new_save_state_and_inp_tree.itemAt(position)
+        if not tree_item:
+            return
+
+        if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Input Files':
+            input_file_name = tree_item.text(0)
+            rom_name = input_file_name.split('_')[0]  # inp files created by program will have rom name at start.
+
+            sub_menu = QMenu('Playback with...')
+            for mame_dir in self.core.mame_dirs:
+                run = QAction(str(mame_dir.path), self)
+                run.triggered.connect(
+                    lambda: self.run_rom(rom_name, play_back_input=True, input_file_name=input_file_name))
+                sub_menu.addAction(run)
+                menu.addMenu(sub_menu)
+
+
+        menu.exec(self.new_save_state_and_inp_tree.viewport().mapToGlobal(position))
+
+    def delete_ss_or_inp(self, tree_item: QTreeWidgetItem):
+        if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Input Files':
+            mame_dir_item = self.save_state_and_inp_tree.currentItem().parent()
+            mame_dir_str = mame_dir_item.text(0)
+            mame_dir = Path(mame_dir_str)
+            if not mame_dir.is_dir():
+                self.remove_invalid_mame_dir(mame_path=mame_dir_str)
+                return
+
+            input_file_dir = mame_dir / 'inp'
+            input_file = input_file_dir / f'{tree_item.text(0)}.inp'
+            if input_file.is_file():
+                input_file.unlink()
+            else:
+                QMessageBox.critical(self, 'Error', 'File does not exist.')
+
+        if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Save States':
+            rom_item = self.save_state_and_inp_tree.currentItem()
+            rom_description = rom_item.text(0)
+            rom_name = self.core.descriptions_and_names[rom_description]
+            # category_item = direct_parent.parent()
+            mame_path_item = rom_item.parent().parent()
+            mame_dir_str = mame_path_item.text(0)
+            mame_dir = Path(mame_dir_str)
+            if not mame_dir.is_dir():
+                self.remove_invalid_mame_dir(mame_path=mame_dir_str)
+                return
+            save_states_dir = mame_dir / 'sta'
+            rom_saves_dir = save_states_dir / f'{rom_name}'
+            save_state_file = rom_saves_dir / f'{tree_item.text(0)}.sta'
+            if save_state_file.is_file():
+                save_state_file.unlink()
+            else:
+                QMessageBox.critical(self, 'Error', 'File does not exist.')
+
+        item_index = self.new_save_state_and_inp_tree.indexOfTopLevelItem(tree_item)
+        self.new_save_state_and_inp_tree.takeTopLevelItem(item_index)
+        self.core.save_states = self.core.new_get_save_states()
+        self.core.input_files = self.core.get_input_files()
 
     def delete_leaf_item(self, leaf_item: QTreeWidgetItem) -> None:
         """Delete a childless QTreeWidgetItem. The corresponding file is also deleted.
