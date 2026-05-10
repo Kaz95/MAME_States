@@ -2,6 +2,7 @@
 
 This module encompasses the static functions used by the MAMEStates application.
 """
+import csv
 import json
 import os
 import pprint
@@ -336,6 +337,21 @@ class MAMEStatesCore:
                 rows.append(split)
 
         return rows
+
+    def export_sqlite_to_csv(self, table_name, output_file):
+        # Execute a query to select all data from the table
+        self.cursor.execute(f"SELECT * FROM {table_name}")
+
+        # Extract column names (headers) from cursor.description
+        headers = [description[0] for description in self.cursor.description]
+
+        # Write the headers and data to the CSV file
+        with open(output_file, 'w', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            writer.writerow(headers)  # Write header row
+            writer.writerows(self.cursor)  # Write data rows directly from cursor
+
+
 
     def new_remove_invalid_mame_dir(self, mame_path: str) -> None:
         """Remove MAME directory and all related info(saves, inps, ect) from in-memory datastructures and DB"""

@@ -79,7 +79,7 @@ class MainWindow(QMainWindow):
         self.test_button_1_action: QAction = QAction('Test Button 1', self)
         """Used as trigger for work in progress functions."""
 
-        self.test_button_2_action: QAction = QAction('Test Button 2', self)
+        self.test_button_2_action: QAction = QAction('Export Personal Bests to CSV', self)
         """Used as trigger for work in progress functions."""
 
         self.add_mame_directory_action: QAction = QAction('Add MAME Directory', self)
@@ -295,9 +295,11 @@ class MainWindow(QMainWindow):
         self.update_pb_action.triggered.connect(self.scan_for_pbs)
 
         self.file_menu.addAction(self.test_button_1_action)
-        self.file_menu.addAction(self.test_button_2_action)
+
         self.file_menu.addAction(self.add_mame_directory_action)
         self.file_menu.addAction(self.update_pb_action)
+        self.file_menu.addAction(self.test_button_2_action)
+
 
     def setup_save_state_page(self) -> None:
         """Save State Page windget customization."""
@@ -1293,6 +1295,8 @@ class MainWindow(QMainWindow):
 
     def menu_button_2_clicked(self) -> None:
         """Temporary, easily accessible, trigger for prototype methods."""
+        self.core.export_sqlite_to_csv('personal_bests', core.get_abs_path('./database_backups/pb.csv'))
+        self.core.export_sqlite_to_csv('splits', core.get_abs_path('./database_backups/splits.csv'))
         self.save_state_and_inp_tree.show()
 
     def add_path_button_clicked(self) -> None:
