@@ -25,7 +25,7 @@ jobs:
 
       - name: Package Application with PyInstaller
         run: |
-          pyinstaller MAMEStates.spec
+          pyinstaller gui.spec
 
       - name: Archive Bundle (Windows)
         shell: pwsh
