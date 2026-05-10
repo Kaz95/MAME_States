@@ -220,6 +220,7 @@ class MAMEStatesCore:
                 continue
             save_state_paths = (mame_dir / 'sta' / rom_name).iterdir()
             save_state_file_paths = [x for x in save_state_paths]
+            save_state_file_paths.sort(key=lambda p: p.stat().st_mtime, reverse=True)
             save_states[rom_name] = save_state_file_paths
         return save_states
 

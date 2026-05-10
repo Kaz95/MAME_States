@@ -118,7 +118,7 @@ class MainWindow(QMainWindow):
         self.save_state_and_inp_tree: QTreeWidget = QTreeWidget()
         """Main widget of the save state tab"""
 
-        self.new_save_state_and_inp_tree: QTreeWidget = QTreeWidget()
+        self.new_save_state_and_inp_tree: widgets.SaveStateInputFileTree = widgets.SaveStateInputFileTree(self.core, self.save_state_and_inp_tree)
 
         self.terminal_output_box: QTextEdit = QTextEdit()
         """Temporary widget for testing."""
@@ -519,8 +519,9 @@ class MainWindow(QMainWindow):
         self.new_save_state_and_inp_tree.setHeaderLabel('Input Files')
         input_files = self.core.input_files.get(str(mame_dir))
         for file in input_files:
-            item = QTreeWidgetItem(self.new_save_state_and_inp_tree, [file])
-            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
+            item = self.new_save_state_and_inp_tree.add_editable_item(file)
+            # item = QTreeWidgetItem(self.new_save_state_and_inp_tree, [file])
+            # item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
             item.setFont(0, self.small_font)
 
     def fill_saves(self, mame_dir: str, rom_description: str) -> None:
@@ -528,8 +529,9 @@ class MainWindow(QMainWindow):
 
         rom_name = self.core.descriptions_and_names[rom_description]
         for save_state in self.core.save_states[mame_dir][rom_name]:
-            save_state_item = QTreeWidgetItem(self.new_save_state_and_inp_tree, [save_state.stem])
-            save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
+            save_state_item = self.new_save_state_and_inp_tree.add_editable_item(save_state.stem)
+            # save_state_item = QTreeWidgetItem(self.new_save_state_and_inp_tree, [save_state.stem])
+            # save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
             save_state_item.setFont(0, self.small_font)
 
 

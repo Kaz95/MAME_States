@@ -2,6 +2,7 @@
 
 This module houses all pyqt6 widgets that have been subclassed and extended.
 """
+import os
 import sqlite3
 from datetime import datetime
 from pathlib import Path
@@ -174,6 +175,64 @@ class ProgressBarWidget(QDialog):
 ######################
 #   Save State Page  #
 ######################
+class SaveStateInputFileTree(QTreeWidget):
+    def __init__(self, mcore: core.MAMEStatesCore, ss_inp_tree: QTreeWidget):
+        super().__init__()
+        self.core = mcore
+        self.ss_inp_tree: QTreeWidget = ss_inp_tree
+        self.last_row: int | None = None
+        """The previously selected row. Used internally to track split movement."""
+        self.setDragDropMode(QTreeWidget.DragDropMode.InternalMove)
+        self.itemPressed.connect(self.item_pressed)
+
+    # TODO Consider checking for empty string on col 1. Maybe raise value error. Blank item saved to DB == Bad.
+    def add_editable_item(self, col1):
+        with QSignalBlocker(self):
+            item = QTreeWidgetItem(self, [col1])
+            # Allow editing for all columns in this row
+            item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsDropEnabled | Qt.ItemFlag.ItemIsEditable)
+            self.addTopLevelItem(item)
+            return item
+
+    def item_pressed(self, item: QTreeWidgetItem, column: int) -> None:
+        """Used internally to preserve split order."""
+        self.last_row = self.indexOfTopLevelItem(item)
+
+    def dropEvent(self, event):
+        item_that_moved = self.currentItem()  # Get items before drop completes
+        super().dropEvent(event)
+        if self.headerItem().text(0) == 'Save States':
+            rom_item = self.ss_inp_tree.currentItem()
+            rom_description = rom_item.text(0)
+            rom_name = self.core.descriptions_and_names[rom_description]
+            mame_dir_item = rom_item.parent().parent()
+            mame_dir = mame_dir_item.text(0)
+            if item_that_moved:
+                self.update_save_order(rom_name, mame_dir, self.last_row, self.indexOfTopLevelItem(item_that_moved))
+                # Update ss order
+                # self.update_split_order(rom_description, self.last_row, self.indexOfTopLevelItem(item_that_moved))
+                # splits = self.core.pb_info[rom_description].splits
+                # self.add_diffs(splits)
+                self.last_row = self.indexOfTopLevelItem(item_that_moved)
+
+    def update_save_order(self, rom_name: str, mame_dir: str, old_index: int, new_index: int) -> None:
+        """Mirror internal list changes to the in-memory representation. Save to database."""
+
+        save_states = self.core.save_states[mame_dir][rom_name]
+        if not (len(save_states) - 1) < old_index:
+            split = save_states.pop(old_index)
+            save_states.insert(new_index, split)
+        for file in save_states:
+            file_index = save_states.index(file)
+            os.utime(file, (file_index, file_index))
+
+
+        # splits = self.core.pb_info[rom_description].splits
+        # if not (len(splits) - 1) < old_index:
+        #     split = splits.pop(old_index)
+        #     splits.insert(new_index, split)
+        # self.core.save_pb_to_database()
+
 class SaveStateNameInputValidator(QStyledItemDelegate):
     """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.
 
