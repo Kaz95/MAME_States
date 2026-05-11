@@ -10,7 +10,7 @@ a = Analysis(
     ['mamestates/gui.py'],
     pathex=[PROJECT_ROOT],
     binaries=[],
-    datas=[('.', '.')],
+    datas=[(PROJECT_ROOT / '*', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
