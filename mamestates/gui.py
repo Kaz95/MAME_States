@@ -203,9 +203,15 @@ class MainWindow(QMainWindow):
 
         self.info_layout.addLayout(self.splits_tree_button_container)
 
+        self.info_container = QWidget()
+        self.info_layout.setContentsMargins(0, 0, 0, 0)
+        self.info_container.setLayout(self.info_layout)
+
         self.hiscore_page_layout.addLayout(self.game_list_container)
-        self.hiscore_page_layout.addLayout(self.info_layout)
+        # self.hiscore_page_layout.addLayout(self.info_layout)
+        self.hiscore_page_layout.addWidget(self.info_container)
         self.hiscore_page.setLayout(self.hiscore_page_layout)
+
         self.hiscore_page.setFont(self.big_font)
 
         # --------------- #
