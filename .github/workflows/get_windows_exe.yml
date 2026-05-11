@@ -24,7 +24,7 @@ jobs:
           pip install -r requirements.txt  
 
       - name: Package Application with PyInstaller
-        run: pyinstaller mamestates/gui.py
+        run: pyinstaller gui.spec
 
       - name: Archive Bundle (Windows)
         shell: pwsh
