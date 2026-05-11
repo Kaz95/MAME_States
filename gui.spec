@@ -2,13 +2,26 @@
 
 from pathlib import Path
 
-PROJECT_ROOT = Path(r'C:\Users\kazac\PycharmProjects\MAME_States')
+PROJECT_ROOT = PROJECT_ROOT = Path(__file__).resolve().parent
+
+# Scan the root directory and explicitly exclude build artifacts and git files
+excluded_names = {'build', 'dist', '.git', '.github', '__pycache__', 'gui.spec'}
+
+data_files = []
+for path in PROJECT_ROOT.iterdir():
+    if path.name not in excluded_names:
+        if path.is_dir():
+            # (source_directory, destination_subfolder_in_bundle)
+            data_files.append((str(path), path.name))
+        else:
+            # (source_file, destination_root_in_bundle)
+            data_files.append((str(path), '.'))
 
 a = Analysis(
     [str(PROJECT_ROOT / 'mamestates' / 'gui.py')],
     pathex=[str(PROJECT_ROOT)],
     binaries=[],
-    datas=[(str(PROJECT_ROOT / '*'), '.')],
+    datas=data_files,
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
