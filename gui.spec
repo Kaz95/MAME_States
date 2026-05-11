@@ -1,16 +1,14 @@
 # -*- mode: python ; coding: utf-8 -*-
 
-import os
-from os.path import abspath, dirname
+from pathlib import Path
 
-# Get the absolute path of the directory containing this spec file
-PROJECT_ROOT = dirname(abspath(__file__))
+PROJECT_ROOT = Path(r'C:\Users\kazac\PycharmProjects\MAME_States')
 
 a = Analysis(
-    ['mamestates/gui.py'],
-    pathex=[PROJECT_ROOT],
+    [str(PROJECT_ROOT / 'mamestates' / 'gui.py')],
+    pathex=[str(PROJECT_ROOT)],
     binaries=[],
-    datas=[(PROJECT_ROOT / '*', '.')],
+    datas=[(str(PROJECT_ROOT / '*'), '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
