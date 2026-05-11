@@ -1,11 +1,16 @@
 # -*- mode: python ; coding: utf-8 -*-
 
+import os
+from os.path import abspath, dirname
+
+# Get the absolute path of the directory containing this spec file
+PROJECT_ROOT = dirname(abspath(__file__))
 
 a = Analysis(
     ['mamestates/gui.py'],
-    pathex=[],
+    pathex=[PROJECT_ROOT],
     binaries=[],
-    datas=[('..', '..')],
+    datas=[('.', '.')],
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
