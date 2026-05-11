@@ -2,7 +2,7 @@
 
 
 a = Analysis(
-    ['gui.py'],
+    ['mamestates/gui.py'],
     pathex=[],
     binaries=[],
     datas=[('.', '.')],
