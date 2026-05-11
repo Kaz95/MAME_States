@@ -24,9 +24,7 @@ jobs:
           pip install -r requirements.txt  
 
       - name: Package Application with PyInstaller
-        working-directory: ${{ github.workspace }}
-        run: |
-          pyinstaller mamestates/gui.py
+        run: pyinstaller mamestates/gui.py
 
       - name: Archive Bundle (Windows)
         shell: pwsh

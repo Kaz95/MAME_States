@@ -1,9 +1,15 @@
 # -*- mode: python ; coding: utf-8 -*-
 
 
+import os
+import sys
+
+# Detects the directory where the .spec file is located
+BASE_DIR = os.path.dirname(os.path.abspath(spec_file))
+
 a = Analysis(
-    ['mamestates/gui.py'],
-    pathex=['mamestates'],
+    [os.path.join(BASE_DIR, 'src', 'nested_folder', 'my_script.py')], # Points to your script
+    pathex=[os.path.join(BASE_DIR, 'src')],
     binaries=[],
     datas=[('.', '.')],
     hiddenimports=[],
