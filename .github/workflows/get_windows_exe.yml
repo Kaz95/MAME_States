@@ -25,7 +25,7 @@ jobs:
 
       - name: Package Application with PyInstaller
         run: |
-          pyinstaller gui.spec
+          pyinstaller C:\Users\kazac\PycharmProjects\MAME_States\mamestates\gui.py
 
       - name: Archive Bundle (Windows)
         shell: pwsh
