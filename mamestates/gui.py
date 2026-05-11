@@ -481,9 +481,10 @@ class MainWindow(QMainWindow):
 
     def fill_hiscore_game_list(self) -> None:
         """Clear and refill Hi Score Game Tree, based on personal best info."""
-        self.games_with_pb_tree.clear()
-        for rom_description in self.core.pb_info:
-            QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
+        with QSignalBlocker(self.games_with_pb_tree):
+            self.games_with_pb_tree.clear()
+            for rom_description in self.core.pb_info:
+                QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
 
     def fill_save_state_tree(self) -> None:
         """Clear, then fill and customize the Save State Tree Widget.
