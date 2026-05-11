@@ -584,9 +584,11 @@ class MainWindow(QMainWindow):
         # After adding all items
         for i in range(self.pb_fields_tree.columnCount()):
             self.pb_fields_tree.resizeColumnToContents(i)
+            self.pb_fields_tree.setColumnWidth(0, self.pb_fields_tree.columnWidth(0) + 10)
 
         for i in range(self.split_tree.columnCount()):
             self.split_tree.resizeColumnToContents(i)
+            self.split_tree.setColumnWidth(0, self.pb_fields_tree.columnWidth(0) + 1)
 
 
     def hiscore_add_game_clicked(self) -> None:
