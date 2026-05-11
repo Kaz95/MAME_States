@@ -12,7 +12,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
         with:
-          path: '.'
+          path: '../MAME_States' # Forces checkout into D:\a\MAME_States
 
       - name: Set up Python
         uses: actions/setup-python@v6.2.0
