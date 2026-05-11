@@ -1041,6 +1041,7 @@ class MainWindow(QMainWindow):
         main_geo = self.geometry()
         self.hiscore_page_layout.removeWidget(self.info_container)
         self.info_container.setWindowFlags(Qt.WindowType.Window)
+        self.info_container.setFont(self.big_font)
 
         popup_width, popup_height = 500, 500
         self.info_container.resize(popup_width, popup_height)
