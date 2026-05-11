@@ -1362,7 +1362,7 @@ def main() -> None:
     Alternative would be creating db connection with context inside MainWindow _init_, which seems not ideal.
     """
     db = core.get_abs_path('./mame_states.db')
-    db_schema = core.get_abs_path('./database_backups/mame_states_schema_v3.sql')
+    db_schema = core.get_abs_path('./database_backups/mame_states_schema_v4.sql')
     db_roms_data = core.get_abs_path('./database_backups/roms.sql')
     print(db_schema)
     print(db_roms_data)
