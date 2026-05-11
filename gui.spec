@@ -1,14 +1,37 @@
 # -*- mode: python ; coding: utf-8 -*-
 import os
+import glob
 
-# Get the absolute path of the base app directory where the spec file sits
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+# 1. Safely resolve the true base directory regardless of nested runner paths
+SPEC_DIR = os.path.dirname(os.path.abspath(__file__))
+
+# 2. Correctly pinpoint your nested script relative to the spec location
+# This resolves to "D:\a\MAME_States\mamestates\gui.py"
+entry_script = os.path.join(SPEC_DIR, 'mamestates', 'gui.py')
+
+# 3. Manually collect files to avoid wildcard matching issues inside actions
+collected_datas = []
+
+# This loops through files inside the repository root
+for item in os.listdir(SPEC_DIR):
+    item_path = os.path.join(SPEC_DIR, item)
+
+    # Exclude common build artifacts to prevent infinite compile loops
+    if item in ['.git', '.github', 'build', 'dist', '__pycache__']:
+        continue
+
+    if os.path.isdir(item_path):
+        # Format: (Source filesystem path, Target subfolder name inside _internal)
+        collected_datas.append((item_path, item))
+    else:
+        # Format: (Source file path, Root of _internal)
+        collected_datas.append((item_path, '.'))
 
 a = Analysis(
-    [mamestates/gui.py],
-    pathex=[BASE_DIR],
+    [entry_script],          # Solves the "D:\a\MAME_States\mamestates\gui.py" problem
+    pathex=[SPEC_DIR],
     binaries=[],
-    datas=[(os.path.join(BASE_DIR, '**', '*'), '.')],
+    datas=collected_datas,    # Safely injects the true repository files into _internal
     hiddenimports=[],
     hookspath=[],
     hooksconfig={},
