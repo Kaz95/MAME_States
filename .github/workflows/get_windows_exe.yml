@@ -11,6 +11,8 @@ jobs:
 
       - name: Checkout repository
         uses: actions/checkout@v6.0.2
+        with:
+          path: '.'
 
       - name: Set up Python
         uses: actions/setup-python@v6.2.0
@@ -25,7 +27,7 @@ jobs:
 
       - name: Package Application with PyInstaller
         run: |
-          pyinstaller mamestates\gui.py
+          pyinstaller gui.py
 
       - name: Archive Bundle (Windows)
         shell: pwsh
