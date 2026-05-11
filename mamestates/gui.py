@@ -672,6 +672,8 @@ class MainWindow(QMainWindow):
     def delete_split_clicked(self) -> None:
         rom_description = self.games_with_pb_tree.currentItem().text(0)
         selected_split_item = self.split_tree.currentItem()
+        if not selected_split_item:
+            return
         item_above = self.split_tree.itemAbove(selected_split_item)
         item_below = self.split_tree.itemBelow(selected_split_item)
 
