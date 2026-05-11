@@ -11,7 +11,7 @@ from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, QSize, QProces
 from PyQt6.QtGui import QRegularExpressionValidator, QCloseEvent, QColor, QIntValidator, QAction, QValidator
 from PyQt6.QtWidgets import QLabel, QLineEdit, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QTabWidget, QDialogButtonBox, \
-    QTreeWidget, QMenu, QInputDialog, QTreeWidgetItem, QStyleOptionViewItem, QMessageBox
+    QTreeWidget, QMenu, QInputDialog, QTreeWidgetItem, QStyleOptionViewItem, QMessageBox, QMainWindow
 
 import core
 import hi2txt_wrapper
@@ -337,6 +337,30 @@ class RomSearchDialog(QDialog):
 
     def sizeHint(self):
         return QSize(800, 800)
+
+class DetachableWidget(QWidget):
+    def __init__(self, parent):
+        super().__init__(parent)
+        self.main_window = parent
+
+        # Tracking flags for window positions
+        self.has_been_moved = False
+        self.saved_position = None
+
+
+    def closeEvent(self, event: QCloseEvent):
+        if self.isWindow():
+            # 1. Capture the window's last known desktop position
+            self.saved_position = self.pos()
+            self.has_been_moved = True
+
+            # 2. Intercept the standard kill execution
+            event.ignore()
+
+            # 3. Fire the return pipeline on the parent container
+            self.main_window.attach_info_container()
+        else:
+            event.accept()
 
 
 class NotesWindow(QWidget):

@@ -16,6 +16,7 @@ from PyQt6.QtWidgets import QApplication, QMainWindow, QTreeWidget, QTreeWidgetI
 import core
 import hi2txt_wrapper
 import widgets
+from mamestates.widgets import DetachableWidget
 
 
 # TODO Consider moving MainWindow to widgets, as it is technically no different then any other QWidget.
@@ -203,7 +204,9 @@ class MainWindow(QMainWindow):
 
         self.info_layout.addLayout(self.splits_tree_button_container)
 
-        self.info_container = QWidget()
+        self.info_container = DetachableWidget(self)
+        self.info_container.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.info_container.customContextMenuRequested.connect(self.show_info_container_context)
         self.info_layout.setContentsMargins(0, 0, 0, 0)
         self.info_container.setLayout(self.info_layout)
 
@@ -1026,6 +1029,39 @@ class MainWindow(QMainWindow):
         menu.addMenu(open_with_submenu)
         menu.addMenu(open_with_inp_submenu)
         menu.exec(self.sender().mapToGlobal(position))
+
+    def show_info_container_context(self, position: QPoint):
+        menu = QMenu()
+        detach = QAction('Detach')
+        detach.triggered.connect(self.detach_info_container)
+        menu.addAction(detach)
+        menu.exec(self.info_container.mapToGlobal(position))
+
+    def detach_info_container(self):
+        main_geo = self.geometry()
+        self.hiscore_page_layout.removeWidget(self.info_container)
+        self.info_container.setWindowFlags(Qt.WindowType.Window)
+
+        popup_width, popup_height = 500, 500
+        self.info_container.resize(popup_width, popup_height)
+
+        if not self.info_container.has_been_moved:
+            # Calculate coordinates to center over main window on first pop out
+            center_x = main_geo.x() + int((main_geo.width() - popup_width) / 2)
+            center_y = main_geo.y() + int((main_geo.height() - popup_height) / 2)
+            self.info_container.move(QPoint(center_x, center_y))
+        else:
+            # Use cached coordinates on subsequent pop outs
+            self.info_container.move(self.info_container.saved_position)
+
+        self.info_container.show()
+        self.info_container.customContextMenuRequested.disconnect(self.show_info_container_context)
+
+    def attach_info_container(self):
+        self.info_container.setWindowFlags(Qt.WindowType.Widget)
+        self.hiscore_page_layout.addWidget(self.info_container)
+        self.info_container.show()
+        self.info_container.customContextMenuRequested.connect(self.show_info_container_context)
 
     def open_rom_for_inp_search(self) -> str:
         """Pop out the 'rom search' tab for use as a search dialog. Rom info is hidden until dialog closes."""
