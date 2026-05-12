@@ -505,7 +505,8 @@ class MainWindow(QMainWindow):
 
         # Add path items.
         for mame_dir in self.core.mame_dirs:
-            mame_dir_item = QTreeWidgetItem(self.save_state_and_inp_tree, [str(mame_dir.path )])
+            mame_dir_item = QTreeWidgetItem(self.save_state_and_inp_tree, [str(mame_dir.path.name)])
+            mame_dir_item.setData(0, Qt.ItemDataRole.UserRole, str(mame_dir.path))
             mame_dir_item.setFont(0, self.big_font)
             save_states_container_item = QTreeWidgetItem(mame_dir_item, ['Save States'])
             save_states_container_item.setFont(0, self.big_font)
@@ -752,7 +753,7 @@ class MainWindow(QMainWindow):
         Use mame_path if called from anywhere else, then derive item from path.
         """
         if path_item:
-            mame_path = path_item.text(0)
+            mame_path = path_item.data(0, Qt.ItemDataRole.UserRole)
             root = self.save_state_and_inp_tree.invisibleRootItem()
             selected_dir = self.save_state_and_inp_tree.currentItem()
             root.removeChild(selected_dir)
@@ -774,7 +775,7 @@ class MainWindow(QMainWindow):
         If a .ini file does not exist, user is given the choice to create a new one.
         """
         mame_dir_item = self.save_state_and_inp_tree.currentItem()
-        path_str = mame_dir_item.text(0)
+        path_str = mame_dir_item.data(0, Qt.ItemDataRole.UserRole)
         mame_path = Path(path_str)
         if Path(path_str).is_dir():
             mame_ini_file = mame_path / 'mame.ini'
@@ -793,7 +794,7 @@ class MainWindow(QMainWindow):
 
         If the path is found to be invalid, it is removed from the app completely.
         """
-        mame_dir = Path(mame_dir_item.text(0))
+        mame_dir = Path(mame_dir_item.data(0, Qt.ItemDataRole.UserRole))
         if not mame_dir.is_dir():
             self.remove_invalid_mame_dir(mame_path=str(mame_dir))
             return
@@ -815,7 +816,7 @@ class MainWindow(QMainWindow):
             open_ini = QAction('Open mame.ini')
             open_in_explorer = QAction('Open in Explorer')
 
-            launch.triggered.connect(lambda: self.run_mame(tree_item.text(0)))
+            launch.triggered.connect(lambda: self.run_mame(tree_item.data(0, Qt.ItemDataRole.UserRole)))
             delete.triggered.connect(lambda: self.remove_invalid_mame_dir(path_item=tree_item))
             open_ini.triggered.connect(self.open_ini_actioned_clicked)
             open_in_explorer.triggered.connect(lambda: self.open_mame_dir_in_explorer(tree_item))
@@ -896,7 +897,7 @@ class MainWindow(QMainWindow):
     def delete_ss_or_inp(self, tree_item: QTreeWidgetItem):
         if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Input Files':
             mame_dir_item = self.save_state_and_inp_tree.currentItem().parent()
-            mame_dir_str = mame_dir_item.text(0)
+            mame_dir_str = mame_dir_item.data(0, Qt.ItemDataRole.UserRole)
             mame_dir = Path(mame_dir_str)
             if not mame_dir.is_dir():
                 self.remove_invalid_mame_dir(mame_path=mame_dir_str)
@@ -915,7 +916,7 @@ class MainWindow(QMainWindow):
             rom_name = self.core.descriptions_and_names[rom_description]
             # category_item = direct_parent.parent()
             mame_path_item = rom_item.parent().parent()
-            mame_dir_str = mame_path_item.text(0)
+            mame_dir_str = mame_path_item.data(0, Qt.ItemDataRole.UserRole)
             mame_dir = Path(mame_dir_str)
             if not mame_dir.is_dir():
                 self.remove_invalid_mame_dir(mame_path=mame_dir_str)
@@ -978,7 +979,7 @@ class MainWindow(QMainWindow):
 
     def open_save_or_inp_in_explorer(self, category_item: QTreeWidgetItem) -> None:
         """Opens a MAME directory's 'inp', and 'sta' folders in Windows explorer."""
-        mame_dir = Path(category_item.parent().text(0))
+        mame_dir = Path(category_item.parent().data(0, Qt.ItemDataRole.UserRole))
         if not mame_dir.is_dir():
             self.remove_invalid_mame_dir(mame_path=str(mame_dir))
             return
@@ -1262,9 +1263,9 @@ class MainWindow(QMainWindow):
         self.new_save_state_and_inp_tree.blockSignals(True)
         if current_item.parent():
             if current_item.parent().text(0) == 'Save States':
-                self.fill_saves(f'{current_item.parent().parent().text(0)}', current_item.text(0))
+                self.fill_saves(f'{current_item.parent().parent().data(0, Qt.ItemDataRole.UserRole)}', current_item.text(0))
             elif current_item.text(0) == 'Input Files':
-                self.fill_inps(current_item.parent().text(0))
+                self.fill_inps(current_item.parent().data(0, Qt.ItemDataRole.UserRole))
         self.new_save_state_and_inp_tree.blockSignals(False)
 
     def ss_or_inp_changed(self, item_that_changed: QTreeWidgetItem) -> None:
@@ -1367,7 +1368,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, 'Error', 'Path already exists')
                 return
             self.core.save_mame_dirs()
-            self.core.save_states = self.core.get_save_states()
+            self.core.save_states = self.core.new_get_save_states()
             self.core.input_files = self.core.get_input_files()
             self.save_state_and_inp_tree.blockSignals(True)
             self.fill_save_state_tree()
