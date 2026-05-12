@@ -1175,9 +1175,14 @@ class MainWindow(QMainWindow):
 
         self.core.pb_info = self.core.get_personal_bests()
         self.fill_hiscore_game_list()
-        self.showNormal()
-        self.raise_()
-        self.activateWindow()
+        rom_description = self.core.rom_description_from_name(self.mame_thread.rom_name)
+        rom_item = self.games_with_pb_tree.findItems(rom_description, Qt.MatchFlag.MatchExactly)[0]
+        if rom_item:
+            self.games_with_pb_tree.scrollToItem(rom_item)
+            self.games_with_pb_tree.setCurrentItem(rom_item)
+            self.showNormal()
+            self.raise_()
+            self.activateWindow()
     # --------------------- #
     # Rom Search Page Slots #
     # --------------------- #
