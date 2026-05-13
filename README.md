@@ -67,13 +67,15 @@ Windows will probably show a warning due to lack of signing, click more info and
 ## Things to know
 Only targeting Windows for now.
 
+Color palette is based on Windows Theme.
+
 MAMEStates relies on MAME ini settings in most cases. For example, attempting to run a rom from a given MAME directory
 relies on the .ini file in the directory to know where to look for roms. The same goes for input files.
 
 ## Future
 
 My current plans are to focus on cleaning up the codebase and building out the testing suite for a while. I will
-fix bugs as I find them, but won't be adding new features for some time. I'm a hobbyist and this is the first project
+fix bugs as I find them,  and add QoL updates, but won't be adding new features for some time. I'm a hobbyist and this is the first project
 I have released for others to use. It's been a really fun project so far, and I've learned a ton. I have quite a few 
 ideas for more features I'd like to add, so stay on the lookout for updates.
 
