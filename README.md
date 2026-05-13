@@ -60,6 +60,9 @@ Extract all the files in the archive into their own folder. Navigate to the new 
 Inside will be the MAMEStates executable and an '_internal' folder which houses project files. Run the executable.
 Windows will probably show a warning due to lack of signing, click more info and run anyway.
 
+## Things to know
+MAMEStates relies on MAME ini settings in most cases. For example, attempting to run a rom from a given MAME directory
+relies on the .ini file in the directory to know where to look for roms. The same goes for input files.
 
 ## Future
 
