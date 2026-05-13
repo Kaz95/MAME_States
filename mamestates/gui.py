@@ -649,7 +649,8 @@ class MainWindow(QMainWindow):
             elif next_item:
                 self.games_with_pb_tree.setCurrentItem(next_item)
             else:
-                self.games_with_pb_tree.clearSelection()
+                # self.games_with_pb_tree.clearSelection()
+                self.games_with_pb_tree.setCurrentItem(None)
 
             rom_description = selected_item.text(0)
             # Delete from in-memory database representation.
