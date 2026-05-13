@@ -60,6 +60,10 @@ Extract all the files in the archive into their own folder. Navigate to the new 
 Inside will be the MAMEStates executable and an '_internal' folder which houses project files. Run the executable.
 Windows will probably show a warning due to lack of signing, click more info and run anyway.
 
+## Usage
+
+[Demo](https://youtu.be/j78EhGp6pMM)
+
 ## Things to know
 MAMEStates relies on MAME ini settings in most cases. For example, attempting to run a rom from a given MAME directory
 relies on the .ini file in the directory to know where to look for roms. The same goes for input files.
@@ -72,6 +76,6 @@ I have released for others to use. It's been a really fun project so far, and I'
 ideas for more features I'd like to add, so stay on the lookout for updates.
 
 
-## AI Usage Disclosure
-It's good ol' USDA Certified Human Slop. Might be some boilerplate copied in there somewheres 
+### AI Usage Disclosure
+It's good ol' USDA Certified Human Slop. Might be some boilerplate copied in there somewhere 
 if you look hard enough though!
