@@ -1283,7 +1283,7 @@ class MainWindow(QMainWindow):
         if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Input Files':
             input_file_name = item_that_changed.text(0)
             mame_dir_item = self.save_state_and_inp_tree.currentItem().parent()
-            mame_dir_str = mame_dir_item.text(0)
+            mame_dir_str = mame_dir_item.data(0, Qt.ItemDataRole.UserRole)
             mame_dir = Path(mame_dir_str)
             if not mame_dir.is_dir():
                 self.remove_invalid_mame_dir(mame_path=mame_dir_str)
@@ -1316,7 +1316,7 @@ class MainWindow(QMainWindow):
             rom_name = self.core.descriptions_and_names[rom_description]
 
             mame_dir_item = self.save_state_and_inp_tree.currentItem().parent().parent()
-            mame_dir_str = mame_dir_item.text(0)
+            mame_dir_str = mame_dir_item.data(0, Qt.ItemDataRole.UserRole)
 
             mame_dir = Path(mame_dir_str)
             if not mame_dir.is_dir():
@@ -1450,4 +1450,4 @@ def main(*, logging=False) -> None:
 
 
 if __name__ == '__main__':
-    main(logging=True)
+    main()
