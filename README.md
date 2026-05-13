@@ -62,7 +62,7 @@ Windows will probably show a warning due to lack of signing, click more info and
 
 ## Usage
 
-[Demo](https://youtu.be/j78EhGp6pMM)
+[Demo](https://youtu.be/WqQ82x1pCMc)
 
 ## Things to know
 MAMEStates relies on MAME ini settings in most cases. For example, attempting to run a rom from a given MAME directory
