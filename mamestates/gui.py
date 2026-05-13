@@ -303,7 +303,7 @@ class MainWindow(QMainWindow):
         self.add_mame_directory_action.triggered.connect(self.add_path_button_clicked)
         self.update_pb_action.triggered.connect(self.scan_for_pbs)
 
-        self.file_menu.addAction(self.test_button_1_action)
+        # self.file_menu.addAction(self.test_button_1_action)
 
         self.file_menu.addAction(self.add_mame_directory_action)
         self.file_menu.addAction(self.update_pb_action)
@@ -1344,7 +1344,8 @@ class MainWindow(QMainWindow):
     # --------------- #
     def menu_button_1_clicked(self) -> None:
         """Temporary, easily accessible, trigger for prototype methods."""
-        self.remove_invalid_mame_dir(mame_path=r'C:\Users\kazac\Downloads\mame')
+        pass
+        # self.remove_invalid_mame_dir(mame_path=r'C:\Users\kazac\Downloads\mame')
         # self.save_state_and_inp_tree.hide()
 
     def menu_button_2_clicked(self) -> None:
@@ -1449,4 +1450,4 @@ def main(*, logging=False) -> None:
 
 
 if __name__ == '__main__':
-    main()
+    main(logging=True)
