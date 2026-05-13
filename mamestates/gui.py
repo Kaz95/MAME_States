@@ -785,7 +785,7 @@ class MainWindow(QMainWindow):
                 response = QMessageBox.question(self, 'Directory Not Found',
                                                 f'Could Not Find File: {mame_ini_file}\nWould you like to create a new ini file?')
                 if response == QMessageBox.StandardButton.Yes:
-                    subprocess.run([core.get_abs_path(mame_path / 'mame.exe'), '-cc'], cwd=core.get_abs_path(mame_path))
+                    subprocess.run([core.get_abs_path(mame_path / 'mame.exe'), '-cc'], cwd=core.get_abs_path(mame_path), creationflags=subprocess.CREATE_NO_WINDOW)
         else:
             self.remove_invalid_mame_dir(mame_path=path_str)
 
@@ -1104,7 +1104,7 @@ class MainWindow(QMainWindow):
             hi2txt_results = subprocess.run(
                 [core.get_abs_path(r'./hi2txt/hi2txt.exe').resolve(), '-r', f'{hiscore_file}'],
                 cwd=core.get_abs_path(r'./hi2txt').resolve(), capture_output=True, text=True,
-                check=True, encoding='utf-8')
+                check=True, encoding='utf-8', creationflags=subprocess.CREATE_NO_WINDOW)
             self.pre_hs_table = hi2txt_results.stdout
 
         # TODO This may need to be a value error. Shouldn't ever have an invalid name. At least not caused by anything the end user can do via GUI.
@@ -1137,7 +1137,7 @@ class MainWindow(QMainWindow):
             [core.get_abs_path(r'./hi2txt/hi2txt.exe'), '-r', f'{hiscore_file}'],
             cwd=core.get_abs_path(r'./hi2txt'), capture_output=True,
             text=True,
-            check=True, encoding='utf-8')
+            check=True, encoding='utf-8', creationflags=subprocess.CREATE_NO_WINDOW)
 
         post_hs_table = hi2txt_results.stdout
         test_dic = {self.mame_thread.mame_dir: {self.mame_thread.rom_name: post_hs_table}}

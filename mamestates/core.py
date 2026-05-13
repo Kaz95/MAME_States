@@ -99,7 +99,7 @@ def get_mame_version(mame_dir: Path) -> str | None:
     """Retrieve the version for the given path's MAME.exe file."""
     mame_exe = mame_dir / 'mame.exe'
     if mame_exe.is_file():
-        results = subprocess.run([mame_exe, '-version'], cwd=mame_dir, capture_output=True, text=True)
+        results = subprocess.run([mame_exe, '-version'], cwd=mame_dir, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
         return results.stdout
 
 

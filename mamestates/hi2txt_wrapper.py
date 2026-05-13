@@ -60,7 +60,7 @@ def _get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[s
             print(f'Score is: {file}')
             results = subprocess.run([core.get_abs_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{file}'],
                                      cwd=core.get_abs_path(r'.\hi2txt'), capture_output=True, text=True,
-                                     check=True, encoding='utf-8')
+                                     check=True, encoding='utf-8', creationflags=subprocess.CREATE_NO_WINDOW)
             hi2txt_tables[mame_dir][f'{file.stem}'] = results.stdout
     return hi2txt_tables
 
