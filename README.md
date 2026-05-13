@@ -65,6 +65,8 @@ Windows will probably show a warning due to lack of signing, click more info and
 [Demo](https://youtu.be/WqQ82x1pCMc)
 
 ## Things to know
+Only targeting Windows for now.
+
 MAMEStates relies on MAME ini settings in most cases. For example, attempting to run a rom from a given MAME directory
 relies on the .ini file in the directory to know where to look for roms. The same goes for input files.
 
