@@ -206,7 +206,7 @@ class SaveStateInputFileTree(QTreeWidget):
             rom_description = rom_item.text(0)
             rom_name = self.core.descriptions_and_names[rom_description]
             mame_dir_item = rom_item.parent().parent()
-            mame_dir = mame_dir_item.text(0)
+            mame_dir = mame_dir_item.data(0, Qt.ItemDataRole.UserRole)
             if item_that_moved:
                 self.update_save_order(rom_name, mame_dir, self.last_row, self.indexOfTopLevelItem(item_that_moved))
                 # Update ss order
