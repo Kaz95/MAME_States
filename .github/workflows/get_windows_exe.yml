@@ -34,7 +34,7 @@ jobs:
       - name: GH Release
         uses: softprops/action-gh-release@v2.5.0
         with:
-          files: "gui-${{ github.ref_name }}-windows.zip"
+          files: "MAMEStates-${{ github.ref_name }}-windows.zip"
 
             
 
