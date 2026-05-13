@@ -4,6 +4,7 @@ This module encompasses the static functions used by the MAMEStates application.
 """
 import csv
 import json
+import logging
 import os
 import pprint
 import sqlite3
@@ -52,6 +53,39 @@ class PersonalBest:
 
 PersonalBests = dict[str, PersonalBest]
 """In-memory representation of the 'personal_bests' table of the database."""
+
+
+
+# 1. Setup the basic logging destination
+logging.basicConfig(
+    filename='app.log',
+    filemode='w',
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    level=logging.DEBUG
+)
+
+# 2. Define the stream router and redirect stdout/stderr
+class LogStreamRouter:
+    def __init__(self, logger_level):
+        self.logger_level = logger_level
+    def write(self, message):
+        if message.strip():
+            logging.log(self.logger_level, message.strip())
+    def flush(self):
+        pass
+
+
+# 3. Define and register the global exception hook
+def handle_exception(exc_type, exc_value, exc_traceback):
+    if issubclass(exc_type, KeyboardInterrupt):
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logging.critical("Unhandled exception", exc_info=(exc_type, exc_value, exc_traceback))
+
+def turn_on_logging():
+    sys.excepthook = handle_exception
+    sys.stdout = LogStreamRouter(logging.INFO)
+    sys.stderr = LogStreamRouter(logging.ERROR)
 
 
 def get_abs_path(relative_path: str | Path) -> Path:

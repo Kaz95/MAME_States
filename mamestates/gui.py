@@ -1409,12 +1409,15 @@ class MainWindow(QMainWindow):
         # Move the window's top-left to the rectangle's top-left
         self.move(frame.topLeft())
 
-def main() -> None:
+def main(*, logging=False) -> None:
     """MAMEStates program entry point.
 
     This function allows me to create DB connects with context manager. If the program ends early, rollback occurs.
     Alternative would be creating db connection with context inside MainWindow _init_, which seems not ideal.
     """
+    if logging:
+        core.turn_on_logging()
+    3/0
     db = core.get_abs_path('./mame_states.db')
     db_schema = core.get_abs_path('./database_backups/mame_states_schema_v4.sql')
     db_roms_data = core.get_abs_path('./database_backups/roms.sql')
