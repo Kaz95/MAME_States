@@ -544,6 +544,9 @@ class PBSplitTreeWidget(QTreeWidget):
     def delete_pb_field_triggered(self) -> None:
         rom_description = self.hs_game_tree.currentItem().text(0)
         item_to_be_deleted = self.currentItem()
+        if item_to_be_deleted.text(0) == 'Hi Score':
+            QMessageBox.critical(self, 'Error', 'Field Required.')
+            return
         item_above = self.itemAbove(item_to_be_deleted)
         item_below = self.itemBelow(item_to_be_deleted)
         pb_field_name = item_to_be_deleted.text(0)
