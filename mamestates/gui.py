@@ -1130,7 +1130,8 @@ class MainWindow(QMainWindow):
 
         hiscore_file = Path(self.mame_thread.mame_dir) / 'hiscore' / (self.mame_thread.rom_name + '.hi')
         if not hiscore_file.is_file():
-            self.showNormal()
+            if self.isMinimized():
+                self.showNormal()
             self.raise_()
             self.activateWindow()
             return
@@ -1182,7 +1183,8 @@ class MainWindow(QMainWindow):
         if rom_item:
             self.games_with_pb_tree.scrollToItem(rom_item)
             self.games_with_pb_tree.setCurrentItem(rom_item)
-            self.showNormal()
+            if self.isMinimized():
+                self.showNormal()
             self.raise_()
             self.activateWindow()
     # --------------------- #
