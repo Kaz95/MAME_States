@@ -3,7 +3,7 @@
 ## What is MAMEStates?
 
 MAMEStates is a Windows based, multipurpose launcher for the emulator, MAME. My goal when creating this project was to 
-create simple way to manage MAME save state files(Renaming, Deleting, Reordering, ect), hence the name. The scope of the
+create a simple way to manage MAME save state files(Renaming, Deleting, Reordering, ect), hence the name. The scope of the
 project has grown and now includes the following features:
 
 ### Features:
