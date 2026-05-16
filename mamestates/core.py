@@ -56,7 +56,7 @@ PersonalBests = dict[str, PersonalBest]
 
 
 
-# 1. Setup the basic logging destination
+# Setup logging.
 logging.basicConfig(
     filename='app.log',
     filemode='w',
@@ -64,26 +64,35 @@ logging.basicConfig(
     level=logging.DEBUG
 )
 
-# 2. Define the stream router and redirect stdout/stderr
+
 class LogStreamRouter:
-    def __init__(self, logger_level):
+    """Create a file-like object for redirecting stdout/stderr to logger."""
+    def __init__(self, logger_level: int):
         self.logger_level = logger_level
-    def write(self, message):
+
+    def write(self, message: str) -> None:
+        """Redirect message to logger."""
         if message.strip():
             logging.log(self.logger_level, message.strip())
+
     def flush(self):
+        """Shouldn't ever be needed. Logging module handles this internally."""
         pass
 
 
-# 3. Define and register the global exception hook
-def handle_exception(exc_type, exc_value, exc_traceback):
+def _handle_exception(exc_type, exc_value, exc_traceback) -> None:
+    """Custom global exception handler.
+
+    Log all unhandled exceptions, except KeyBoardInterrupts.
+    """
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
     logging.critical("Unhandled exception", exc_info=(exc_type, exc_value, exc_traceback))
 
-def turn_on_logging():
-    sys.excepthook = handle_exception
+def turn_on_logging() -> None:
+    """Redirect stdout, stderr, and unhandled exception traceback to logger."""
+    sys.excepthook = _handle_exception
     sys.stdout = LogStreamRouter(logging.INFO)
     sys.stderr = LogStreamRouter(logging.ERROR)
 
@@ -112,7 +121,7 @@ class MAMEStatesCore:
         self.cursor.row_factory = sqlite3.Row
         self.mame_dirs: list[MAMEDir] = self._get_mame_dirs()
         self.input_files: dict[str, list[str]] = self.get_input_files()
-        self.save_states: dict[str, dict[str, list[Path]]] = self.new_get_save_states()
+        self.save_states: dict[str, dict[str, list[Path]]] = self.get_save_states()
         self.descriptions_and_names: dict[str, str] = self._get_descriptions_and_names()
         self.rom_info: dict[str, RomInfo] = self._get_formatted_rom_info()
         self.pb_info: dict[str, PersonalBest] = self.get_personal_bests()
@@ -247,9 +256,10 @@ class MAMEStatesCore:
 
 
     @staticmethod
-    def _new_get_save_state_names(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list[Path]]:
-        """Return all save files, and their respective roms."""
+    def _get_save_states_from_mame_dir(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list[Path]]:
+        """Retrieve and return all save state paths from a given MAME directory."""
         save_states = {}
+        #  TODO Not sure if this can happen anymore. Look into it.
         for rom_name in roms_with_saves:
             if not rom_name:
                 continue
@@ -259,12 +269,12 @@ class MAMEStatesCore:
             save_states[rom_name] = save_state_file_paths
         return save_states
 
-    def new_get_save_states(self) -> dict[str, dict[str, list[Path]]]:
-        """Retrieve and return save state file names, for each path in the mame_dirs list. File extensions are stripped."""
+    def get_save_states(self) -> dict[str, dict[str, list[Path]]]:
+        """Retrieve and return all save state paths for all MAME directories."""
         all_save_state_paths = {}
         for mame_dir in self.mame_dirs:
             roms_with_saves = self._get_roms_with_saves(mame_dir.path)
-            save_state_names = self._new_get_save_state_names(roms_with_saves, mame_dir.path)
+            save_state_names = self._get_save_states_from_mame_dir(roms_with_saves, mame_dir.path)
             all_save_state_paths[str(mame_dir.path)] = save_state_names
 
         return all_save_state_paths
@@ -372,8 +382,8 @@ class MAMEStatesCore:
 
         return rows
 
-    def export_sqlite_to_csv(self, table_name, output_file):
-        # Execute a query to select all data from the table
+    def export_sqlite_to_csv(self, table_name: str, output_file: Path | str) -> None:
+        """Export the contents of a given table to CSV file."""
         self.cursor.execute(f"SELECT * FROM {table_name}")
 
         # Extract column names (headers) from cursor.description
@@ -382,7 +392,7 @@ class MAMEStatesCore:
         # Write the headers and data to the CSV file
         with open(output_file, 'w', newline='', encoding='utf-8') as f:
             writer = csv.writer(f)
-            writer.writerow(headers)  # Write header row
+            writer.writerow(headers)
             writer.writerows(self.cursor)  # Write data rows directly from cursor
 
 
