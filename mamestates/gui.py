@@ -932,7 +932,7 @@ class MainWindow(QMainWindow):
 
         item_index = self.new_save_state_and_inp_tree.indexOfTopLevelItem(tree_item)
         self.new_save_state_and_inp_tree.takeTopLevelItem(item_index)
-        self.core.save_states = self.core.new_get_save_states()
+        self.core.save_states = self.core.get_save_states()
         self.core.input_files = self.core.get_input_files()
 
     def delete_leaf_item(self, leaf_item: QTreeWidgetItem) -> None:
@@ -1339,7 +1339,7 @@ class MainWindow(QMainWindow):
                 return
             # Have to set this to new save_state_name so multiple renames can take place without reselection.
             self.save_state_page_text_before_editing = save_state_name
-        self.core.save_states = self.core.new_get_save_states()
+        self.core.save_states = self.core.get_save_states()
         self.core.input_files = self.core.get_input_files()
 
     # --------------- #
@@ -1372,7 +1372,7 @@ class MainWindow(QMainWindow):
                 QMessageBox.critical(self, 'Error', 'Path already exists')
                 return
             self.core.save_mame_dirs()
-            self.core.save_states = self.core.new_get_save_states()
+            self.core.save_states = self.core.get_save_states()
             self.core.input_files = self.core.get_input_files()
             self.save_state_and_inp_tree.blockSignals(True)
             self.fill_save_state_tree()
