@@ -901,37 +901,35 @@ class MainWindow(QMainWindow):
         """
         menu = QMenu()
         selector_tree_selections = self.save_state_and_inp_tree_selector.selectedItems()
+        tree_item = self.save_state_and_inp_tree_viewer.itemAt(position)
         if selector_tree_selections:
             selector_tree_selection = selector_tree_selections[0]
+
+            if tree_item:
+                delete = QAction('Delete')
+                delete.triggered.connect(lambda: self.delete_ss_or_inp(tree_item))
+                menu.addAction(delete)
+
+                if self.save_state_and_inp_tree_viewer.headerItem().text(0) == 'Input Files':
+                    input_file_name = tree_item.text(0)
+                    rom_name = input_file_name.split('_')[0]  # inp files created by program will have rom name at start.
+
+                    sub_menu = QMenu('Playback with...')
+                    for mame_dir in self.core.mame_dirs:
+                        run = QAction(str(mame_dir.path), self)
+                        run.triggered.connect(
+                            lambda: self.run_rom(rom_name, play_back_input=True, input_file_name=input_file_name))
+                        sub_menu.addAction(run)
+                        menu.addMenu(sub_menu)
+
             if selector_tree_selection.parent():
                 if selector_tree_selection.parent().text(0) == 'Save States' or selector_tree_selection.text(0) == 'Input Files':
                     refresh = QAction('Refresh')
                     refresh.triggered.connect(lambda: self.refresh_file_viewer(selector_tree_selection))
                     menu.addAction(refresh)
 
-        tree_item = self.save_state_and_inp_tree_viewer.itemAt(position)
-        if not tree_item:
-            menu.exec(self.save_state_and_inp_tree_viewer.viewport().mapToGlobal(position))
-            return
-        else:
-            delete = QAction('Delete')
-            delete.triggered.connect(lambda: self.delete_ss_or_inp(tree_item))
-            menu.addAction(delete)
-
-        if self.save_state_and_inp_tree_viewer.headerItem().text(0) == 'Input Files':
-            input_file_name = tree_item.text(0)
-            rom_name = input_file_name.split('_')[0]  # inp files created by program will have rom name at start.
-
-            sub_menu = QMenu('Playback with...')
-            for mame_dir in self.core.mame_dirs:
-                run = QAction(str(mame_dir.path), self)
-                run.triggered.connect(
-                    lambda: self.run_rom(rom_name, play_back_input=True, input_file_name=input_file_name))
-                sub_menu.addAction(run)
-                menu.addMenu(sub_menu)
-
-
         menu.exec(self.save_state_and_inp_tree_viewer.viewport().mapToGlobal(position))
+
 
     def delete_ss_or_inp(self, tree_item: QTreeWidgetItem) -> None:
         """Remove item, representing save state or input file, from tree and delete the corresponding file.
