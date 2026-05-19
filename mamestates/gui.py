@@ -36,12 +36,14 @@ class MainWindow(QMainWindow):
         """
         super().__init__()
 
-        self.pb_scanner = None
         self.core = mame_states_core
         """Entry point for accessing DB and in-memory data structures."""
 
         self.progress_bar = None
         """Reference to progress bar popup window. Prevents garbage collection and allows access."""
+
+        self.pb_scanner = None
+        """Reference to PBScanner thread. Prevents garbage collection and allows access."""
 
         self.pre_hs_table = None
         """Reference to a roms leaderboard prior to being launched."""
@@ -80,7 +82,7 @@ class MainWindow(QMainWindow):
         self.test_button_1_action: QAction = QAction('Test Button 1', self)
         """Used as trigger for work in progress functions."""
 
-        self.test_button_2_action: QAction = QAction('Export Personal Bests to CSV', self)
+        self.export_to_csv_action: QAction = QAction('Export Personal Bests to CSV', self)
         """Used as trigger for work in progress functions."""
 
         self.add_mame_directory_action: QAction = QAction('Add MAME Directory', self)
@@ -116,21 +118,23 @@ class MainWindow(QMainWindow):
         # ------------------ #
 
         # Widgets
-        self.save_state_and_inp_tree: QTreeWidget = QTreeWidget()
+        self.save_state_and_inp_tree_selector: QTreeWidget = QTreeWidget()
         """Main widget of the save state tab"""
 
-        self.new_save_state_and_inp_tree: widgets.SaveStateInputFileTree = widgets.SaveStateInputFileTree(self.core, self.save_state_and_inp_tree)
+        self.save_state_and_inp_tree_viewer: widgets.SaveStateInputFileTree = widgets.SaveStateInputFileTree(self.core, self.save_state_and_inp_tree_selector)
+        """View for contents of a given '/sta' or '/inp' directory."""
 
         self.terminal_output_box: QTextEdit = QTextEdit()
-        """Temporary widget for testing."""
+        """Terminal output."""
 
         # Layouts
         self.save_state_and_inp_layout: QVBoxLayout = QVBoxLayout()
         """Top level page layout."""
 
+        # TODO Reformat
         self.tree_container: QHBoxLayout = QHBoxLayout()
-        self.tree_container.addWidget(self.save_state_and_inp_tree)
-        self.tree_container.addWidget(self.new_save_state_and_inp_tree)
+        self.tree_container.addWidget(self.save_state_and_inp_tree_selector)
+        self.tree_container.addWidget(self.save_state_and_inp_tree_viewer)
 
 
         self.save_state_and_inp_layout.setContentsMargins(0, 0, 0, 0)
@@ -140,7 +144,7 @@ class MainWindow(QMainWindow):
         self.save_state_and_inp_layout.addWidget(self.terminal_output_box)
 
         # ------------------#
-        #   Hiscore Page  #
+        #    Hiscore Page   #
         # ------------------#
 
         # Widgets
@@ -299,7 +303,7 @@ class MainWindow(QMainWindow):
     def setup_file_menu(self) -> None:
         """File Menu widget customization."""
         self.test_button_1_action.triggered.connect(self.menu_button_1_clicked)
-        self.test_button_2_action.triggered.connect(self.menu_button_2_clicked)
+        self.export_to_csv_action.triggered.connect(self.export_to_csv)
         self.add_mame_directory_action.triggered.connect(self.add_path_button_clicked)
         self.update_pb_action.triggered.connect(self.scan_for_pbs)
 
@@ -307,28 +311,28 @@ class MainWindow(QMainWindow):
 
         self.file_menu.addAction(self.add_mame_directory_action)
         self.file_menu.addAction(self.update_pb_action)
-        self.file_menu.addAction(self.test_button_2_action)
+        self.file_menu.addAction(self.export_to_csv_action)
 
 
     def setup_save_state_page(self) -> None:
         """Save State Page windget customization."""
-        self.save_state_and_inp_tree.setEditTriggers(
+        self.save_state_and_inp_tree_selector.setEditTriggers(
             QTreeWidget.EditTrigger.AnyKeyPressed | QTreeWidget.EditTrigger.DoubleClicked)
-        self.save_state_and_inp_tree.setHeaderLabels(['MAME Folders'])
-        self.save_state_and_inp_tree.setColumnWidth(0, 1000)
-        self.save_state_and_inp_tree.setItemDelegate(widgets.SaveStateNameInputValidator(self))
-        self.save_state_and_inp_tree.setTabKeyNavigation(True)
-        self.save_state_and_inp_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.save_state_and_inp_tree.customContextMenuRequested.connect(self.show_save_state_tree_context)
+        self.save_state_and_inp_tree_selector.setHeaderLabels(['MAME Folders'])
+        self.save_state_and_inp_tree_selector.setColumnWidth(0, 1000)
+        self.save_state_and_inp_tree_selector.setItemDelegate(widgets.SaveStateNameInputValidator(self))
+        self.save_state_and_inp_tree_selector.setTabKeyNavigation(True)
+        self.save_state_and_inp_tree_selector.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.save_state_and_inp_tree_selector.customContextMenuRequested.connect(self.save_state_and_inp_tree_selector_context)
 
         self.fill_save_state_tree()
-        self.save_state_and_inp_tree.currentItemChanged.connect(self.save_state_tree_selection_changed)
+        self.save_state_and_inp_tree_selector.currentItemChanged.connect(self.save_state_and_inp_tree_selector_selection_changed)
         # self.save_state_and_inp_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
 
-        self.new_save_state_and_inp_tree.currentItemChanged.connect(self.new_save_state_tree_selection_changed)
-        self.new_save_state_and_inp_tree.itemChanged.connect(self.ss_or_inp_changed)
-        self.new_save_state_and_inp_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.new_save_state_and_inp_tree.customContextMenuRequested.connect(self.show_new_save_state_tree_context)
+        self.save_state_and_inp_tree_viewer.currentItemChanged.connect(self.save_state_and_inp_tree_viewer_selection_changed)
+        self.save_state_and_inp_tree_viewer.itemChanged.connect(self.ss_or_inp_changed)
+        self.save_state_and_inp_tree_viewer.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.save_state_and_inp_tree_viewer.customContextMenuRequested.connect(self.save_state_and_inp_tree_viewer_context)
 
 
     def setup_hiscore_panel(self) -> None:
@@ -363,7 +367,8 @@ class MainWindow(QMainWindow):
         self.add_split_button.clicked.connect(self.add_split_clicked)
         self.delete_split_button.clicked.connect(self.delete_split_clicked)
 
-    def setup_search_page_layout(self):
+    def setup_search_page_layout(self) -> None:
+        """Search page layout customization."""
         self.rom_search_container.setLayout(self.rom_search_panel)
 
         # self.rom_search_container.setFixedWidth(600)
@@ -394,7 +399,7 @@ class MainWindow(QMainWindow):
         self.rom_search_page.setLayout(self.rom_search_page_layout)
         self.rom_search_page.setFont(self.big_font)
 
-    def setup_search_page(self):
+    def setup_search_page(self) -> None:
         """Search Page widget customization."""
         self.rom_search_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.rom_search_tree.customContextMenuRequested.connect(self.show_rom_item_context)
@@ -435,12 +440,12 @@ class MainWindow(QMainWindow):
 
     @staticmethod
     def paint_clone_rom_item(item: QTreeWidgetItem) -> None:
-        """Paint the given item light grey. """
+        """Paint the given item light grey."""
         color = QColor(211, 211, 211, 127)
         brush = QBrush(color)
         item.setForeground(0, brush)
 
-    def create_rom_search_item(self, rom_description, rom_name, weight=3) -> tuple[QTreeWidgetItem, int]:
+    def create_rom_search_item(self, rom_description: str, rom_name: str, weight=3) -> tuple[QTreeWidgetItem, int]:
         """Create and return rom item, set tooltip to rom name, pain item if is clone."""
         item = QTreeWidgetItem([rom_description])
         item.setToolTip(0, rom_name)
@@ -491,7 +496,7 @@ class MainWindow(QMainWindow):
     def fill_hiscore_game_list(self) -> None:
         """Clear and refill Hi Score Game Tree, based on personal best info."""
         with QSignalBlocker(self.games_with_pb_tree):
-            self.games_with_pb_tree.clear()
+            self.games_with_pb_tree.clear() # Need this under signal blocker because selectionChanged will fire.
             for rom_description in self.core.pb_info:
                 QTreeWidgetItem(self.games_with_pb_tree, [rom_description])
 
@@ -501,11 +506,11 @@ class MainWindow(QMainWindow):
         Font size is configured on each item. Large for parent items, small for leaf items.
         Leaf items are made editable via flags.
         """
-        self.save_state_and_inp_tree.clear()
+        self.save_state_and_inp_tree_selector.clear()
 
         # Add path items.
         for mame_dir in self.core.mame_dirs:
-            mame_dir_item = QTreeWidgetItem(self.save_state_and_inp_tree, [str(mame_dir.path.name)])
+            mame_dir_item = QTreeWidgetItem(self.save_state_and_inp_tree_selector, [str(mame_dir.path.name)])
             mame_dir_item.setData(0, Qt.ItemDataRole.UserRole, str(mame_dir.path))
             mame_dir_item.setFont(0, self.big_font)
             save_states_container_item = QTreeWidgetItem(mame_dir_item, ['Save States'])
@@ -532,20 +537,22 @@ class MainWindow(QMainWindow):
                 #     save_state_item.setFont(0, self.small_font)
 
     def fill_inps(self, mame_dir: str) -> None:
-        self.new_save_state_and_inp_tree.setHeaderLabel('Input Files')
+        """Fill ss/inp tree viewer with contents of a given MAME directory's '/inp' folder."""
+        self.save_state_and_inp_tree_viewer.setHeaderLabel('Input Files')
         input_files = self.core.input_files.get(str(mame_dir))
         for file in input_files:
-            item = self.new_save_state_and_inp_tree.add_editable_item(file)
+            item = self.save_state_and_inp_tree_viewer.add_editable_item(file)
             # item = QTreeWidgetItem(self.new_save_state_and_inp_tree, [file])
             # item.setFlags(item.flags() | Qt.ItemFlag.ItemIsEditable)
             item.setFont(0, self.small_font)
 
     def fill_saves(self, mame_dir: str, rom_description: str) -> None:
-        self.new_save_state_and_inp_tree.setHeaderLabel('Save States')
+        """Fill ss/inp tree viewer with contents of a given MAME directory's '/sta' folder."""
+        self.save_state_and_inp_tree_viewer.setHeaderLabel('Save States')
 
         rom_name = self.core.descriptions_and_names[rom_description]
         for save_state in self.core.save_states[mame_dir][rom_name]:
-            save_state_item = self.new_save_state_and_inp_tree.add_editable_item(save_state.stem)
+            save_state_item = self.save_state_and_inp_tree_viewer.add_editable_item(save_state.stem)
             # save_state_item = QTreeWidgetItem(self.new_save_state_and_inp_tree, [save_state.stem])
             # save_state_item.setFlags(save_state_item.flags() | Qt.ItemFlag.ItemIsEditable)
             save_state_item.setFont(0, self.small_font)
@@ -567,7 +574,7 @@ class MainWindow(QMainWindow):
     def hi_score_tree_selection_changed(self) -> None:
         """Clear and refill 'splits list' and 'pb panel' based on currently selected item.
 
-        Split diffs are calculated and displayed.
+        Split diffs are calculated and displayed. PB/Splits tree columns have their width appropriately resized.
         """
         self.pb_fields_tree.clear()
         self.split_tree.clear()
@@ -665,6 +672,10 @@ class MainWindow(QMainWindow):
             self.games_with_pb_tree.takeTopLevelItem(game_row)
 
     def add_split_clicked(self) -> None:
+        """Add new split to split tree
+
+        User is prompted for split name. Duplicate names are disallowed. Recalculate diffs and open item editor.
+        """
         rom_description = self.games_with_pb_tree.currentItem().text(0)
         split_name, ok = QInputDialog.getText(self, 'User Input', 'Split Name', text='Placeholder')
         if split_name and ok:
@@ -684,6 +695,10 @@ class MainWindow(QMainWindow):
                 self.split_tree.editItem(new_item, 1)
 
     def delete_split_clicked(self) -> None:
+        """Remove split from split tree, in-memory datastructures, and database.
+
+        If available, a new item is selected. Diffs are recalculated.
+        """
         rom_description = self.games_with_pb_tree.currentItem().text(0)
         selected_split_item = self.split_tree.currentItem()
         if not selected_split_item:
@@ -711,7 +726,7 @@ class MainWindow(QMainWindow):
 
         Open the notes widget and change the title to reflect the currently selected item.
         If [rom_name].txt exists, copy data into the notes widget. Otherwise, create [rom_name].txt. Focus notes widget.
-        A reference is held to the notes widget to avoid it being automatically deleted. Cannot open multiple notes.
+        A reference is held to the notes widget to avoid it being garbage collected. Cannot open multiple notes.
         """
         rom_description = some_list.currentItem().text(0)
         rom_name = self.core.descriptions_and_names[rom_description]
@@ -755,14 +770,15 @@ class MainWindow(QMainWindow):
         """
         if path_item:
             mame_path = path_item.data(0, Qt.ItemDataRole.UserRole)
-            root = self.save_state_and_inp_tree.invisibleRootItem()
-            selected_dir = self.save_state_and_inp_tree.currentItem()
+            root = self.save_state_and_inp_tree_selector.invisibleRootItem()
+            selected_dir = self.save_state_and_inp_tree_selector.currentItem()
             root.removeChild(selected_dir)
 
+        # TODO Think there is a findItem() method or something that would make sense here.
         elif mame_path:
-            for _ in range(self.save_state_and_inp_tree.topLevelItemCount()):
-                if self.save_state_and_inp_tree.topLevelItem(_).text(0) == mame_path:
-                    self.save_state_and_inp_tree.takeTopLevelItem(_)
+            for _ in range(self.save_state_and_inp_tree_selector.topLevelItemCount()):
+                if self.save_state_and_inp_tree_selector.topLevelItem(_).text(0) == mame_path:
+                    self.save_state_and_inp_tree_selector.takeTopLevelItem(_)
                     QMessageBox.critical(self, 'Error',
                                          'Invalid MAME Directory.\nDirectory has been removed. Please update it.')
                     break
@@ -773,9 +789,9 @@ class MainWindow(QMainWindow):
     def open_ini_actioned_clicked(self) -> None:
         """Attempt to open the .ini file for the selected MAME directory.
 
-        If a .ini file does not exist, user is given the choice to create a new one.
+        If a .ini file does not exist, user is given the choice to create a new one. If invalid MAME dir, remove it.
         """
-        mame_dir_item = self.save_state_and_inp_tree.currentItem()
+        mame_dir_item = self.save_state_and_inp_tree_selector.currentItem()
         path_str = mame_dir_item.data(0, Qt.ItemDataRole.UserRole)
         mame_path = Path(path_str)
         if Path(path_str).is_dir():
@@ -801,12 +817,12 @@ class MainWindow(QMainWindow):
             return
         os.startfile(mame_dir)
 
-    def show_save_state_tree_context(self, position: QPoint) -> None:
+    def save_state_and_inp_tree_selector_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
 
         If no item is selected, no menu is created.
         """
-        tree_item = self.save_state_and_inp_tree.itemAt(position)
+        tree_item = self.save_state_and_inp_tree_selector.itemAt(position)
         if not tree_item:
             return
 
@@ -837,7 +853,7 @@ class MainWindow(QMainWindow):
                 rom_description = tree_item.text(0)
                 rom_name = self.core.descriptions_and_names[rom_description]
                 open_notes = QAction('Open Notes')
-                open_notes.triggered.connect(lambda: self.open_notes(self.save_state_and_inp_tree))
+                open_notes.triggered.connect(lambda: self.open_notes(self.save_state_and_inp_tree_selector))
                 menu.addAction(open_notes)
 
                 open_with_submenu = QMenu('Open with...')
@@ -869,18 +885,22 @@ class MainWindow(QMainWindow):
             #             lambda: self.run_rom(rom_name, play_back_input=True, input_file_name=input_file_name))
             #         sub_menu.addAction(run)
             #         menu.addMenu(sub_menu)
-        menu.exec(self.save_state_and_inp_tree.viewport().mapToGlobal(position))
+        menu.exec(self.save_state_and_inp_tree_selector.viewport().mapToGlobal(position))
 
-    def show_new_save_state_tree_context(self, position: QPoint):
+    def save_state_and_inp_tree_viewer_context(self, position: QPoint) -> None:
+        """Create custom context menu, connect slots, execute menu.
+
+        If no item is selected, no menu is created.
+        """
         menu = QMenu()
         delete = QAction('Delete')
         delete.triggered.connect(lambda: self.delete_ss_or_inp(tree_item))
         menu.addAction(delete)
-        tree_item = self.new_save_state_and_inp_tree.itemAt(position)
+        tree_item = self.save_state_and_inp_tree_viewer.itemAt(position)
         if not tree_item:
             return
 
-        if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Input Files':
+        if self.save_state_and_inp_tree_viewer.headerItem().text(0) == 'Input Files':
             input_file_name = tree_item.text(0)
             rom_name = input_file_name.split('_')[0]  # inp files created by program will have rom name at start.
 
@@ -893,11 +913,15 @@ class MainWindow(QMainWindow):
                 menu.addMenu(sub_menu)
 
 
-        menu.exec(self.new_save_state_and_inp_tree.viewport().mapToGlobal(position))
+        menu.exec(self.save_state_and_inp_tree_viewer.viewport().mapToGlobal(position))
 
-    def delete_ss_or_inp(self, tree_item: QTreeWidgetItem):
-        if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Input Files':
-            mame_dir_item = self.save_state_and_inp_tree.currentItem().parent()
+    def delete_ss_or_inp(self, tree_item: QTreeWidgetItem) -> None:
+        """Remove item, representing save state or input file, from tree and delete the corresponding file.
+
+        Invalid MAME directories are removed. Save state and input files have their in-memory representation updated.
+        """
+        if self.save_state_and_inp_tree_viewer.headerItem().text(0) == 'Input Files':
+            mame_dir_item = self.save_state_and_inp_tree_selector.currentItem().parent()
             mame_dir_str = mame_dir_item.data(0, Qt.ItemDataRole.UserRole)
             mame_dir = Path(mame_dir_str)
             if not mame_dir.is_dir():
@@ -911,8 +935,8 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.critical(self, 'Error', 'File does not exist.')
 
-        if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Save States':
-            rom_item = self.save_state_and_inp_tree.currentItem()
+        if self.save_state_and_inp_tree_viewer.headerItem().text(0) == 'Save States':
+            rom_item = self.save_state_and_inp_tree_selector.currentItem()
             rom_description = rom_item.text(0)
             rom_name = self.core.descriptions_and_names[rom_description]
             # category_item = direct_parent.parent()
@@ -930,8 +954,8 @@ class MainWindow(QMainWindow):
             else:
                 QMessageBox.critical(self, 'Error', 'File does not exist.')
 
-        item_index = self.new_save_state_and_inp_tree.indexOfTopLevelItem(tree_item)
-        self.new_save_state_and_inp_tree.takeTopLevelItem(item_index)
+        item_index = self.save_state_and_inp_tree_viewer.indexOfTopLevelItem(tree_item)
+        self.save_state_and_inp_tree_viewer.takeTopLevelItem(item_index)
         self.core.save_states = self.core.get_save_states()
         self.core.input_files = self.core.get_input_files()
 
@@ -979,7 +1003,7 @@ class MainWindow(QMainWindow):
         direct_parent.removeChild(leaf_item)
 
     def open_save_or_inp_in_explorer(self, category_item: QTreeWidgetItem) -> None:
-        """Opens a MAME directory's 'inp', and 'sta' folders in Windows explorer."""
+        """Opens a MAME directory's 'inp' or 'sta' folders in Windows explorer."""
         mame_dir = Path(category_item.parent().data(0, Qt.ItemDataRole.UserRole))
         if not mame_dir.is_dir():
             self.remove_invalid_mame_dir(mame_path=str(mame_dir))
@@ -1034,14 +1058,20 @@ class MainWindow(QMainWindow):
         menu.addMenu(open_with_inp_submenu)
         menu.exec(self.sender().mapToGlobal(position))
 
-    def show_info_container_context(self, position: QPoint):
+    def show_info_container_context(self, position: QPoint) -> None:
+        """Create custom context menu, connect slots, execute menu."""
         menu = QMenu()
         detach = QAction('Detach')
         detach.triggered.connect(self.detach_info_container)
         menu.addAction(detach)
         menu.exec(self.info_container.mapToGlobal(position))
 
-    def detach_info_container(self):
+    def detach_info_container(self) -> None:
+        """Detach widget which houses PB and split information.
+
+        First detach centers widget on MainWindow. Subsequent detachments will use previous coordinates.
+        Custom context menu is disabled while detached.
+        """
         main_geo = self.geometry()
         self.hiscore_page_layout.removeWidget(self.info_container)
         self.info_container.setWindowFlags(Qt.WindowType.Window)
@@ -1062,7 +1092,8 @@ class MainWindow(QMainWindow):
         self.info_container.show()
         self.info_container.customContextMenuRequested.disconnect(self.show_info_container_context)
 
-    def attach_info_container(self):
+    def attach_info_container(self) -> None:
+        """Re-attach widget which houses PB and split information."""
         self.info_container.setWindowFlags(Qt.WindowType.Widget)
         self.hiscore_page_layout.addWidget(self.info_container)
         self.info_container.show()
@@ -1086,7 +1117,6 @@ class MainWindow(QMainWindow):
 
         If the rom is hi2txt compatible, a snapshot is taken of current hi score tables.
         This function does not currently check for a roms existence before trying to run it. MAME errors used instead.
-        MAME is run in by spawning a subprocess. The subprocess is spawned in a separate thread to avoid blocking GUI.
         """
         # The action that triggered this function call. Its label has the correct MAME path.
         action = self.sender()
@@ -1108,7 +1138,7 @@ class MainWindow(QMainWindow):
                 check=True, encoding='utf-8', creationflags=subprocess.CREATE_NO_WINDOW)
             self.pre_hs_table = hi2txt_results.stdout
 
-        # TODO This may need to be a value error. Shouldn't ever have an invalid name. At least not caused by anything the end user can do via GUI.
+        # This occurs when input file name does not confirm to known schema.
         if rom_name not in list(self.core.descriptions_and_names.values()):
             QMessageBox.critical(self, 'Error', 'Input File cannot be played back without a valid rom.')
             rom_description = self.open_rom_for_inp_search()
@@ -1255,37 +1285,43 @@ class MainWindow(QMainWindow):
     # --------------------- #
     # Save State Page Slots #
     # --------------------- #
-    def new_save_state_tree_selection_changed(self, current_item: QTreeWidgetItem) -> None:
+    def save_state_and_inp_tree_viewer_selection_changed(self, current_item: QTreeWidgetItem) -> None:
+        """Capture current item text before it is edited, so it can be reverted if needed."""
         if current_item:
             self.save_state_page_text_before_editing = current_item.text(0)
 
-    def save_state_tree_selection_changed(self, current_item: QTreeWidgetItem) -> None:
-        """Used internally for renaming."""
-        self.new_save_state_and_inp_tree.clear()
-        self.new_save_state_and_inp_tree.setHeaderLabel('It Could Be Anything...Even an Empty List!')
-        self.new_save_state_and_inp_tree.blockSignals(True)
+    # TODO switch to context managed QSignalBlocker.
+    def save_state_and_inp_tree_selector_selection_changed(self, current_item: QTreeWidgetItem) -> None:
+        """Fill save state/input file viewer tree.
+
+        Header is changed based on what type of file is being added to viewer. Signals are blocked during filling.
+        """
+        self.save_state_and_inp_tree_viewer.clear()
+        self.save_state_and_inp_tree_viewer.setHeaderLabel('It Could Be Anything...Even an Empty List!')
+        self.save_state_and_inp_tree_viewer.blockSignals(True)
         if current_item.parent():
             if current_item.parent().text(0) == 'Save States':
                 self.fill_saves(f'{current_item.parent().parent().data(0, Qt.ItemDataRole.UserRole)}', current_item.text(0))
             elif current_item.text(0) == 'Input Files':
                 self.fill_inps(current_item.parent().data(0, Qt.ItemDataRole.UserRole))
-        self.new_save_state_and_inp_tree.blockSignals(False)
+        self.save_state_and_inp_tree_viewer.blockSignals(False)
 
     def ss_or_inp_changed(self, item_that_changed: QTreeWidgetItem) -> None:
         """Rename save state or input file corresponding to leaf item in tree.
 
-        If file name already in use, item has its text reverted and file is not renamed.
+        If file name already in use, revert item text and do not rename file. Update in-memory representations.
+        Block Signals while updating items.
         """
         # TODO Should probably be using the NotEmpty custom validator here. Would remove need to track text before editing.
         if not item_that_changed.text(0):
-            self.new_save_state_and_inp_tree.blockSignals(True)
+            self.save_state_and_inp_tree_viewer.blockSignals(True)
             item_that_changed.setText(0, self.save_state_page_text_before_editing)
-            self.new_save_state_and_inp_tree.blockSignals(False)
+            self.save_state_and_inp_tree_viewer.blockSignals(False)
             return
 
-        if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Input Files':
+        if self.save_state_and_inp_tree_viewer.headerItem().text(0) == 'Input Files':
             input_file_name = item_that_changed.text(0)
-            mame_dir_item = self.save_state_and_inp_tree.currentItem().parent()
+            mame_dir_item = self.save_state_and_inp_tree_selector.currentItem().parent()
             mame_dir_str = mame_dir_item.data(0, Qt.ItemDataRole.UserRole)
             mame_dir = Path(mame_dir_str)
             if not mame_dir.is_dir():
@@ -1300,25 +1336,25 @@ class MainWindow(QMainWindow):
                     old_input_file_path.rename(new_input_file_path)
                 except FileExistsError:
                     QMessageBox.critical(self, 'Error', 'Sorry, that name is already in use.')
-                    self.new_save_state_and_inp_tree.blockSignals(True)
+                    self.save_state_and_inp_tree_viewer.blockSignals(True)
                     item_that_changed.setText(0, self.save_state_page_text_before_editing)
-                    self.new_save_state_and_inp_tree.blockSignals(False)
+                    self.save_state_and_inp_tree_viewer.blockSignals(False)
                     return
                 self.save_state_page_text_before_editing = input_file_name
             else:
-                self.new_save_state_and_inp_tree.blockSignals(True)
+                self.save_state_and_inp_tree_viewer.blockSignals(True)
                 item_that_changed.setText(0, self.save_state_page_text_before_editing)
-                self.new_save_state_and_inp_tree.blockSignals(False)
+                self.save_state_and_inp_tree_viewer.blockSignals(False)
                 return
 
-        if self.new_save_state_and_inp_tree.headerItem().text(0) == 'Save States':
+        if self.save_state_and_inp_tree_viewer.headerItem().text(0) == 'Save States':
             save_state_name = item_that_changed.text(0)
-            rom_item = self.save_state_and_inp_tree.currentItem()
+            rom_item = self.save_state_and_inp_tree_selector.currentItem()
             rom_description = rom_item.text(0)
 
             rom_name = self.core.descriptions_and_names[rom_description]
 
-            mame_dir_item = self.save_state_and_inp_tree.currentItem().parent().parent()
+            mame_dir_item = self.save_state_and_inp_tree_selector.currentItem().parent().parent()
             mame_dir_str = mame_dir_item.data(0, Qt.ItemDataRole.UserRole)
 
             mame_dir = Path(mame_dir_str)
@@ -1333,9 +1369,9 @@ class MainWindow(QMainWindow):
                 old_save_state_path.rename(new_save_state_path)
             except FileExistsError:
                 QMessageBox.critical(self, 'Error', 'Sorry, that name is already in use.')
-                self.new_save_state_and_inp_tree.blockSignals(True)
+                self.save_state_and_inp_tree_viewer.blockSignals(True)
                 item_that_changed.setText(0, self.save_state_page_text_before_editing)
-                self.new_save_state_and_inp_tree.blockSignals(False)
+                self.save_state_and_inp_tree_viewer.blockSignals(False)
                 return
             # Have to set this to new save_state_name so multiple renames can take place without reselection.
             self.save_state_page_text_before_editing = save_state_name
@@ -1351,11 +1387,11 @@ class MainWindow(QMainWindow):
         # self.remove_invalid_mame_dir(mame_path=r'C:\Users\kazac\Downloads\mame')
         # self.save_state_and_inp_tree.hide()
 
-    def menu_button_2_clicked(self) -> None:
-        """Temporary, easily accessible, trigger for prototype methods."""
+    def export_to_csv(self) -> None:
+        """Export tables 'personal_bests' and 'splits' to csv file."""
         self.core.export_sqlite_to_csv('personal_bests', core.get_abs_path('./database_backups/pb.csv'))
         self.core.export_sqlite_to_csv('splits', core.get_abs_path('./database_backups/splits.csv'))
-        self.save_state_and_inp_tree.show()
+        self.save_state_and_inp_tree_selector.show()
 
     def add_path_button_clicked(self) -> None:
         """Prompt user for new MAME path and then, clear and refill save state tree.
@@ -1374,15 +1410,15 @@ class MainWindow(QMainWindow):
             self.core.save_mame_dirs()
             self.core.save_states = self.core.get_save_states()
             self.core.input_files = self.core.get_input_files()
-            self.save_state_and_inp_tree.blockSignals(True)
+            self.save_state_and_inp_tree_selector.blockSignals(True)
             self.fill_save_state_tree()
-            self.save_state_and_inp_tree.blockSignals(False)
+            self.save_state_and_inp_tree_selector.blockSignals(False)
             # print(f'New MAME path: {path}')
         # else:
         #     print('Cancel chosen')
 
     def scan_for_pbs(self) -> None:
-        """Scan for new personal bests and insert, or update, them into database.
+        """Scan for new personal bests and insert, or update, them in database.
 
         An indeterminate progress bar is displayed while scanner runs. It runs on its own thread to avoid blocking.
         The in-memory representation of the database is updated when the scan finishes and GUI reloads with new info.
@@ -1403,7 +1439,8 @@ class MainWindow(QMainWindow):
         self.fill_hiscore_game_list()
 
     # TODO Look into all the ways you can manipulate geometry.
-    def center(self):
+    def center(self) -> None:
+        """TODO Deprecated"""
         # Get the geometry of the main window including frames
         frame = self.frameGeometry()
         # Get the center point of the available screen geometry
@@ -1421,6 +1458,7 @@ def main(*, logging=False) -> None:
     """
     if logging:
         core.turn_on_logging()
+
     db = core.get_abs_path('./mame_states.db')
     db_schema = core.get_abs_path('./database_backups/mame_states_schema_v4.sql')
     db_roms_data = core.get_abs_path('./database_backups/roms.sql')
