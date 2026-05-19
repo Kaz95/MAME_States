@@ -887,18 +887,36 @@ class MainWindow(QMainWindow):
             #         menu.addMenu(sub_menu)
         menu.exec(self.save_state_and_inp_tree_selector.viewport().mapToGlobal(position))
 
+
+    def refresh_file_viewer(self, selector_tree_selection: QTreeWidgetItem):
+        self.core.save_states = self.core.get_save_states()
+        self.core.input_files = self.core.get_input_files()
+        self.save_state_and_inp_tree_selector_selection_changed(selector_tree_selection)
+
+
     def save_state_and_inp_tree_viewer_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
 
         If no item is selected, no menu is created.
         """
         menu = QMenu()
-        delete = QAction('Delete')
-        delete.triggered.connect(lambda: self.delete_ss_or_inp(tree_item))
-        menu.addAction(delete)
+        selector_tree_selections = self.save_state_and_inp_tree_selector.selectedItems()
+        if selector_tree_selections:
+            selector_tree_selection = selector_tree_selections[0]
+            if selector_tree_selection.parent():
+                if selector_tree_selection.parent().text(0) == 'Save States' or selector_tree_selection.text(0) == 'Input Files':
+                    refresh = QAction('Refresh')
+                    refresh.triggered.connect(lambda: self.refresh_file_viewer(selector_tree_selection))
+                    menu.addAction(refresh)
+
         tree_item = self.save_state_and_inp_tree_viewer.itemAt(position)
         if not tree_item:
+            menu.exec(self.save_state_and_inp_tree_viewer.viewport().mapToGlobal(position))
             return
+        else:
+            delete = QAction('Delete')
+            delete.triggered.connect(lambda: self.delete_ss_or_inp(tree_item))
+            menu.addAction(delete)
 
         if self.save_state_and_inp_tree_viewer.headerItem().text(0) == 'Input Files':
             input_file_name = tree_item.text(0)
