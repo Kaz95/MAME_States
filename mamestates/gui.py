@@ -1510,4 +1510,4 @@ def main(*, logging=False) -> None:
 
 
 if __name__ == '__main__':
-    main()
+    main(logging=True)
