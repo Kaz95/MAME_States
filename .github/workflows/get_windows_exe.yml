@@ -29,7 +29,7 @@ jobs:
       - name: Archive Bundle (Windows)
         shell: pwsh
         run: |
-          Compress-Archive -Path dist/gui -DestinationPath "MAMEStates-${{ github.ref_name }}-windows.zip"
+          Compress-Archive -Path dist/MAMEStates -DestinationPath "MAMEStates-${{ github.ref_name }}-windows.zip"
 
       - name: GH Release
         uses: softprops/action-gh-release@v2.5.0
