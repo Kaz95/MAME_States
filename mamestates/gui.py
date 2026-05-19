@@ -320,7 +320,7 @@ class MainWindow(QMainWindow):
             QTreeWidget.EditTrigger.AnyKeyPressed | QTreeWidget.EditTrigger.DoubleClicked)
         self.save_state_and_inp_tree_selector.setHeaderLabels(['MAME Folders'])
         self.save_state_and_inp_tree_selector.setColumnWidth(0, 1000)
-        self.save_state_and_inp_tree_selector.setItemDelegate(widgets.SaveStateNameInputValidator(self))
+        # self.save_state_and_inp_tree_selector.setItemDelegate(widgets.SaveStateNameInputValidator(self))
         self.save_state_and_inp_tree_selector.setTabKeyNavigation(True)
         self.save_state_and_inp_tree_selector.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.save_state_and_inp_tree_selector.customContextMenuRequested.connect(self.save_state_and_inp_tree_selector_context)
@@ -329,6 +329,7 @@ class MainWindow(QMainWindow):
         self.save_state_and_inp_tree_selector.currentItemChanged.connect(self.save_state_and_inp_tree_selector_selection_changed)
         # self.save_state_and_inp_tree.itemChanged.connect(self.save_state_tree_leaf_item_changed)
 
+        self.save_state_and_inp_tree_viewer.setItemDelegate(widgets.SaveStateNameInputValidator(self))
         self.save_state_and_inp_tree_viewer.currentItemChanged.connect(self.save_state_and_inp_tree_viewer_selection_changed)
         self.save_state_and_inp_tree_viewer.itemChanged.connect(self.ss_or_inp_changed)
         self.save_state_and_inp_tree_viewer.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
