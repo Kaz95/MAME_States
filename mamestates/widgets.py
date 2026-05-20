@@ -126,7 +126,6 @@ class PBScannerThread(QThread):
     def __init__(self, mame_dirs: list[core.MAMEDir]) -> None:
         super().__init__()
         self.mame_dirs = mame_dirs
-        print(self.mame_dirs)
 
     def run(self) -> None:
         """Override and extend run function to scan for new personal bests. Emit signal when finished."""

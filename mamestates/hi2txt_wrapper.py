@@ -57,7 +57,6 @@ def _get_hs_tables(hi2txt_compatible_hi_scores: dict[str, list[Path]]) -> dict[s
         hi2txt_tables[mame_dir] = {}
         hiscore_files = hi2txt_compatible_hi_scores[mame_dir]
         for file in hiscore_files:
-            print(f'Score is: {file}')
             results = subprocess.run([core.get_abs_path(r'.\hi2txt\hi2txt.exe'), '-r', f'{file}'],
                                      cwd=core.get_abs_path(r'.\hi2txt'), capture_output=True, text=True,
                                      check=True, encoding='utf-8', creationflags=subprocess.CREATE_NO_WINDOW)
@@ -90,8 +89,6 @@ def get_new_pb(old_raw_table: str, new_raw_table: str) -> dict[str, str] | Hi2Tx
     """Compare two raw hi2txt tables to look for new, possible, personal best."""
     old_table = _format_table(old_raw_table)
     new_table = _format_table(new_raw_table)
-    pprint.pp(old_table)
-    pprint.pp(new_table)
     old_columns = old_table['col']
     new_columns = new_table['col']
     old_leaderboard = old_table.get('name')

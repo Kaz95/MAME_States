@@ -738,7 +738,6 @@ class MainWindow(QMainWindow):
 
         notes_file = Path('./notes') / (rom_name + '.txt')
         notes_file = core.get_abs_path(notes_file)
-        print(notes_file.resolve())
 
         if not notes_file.is_file():
             notes_file.touch()
@@ -762,7 +761,6 @@ class MainWindow(QMainWindow):
             # subprocess.Popen(mame_exe, cwd=rf'{mame_dir}')
         else:
             self.remove_invalid_mame_dir(mame_path=mame_path)
-            print(f'File {mame_exe} not found')
 
 
     def remove_invalid_mame_dir(self, *, mame_path: str | None = None, path_item: QTreeWidgetItem | None = None) -> None:
@@ -1149,7 +1147,6 @@ class MainWindow(QMainWindow):
 
         hiscore_file = Path(mame_dir) / 'hiscore' / (rom_name + '.hi')
         hi2txt_compatible = hi2txt_wrapper.has_xml(rom_name)
-        print(core.get_abs_path(r'./hi2txt/hi2txt.exe'))
         if hi2txt_compatible:
             hi2txt_results = subprocess.run(
                 [core.get_abs_path(r'./hi2txt/hi2txt.exe').resolve(), '-r', f'{hiscore_file}'],
@@ -1168,7 +1165,6 @@ class MainWindow(QMainWindow):
         self.mame_thread = widgets.MAMEProcess(Path(mame_dir), self.terminal_output_box, rom_name, record_input=record_input, playback_input=play_back_input, input_file_name=input_file_name)
         self.mame_thread.finished.connect(self.rom_done)
 
-        print(f'Running {rom_name}, from {action.text()}')
 
     def rom_done(self) -> None:
         """Perform actions after rom finishes running.
@@ -1213,7 +1209,6 @@ class MainWindow(QMainWindow):
 
         else:
             new_pb = hi2txt_wrapper._get_new_pbs(test_dic, self.core.cursor)
-            pprint.pp(new_pb)
             if new_pb:
                 response = QMessageBox.question(self, 'New PB Detected!',
                                                 f'A new personal best has been detected\n{new_pb}\nWould you like to add new PB?')
@@ -1432,9 +1427,7 @@ class MainWindow(QMainWindow):
             self.save_state_and_inp_tree_selector.blockSignals(True)
             self.fill_save_state_tree()
             self.save_state_and_inp_tree_selector.blockSignals(False)
-            # print(f'New MAME path: {path}')
-        # else:
-        #     print('Cancel chosen')
+
 
     def scan_for_pbs(self) -> None:
         """Scan for new personal bests and insert, or update, them in database.
@@ -1481,8 +1474,6 @@ def main(*, logging=False) -> None:
     db = core.get_abs_path('./mame_states.db')
     db_schema = core.get_abs_path('./database_backups/mame_states_schema_v4.sql')
     db_roms_data = core.get_abs_path('./database_backups/roms.sql')
-    print(db_schema)
-    print(db_roms_data)
     if not db.is_file():
         with sqlite3.connect(db) as connection:
             with open(db_schema, 'r') as schema_file:
@@ -1492,7 +1483,6 @@ def main(*, logging=False) -> None:
 
             with open(db_roms_data, 'r', encoding='utf-8') as roms_data:
                 data = roms_data.read()
-                pprint.pp(data)
                 connection.executescript(data)
                 connection.commit()
 
