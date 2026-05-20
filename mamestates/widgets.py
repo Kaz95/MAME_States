@@ -7,7 +7,8 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, QSize, QProcess, QModelIndex, QLocale, QSignalBlocker
+from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, QSize, QProcess, QModelIndex, QLocale, QSignalBlocker, \
+    QPoint
 from PyQt6.QtGui import QRegularExpressionValidator, QCloseEvent, QColor, QIntValidator, QAction, QValidator
 from PyQt6.QtWidgets import QLabel, QLineEdit, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QTabWidget, QDialogButtonBox, \
@@ -25,6 +26,7 @@ class MAMEProcess(QProcess):
     This class inherits most of its behavior from its parent class, while extending its functionality.
     Used when launching any type of MAME process. Stdout and stderr are piped to the main process in real time.
     """
+
     def __init__(self, mame_dir: Path, text_box: QTextEdit, rom_name: str | None = None, *, record_input: bool = False,
                  playback_input: bool = False, input_file_name: str | None = None):
         """If no flags are 'True' during init, the default action is to run the mame.exe file in the given mame_dir."""
@@ -45,7 +47,6 @@ class MAMEProcess(QProcess):
         self.readyReadStandardOutput.connect(self.handle_stdout)
         self.readyReadStandardError.connect(self.handle_stderr)
         self.finished.connect(self.process_finished)
-
 
         if self.playback_input is True and self.record_input is True:
             raise ValueError('Record/Playback are mutually exclusive.')
@@ -176,17 +177,24 @@ class ProgressBarWidget(QDialog):
 #   Save State Page  #
 ######################
 class SaveStateInputFileTree(QTreeWidget):
+    """Subclass and extend the QTreeWidget class of the PyQt6.QtWidgets module.
+
+    This class inherits most of its behavior from its parent class, while extending its functionality.
+    Custom tree for input and save states. Tree is editable and preserves the order of save states.
+    """
+
     def __init__(self, mcore: core.MAMEStatesCore, ss_inp_tree: QTreeWidget):
         super().__init__()
         self.core = mcore
         self.ss_inp_tree: QTreeWidget = ss_inp_tree
         self.last_row: int | None = None
-        """The previously selected row. Used internally to track split movement."""
+        """The previously selected row. Used internally to track save movement."""
         self.setDragDropMode(QTreeWidget.DragDropMode.InternalMove)
         self.itemPressed.connect(self.item_pressed)
 
     # TODO Consider checking for empty string on col 1. Maybe raise value error. Blank item saved to DB == Bad.
-    def add_editable_item(self, col1):
+    def add_editable_item(self, col1: str):
+        """Add a new editable item to the tree, while blocking signals."""
         with QSignalBlocker(self):
             item = QTreeWidgetItem(self, [col1])
             # Allow editing for all columns in this row
@@ -195,10 +203,11 @@ class SaveStateInputFileTree(QTreeWidget):
             return item
 
     def item_pressed(self, item: QTreeWidgetItem, column: int) -> None:
-        """Used internally to preserve split order."""
+        """Used internally to preserve save order."""
         self.last_row = self.indexOfTopLevelItem(item)
 
     def dropEvent(self, event):
+        """Extend method to handle preservation of save state order."""
         item_that_moved = self.currentItem()  # Get items before drop completes
         super().dropEvent(event)
         if self.headerItem().text(0) == 'Save States':
@@ -230,10 +239,6 @@ class SaveStateInputFileTree(QTreeWidget):
         #     split = splits.pop(old_index)
         #     splits.insert(new_index, split)
         # self.core.save_pb_to_database()
-
-
-
-
 
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
@@ -338,7 +343,14 @@ class RomSearchDialog(QDialog):
     def sizeHint(self):
         return QSize(800, 800)
 
+
 class DetachableWidget(QWidget):
+    """Subclass and extend QDialog class of the PyQt6.QtWidgets module.
+
+    This class inherits most of its behavior from its parent class , while extending its functionality.
+    A container widget, which can get easily detached and automatically reattached to the MainWindow when closed.
+    """
+
     def __init__(self, parent):
         super().__init__(parent)
         self.main_window = parent
@@ -347,17 +359,16 @@ class DetachableWidget(QWidget):
         self.has_been_moved = False
         self.saved_position = None
 
-
     def closeEvent(self, event: QCloseEvent):
         if self.isWindow():
-            # 1. Capture the window's last known desktop position
+            # Capture the window's last known desktop position
             self.saved_position = self.pos()
             self.has_been_moved = True
 
-            # 2. Intercept the standard kill execution
+            # Intercept the standard kill execution
             event.ignore()
 
-            # 3. Fire the return pipeline on the parent container
+            # Fire the return pipeline on the parent container
             self.main_window.attach_info_container()
         else:
             event.accept()
@@ -394,15 +405,16 @@ class NotesWindow(QWidget):
             notes.write(self.text_edit.toPlainText())
         event.accept()
 
+
 class NotEmptyValidator(QValidator):
     def validate(self, text, pos):
         # Strip whitespace to ensure it's not just spaces
         if text.strip():
             return QValidator.State.Acceptable, text, pos
         else:
-            # Return Intermediate instead of Invalid to allow
-            # temporary emptiness while editing
+            # Return Intermediate instead of Invalid to allow temporary emptiness while editing
             return QValidator.State.Intermediate, text, pos
+
 
 class PBSplitTreeDelegate(QStyledItemDelegate):
     """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.
@@ -412,9 +424,9 @@ class PBSplitTreeDelegate(QStyledItemDelegate):
     Color positive and negative numbers respectively in the 'diff' column. Cast values to and fro strings/ints as
     needed.
     """
+
     # def __init__(self, parent=None):
     #     super().__init__(parent)
-
 
     def createEditor(self, parent, option, index):
         if self.parent().usage == 'pb':
@@ -489,10 +501,8 @@ class PBSplitTreeWidget(QTreeWidget):
         self.last_row: int | None = None
         """The previously selected row. Used internally to track split movement."""
 
-
         self.add_pb_field = QAction('Add Field')
         self.delete_pb_field = QAction('Delete Field')
-
 
         # TODO Use enum
         # TODO Delegate should be used across entire tree. Should be fine as its behavior is customized internally.
@@ -520,15 +530,13 @@ class PBSplitTreeWidget(QTreeWidget):
         header.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         header.customContextMenuRequested.connect(self.show_header_menu)
 
-
-
         self.itemPressed.connect(self.item_pressed)
 
         # QueuedConnection allows editor to be reopened after the close event finishes.
         self.itemChanged.connect(self.item_changed, Qt.ConnectionType.QueuedConnection)
 
-
     def add_pb_field_triggered(self) -> None:
+        """Prompt user for pb field name and add item to tree with name as first column. Repeat names are disallowed."""
         rom_description = self.hs_game_tree.currentItem().text(0)
         field_name, ok = QInputDialog.getText(self, 'User Input', 'Field Name', text='Placeholder')
         if field_name and ok:
@@ -542,6 +550,7 @@ class PBSplitTreeWidget(QTreeWidget):
                 self.editItem(new_item, 1)
 
     def delete_pb_field_triggered(self) -> None:
+        """Remove the selected item and the corresponding field from in-memory data structures and database."""
         rom_description = self.hs_game_tree.currentItem().text(0)
         item_to_be_deleted = self.currentItem()
         if item_to_be_deleted.text(0) == 'Hi Score':
@@ -560,8 +569,8 @@ class PBSplitTreeWidget(QTreeWidget):
         elif item_below:
             self.setCurrentItem(item_below)
 
-
-    def show_header_menu(self, pos):
+    def show_header_menu(self, pos: QPoint) -> None:
+        """Custom context menu for tree header."""
         column_index = self.header().logicalIndexAt(pos)
         menu = QMenu(self)
         rename_action = menu.addAction(f"Rename '{self.headerItem().text(column_index)}' Column ")
@@ -572,7 +581,8 @@ class PBSplitTreeWidget(QTreeWidget):
             if ok and new_text:
                 self.headerItem().setText(column_index, new_text)
 
-    def show_body_menu(self, pos):
+    def show_body_menu(self, pos: QPoint):
+        """Custom context menu for tree body."""
         tree_item = self.itemAt(pos)
         menu = QMenu(self)
         menu.addAction(self.add_pb_field)
@@ -581,11 +591,9 @@ class PBSplitTreeWidget(QTreeWidget):
 
         menu.exec(self.viewport().mapToGlobal(pos))
 
-
-
-
     # TODO Consider checking for empty string on col 1. Maybe raise value error. Blank item saved to DB == Bad.
-    def add_editable_item(self, col1, col2):
+    def add_editable_item(self, col1: str, col2: str | int) -> QTreeWidgetItem:
+        """Add new, editable item, to tree. Block signals while adding item."""
         with QSignalBlocker(self):
             item = QTreeWidgetItem(self)
             item.setData(0, Qt.ItemDataRole.DisplayRole, col1)
@@ -597,6 +605,7 @@ class PBSplitTreeWidget(QTreeWidget):
             return item
 
     def dropEvent(self, event):
+        """Extend drop event to mirror item position changes to in-memory data structures and database."""
         item_that_moved = self.currentItem()  # Get items before drop completes
         super().dropEvent(event)
         hs_game_item = self.hs_game_tree.currentItem()
@@ -611,7 +620,15 @@ class PBSplitTreeWidget(QTreeWidget):
         """Used internally to preserve split order."""
         self.last_row = self.indexOfTopLevelItem(item)
 
-    def item_changed(self, item: QTreeWidgetItem, column: int):
+    def item_changed(self, item: QTreeWidgetItem, column: int) -> None:
+        """Mirror editor changes to in-memory data structures and database.
+
+        PB and Split trees have different behavior. PB Tree will mirror changes without any input validation.
+        PB Tree does not allow altering field name after creation, and does not care if values are repeated.
+        Split Tree allows split names as well as split values to be altered. Repeat split names are disallowed.
+        Blank split names are also disallowed. If either is detected, text is reset to original value.
+        If split value changes, diff column recalculates.
+        """
         if self.usage == 'pb':
             rom_description = self.hs_game_tree.currentItem().text(0)
             field_name = item.text(0)
@@ -655,6 +672,7 @@ class PBSplitTreeWidget(QTreeWidget):
                 self.add_diffs(splits)
                 # Update score
 
+            # TODO No idea why I included this dead path? Maybe it was blocking an error at one point?
             else:
                 # Out of range
                 pass
