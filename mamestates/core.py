@@ -1,6 +1,6 @@
 """MAMEStates core mamestates
 
-This module encompasses the static functions used by the MAMEStates application.
+This module encompasses the core logic used by the MAMEStates application.
 """
 import csv
 import json
@@ -98,7 +98,7 @@ def turn_on_logging() -> None:
 
 
 def get_abs_path(relative_path: str | Path) -> Path:
-    """ Get absolute path to resource, works for dev and for PyInstaller """
+    """Get absolute path to resource, works for dev and for PyInstaller """
     # Get the bundle directory; fallback to the script's parent directory
     base_path = Path(getattr(sys, '_MEIPASS', Path(__file__).parent.parent))
     return base_path / relative_path
@@ -236,18 +236,20 @@ class MAMEStatesCore:
         self.cursor.execute(sql_statement, (mame_path,))
         self.connection.commit()
 
-    def get_input_files(self) -> dict[str, list[str]]:
-        """Retrieve and return input file names, for each path in the mame_dirs list. File extensions are stripped."""
-        all_input_files = {}
+    def remove_invalid_mame_dir(self, mame_path: str) -> None:
+        """Remove MAME directory and all related info(saves, inps, ect) from in-memory datastructures and DB"""
         for mame_dir in self.mame_dirs:
-            input_file_dir = mame_dir.path / 'inp'
-            if input_file_dir.is_dir():
-                all_input_files[str(mame_dir.path)] = [input_file.stem for input_file in input_file_dir.iterdir()]
-        return all_input_files
+            if mame_path == str(mame_dir.path):
+                self.mame_dirs.remove(mame_dir)
+        del self.save_states[mame_path]
+        del self.input_files[mame_path]
+        self._delete_mame_dir(mame_path)
 
-    ###############
-    # Save States #
-    ###############
+
+
+    #############################
+    # Save States & Input Files #
+    #############################
     @staticmethod
     def _get_roms_with_saves(mame_dir: Path) -> list[str]:
         """Create and return a list of roms that have a save folder in the given MAME file path"""
@@ -279,9 +281,18 @@ class MAMEStatesCore:
 
         return all_save_state_paths
 
-    ##################
-    # Personal Bests #
-    ##################
+    def get_input_files(self) -> dict[str, list[str]]:
+        """Retrieve and return input file names, for each path in the mame_dirs list. File extensions are stripped."""
+        all_input_files = {}
+        for mame_dir in self.mame_dirs:
+            input_file_dir = mame_dir.path / 'inp'
+            if input_file_dir.is_dir():
+                all_input_files[str(mame_dir.path)] = [input_file.stem for input_file in input_file_dir.iterdir()]
+        return all_input_files
+
+    ###########################
+    # Personal Bests & Splits #
+    ###########################
     def get_personal_bests(self) -> PersonalBests:
         """Load, and format, all personal best information from the database. Keyed to rom description."""
         pb_info = {}
@@ -394,14 +405,3 @@ class MAMEStatesCore:
             writer = csv.writer(f)
             writer.writerow(headers)
             writer.writerows(self.cursor)  # Write data rows directly from cursor
-
-
-
-    def new_remove_invalid_mame_dir(self, mame_path: str) -> None:
-        """Remove MAME directory and all related info(saves, inps, ect) from in-memory datastructures and DB"""
-        for mame_dir in self.mame_dirs:
-            if mame_path == str(mame_dir.path):
-                self.mame_dirs.remove(mame_dir)
-        del self.save_states[mame_path]
-        del self.input_files[mame_path]
-        self._delete_mame_dir(mame_path)
