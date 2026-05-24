@@ -1341,6 +1341,18 @@ class MainWindow(QMainWindow):
         self.core.pb_info = self.core.get_personal_bests()
         self.fill_hiscore_game_list()
 
+    # TODO Look into all the ways you can manipulate geometry.
+    def center(self) -> None:
+        """TODO Deprecated"""
+        # Get the geometry of the main window including frames
+        frame = self.frameGeometry()
+        # Get the center point of the available screen geometry
+        center_of_screen = self.screen().availableGeometry().center()
+        # Move the rectangle's center to the screen's center
+        frame.moveCenter(center_of_screen)
+        # Move the window's top-left to the rectangle's top-left
+        self.move(frame.topLeft())
+
 def main(*, logging=False) -> None:
     """MAMEStates program entry point.
 

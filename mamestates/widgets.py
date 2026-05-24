@@ -7,12 +7,12 @@ import sqlite3
 from datetime import datetime
 from pathlib import Path
 
-from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, QSize, QProcess, QModelIndex, QLocale, QSignalBlocker, \
+from PyQt6.QtCore import Qt, QEvent, QRegularExpression, QThread, QSize, QProcess, QLocale, QSignalBlocker, \
     QPoint
 from PyQt6.QtGui import QRegularExpressionValidator, QCloseEvent, QColor, QIntValidator, QAction, QValidator
 from PyQt6.QtWidgets import QLabel, QLineEdit, QHBoxLayout, QWidget, QStyledItemDelegate, QTextEdit, \
     QVBoxLayout, QPushButton, QDialog, QProgressBar, QTabWidget, QDialogButtonBox, \
-    QTreeWidget, QMenu, QInputDialog, QTreeWidgetItem, QStyleOptionViewItem, QMessageBox, QMainWindow
+    QTreeWidget, QMenu, QInputDialog, QTreeWidgetItem, QMessageBox
 
 import core
 import hi2txt_wrapper
@@ -101,14 +101,14 @@ class MAMEProcess(QProcess):
 
     def handle_stdout(self) -> None:
         """Decode stdout and append to apps 'terminal'."""
-        data = self.readAllStandardOutput()
-        stdout = data.data().decode()
+        raw_stdout = self.readAllStandardOutput()
+        stdout = raw_stdout.data().decode()
         self.text_box.append(stdout)
 
     def handle_stderr(self) -> None:
         """Decode stderr and append to apps 'terminal'."""
-        data = self.readAllStandardError()
-        stderr = data.data().decode()
+        raw_stderr = self.readAllStandardError()
+        stderr = raw_stderr.data().decode()
         self.text_box.append(f"Error: {stderr}")
 
     def process_finished(self) -> None:
@@ -151,24 +151,23 @@ class ProgressBarWidget(QDialog):
         """An indeterminate progress bar. Pulses."""
 
         self.progress_bar.setRange(0, 0)
-        # self.progress.setMinimumWidth(400)
 
         self.label = QLabel('Scanning for new PBs...')
         """Dialog label."""
+
         self.label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         layout = QVBoxLayout()
         """Top level layout."""
 
-        p_layout = QHBoxLayout()
-        """Progress bar container widget."""
+        progress_bar_layout = QHBoxLayout()
 
-        p_layout.addStretch()
-        p_layout.addWidget(self.progress_bar)
-        p_layout.addStretch()
+        progress_bar_layout.addStretch()
+        progress_bar_layout.addWidget(self.progress_bar)
+        progress_bar_layout.addStretch()
 
         layout.addWidget(self.label)
-        layout.addLayout(p_layout)
+        layout.addLayout(progress_bar_layout)
         self.setLayout(layout)
 
 
@@ -182,12 +181,14 @@ class SaveStateInputFileTree(QTreeWidget):
     Custom tree for input and save states. Tree is editable and preserves the order of save states.
     """
 
-    def __init__(self, mcore: core.MAMEStatesCore, ss_inp_tree: QTreeWidget):
+    def __init__(self, mame_states_core: core.MAMEStatesCore, save_state_and_input_selector: QTreeWidget):
         super().__init__()
-        self.core = mcore
-        self.ss_inp_tree: QTreeWidget = ss_inp_tree
+        self.core = mame_states_core
+        self.save_state_and_input_selector: QTreeWidget = save_state_and_input_selector
+
         self.last_row: int | None = None
         """The previously selected row. Used internally to track save movement."""
+
         self.setDragDropMode(QTreeWidget.DragDropMode.InternalMove)
         self.itemPressed.connect(self.item_pressed)
 
@@ -196,7 +197,6 @@ class SaveStateInputFileTree(QTreeWidget):
         """Add a new editable item to the tree, while blocking signals."""
         with QSignalBlocker(self):
             item = QTreeWidgetItem(self, [col1])
-            # Allow editing for all columns in this row
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsDropEnabled | Qt.ItemFlag.ItemIsEditable)
             self.addTopLevelItem(item)
             return item
@@ -210,22 +210,17 @@ class SaveStateInputFileTree(QTreeWidget):
         item_that_moved = self.currentItem()  # Get items before drop completes
         super().dropEvent(event)
         if self.headerItem().text(0) == 'Save States':
-            rom_item = self.ss_inp_tree.currentItem()
+            rom_item = self.save_state_and_input_selector.currentItem()
             rom_description = rom_item.text(0)
             rom_name = self.core.descriptions_and_names[rom_description]
             mame_dir_item = rom_item.parent().parent()
             mame_dir = mame_dir_item.data(0, Qt.ItemDataRole.UserRole)
             if item_that_moved:
                 self.update_save_order(rom_name, mame_dir, self.last_row, self.indexOfTopLevelItem(item_that_moved))
-                # Update ss order
-                # self.update_split_order(rom_description, self.last_row, self.indexOfTopLevelItem(item_that_moved))
-                # splits = self.core.pb_info[rom_description].splits
-                # self.add_diffs(splits)
                 self.last_row = self.indexOfTopLevelItem(item_that_moved)
 
     def update_save_order(self, rom_name: str, mame_dir: str, old_index: int, new_index: int) -> None:
         """Mirror internal list changes to the in-memory representation. Save to database."""
-
         save_states = self.core.save_states[mame_dir][rom_name]
         if not (len(save_states) - 1) < old_index:
             split = save_states.pop(old_index)
@@ -233,12 +228,6 @@ class SaveStateInputFileTree(QTreeWidget):
         for file in save_states:
             file_index = save_states.index(file)
             os.utime(file, (file_index, file_index))
-        # splits = self.core.pb_info[rom_description].splits
-        # if not (len(splits) - 1) < old_index:
-        #     split = splits.pop(old_index)
-        #     splits.insert(new_index, split)
-        # self.core.save_pb_to_database()
-
 
 class SaveStateNameInputValidator(QStyledItemDelegate):
     """Subclass and extend the QStyledItemDelegate class of the PyQt6.QtWidgets module.
@@ -423,10 +412,6 @@ class PBSplitTreeDelegate(QStyledItemDelegate):
     Color positive and negative numbers respectively in the 'diff' column. Cast values to and fro strings/ints as
     needed.
     """
-
-    # def __init__(self, parent=None):
-    #     super().__init__(parent)
-
     def createEditor(self, parent, option, index):
         if self.parent().usage == 'pb':
             if index.column() == 1:
@@ -486,17 +471,16 @@ class PBSplitTreeWidget(QTreeWidget):
     When used for PBs, internal movement is not active, list order is static.
     """
 
-    def __init__(self, mcore: core.MAMEStatesCore, hs_game_tree: QTreeWidget, usage):
+    def __init__(self, mame_states_core: core.MAMEStatesCore, games_with_pb: QTreeWidget, usage):
         """ The StageSplitListWidget subclass inherits most of its behavior from, and extends,
         its parent class QListWidget.
 
         The initialization process customizes the widget.
         """
         super().__init__()
-        # pass
         self.usage = usage
-        self.core = mcore
-        self.hs_game_tree: QTreeWidget = hs_game_tree
+        self.core = mame_states_core
+        self.games_with_pb: QTreeWidget = games_with_pb
         self.last_row: int | None = None
         """The previously selected row. Used internally to track split movement."""
 
@@ -536,7 +520,7 @@ class PBSplitTreeWidget(QTreeWidget):
 
     def add_pb_field_triggered(self) -> None:
         """Prompt user for pb field name and add item to tree with name as first column. Repeat names are disallowed."""
-        rom_description = self.hs_game_tree.currentItem().text(0)
+        rom_description = self.games_with_pb.currentItem().text(0)
         field_name, ok = QInputDialog.getText(self, 'User Input', 'Field Name', text='Placeholder')
         if field_name and ok:
             other_fields = self.core.pb_info[rom_description].other_fields
@@ -550,7 +534,7 @@ class PBSplitTreeWidget(QTreeWidget):
 
     def delete_pb_field_triggered(self) -> None:
         """Remove the selected item and the corresponding field from in-memory data structures and database."""
-        rom_description = self.hs_game_tree.currentItem().text(0)
+        rom_description = self.games_with_pb.currentItem().text(0)
         item_to_be_deleted = self.currentItem()
         if item_to_be_deleted.text(0) == 'Hi Score':
             QMessageBox.critical(self, 'Error', 'Field Required.')
@@ -597,8 +581,6 @@ class PBSplitTreeWidget(QTreeWidget):
             item = QTreeWidgetItem(self)
             item.setData(0, Qt.ItemDataRole.DisplayRole, col1)
             item.setData(1, Qt.ItemDataRole.DisplayRole, col2)
-
-            # Allow editing for all columns in this row
             item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsDropEnabled | Qt.ItemFlag.ItemIsEditable)
             self.addTopLevelItem(item)
             return item
@@ -607,7 +589,7 @@ class PBSplitTreeWidget(QTreeWidget):
         """Extend drop event to mirror item position changes to in-memory data structures and database."""
         item_that_moved = self.currentItem()  # Get items before drop completes
         super().dropEvent(event)
-        hs_game_item = self.hs_game_tree.currentItem()
+        hs_game_item = self.games_with_pb.currentItem()
         rom_description = hs_game_item.text(0)
         if item_that_moved:
             self.update_split_order(rom_description, self.last_row, self.indexOfTopLevelItem(item_that_moved))
@@ -629,7 +611,7 @@ class PBSplitTreeWidget(QTreeWidget):
         If split value changes, diff column recalculates.
         """
         if self.usage == 'pb':
-            rom_description = self.hs_game_tree.currentItem().text(0)
+            rom_description = self.games_with_pb.currentItem().text(0)
             field_name = item.text(0)
             if field_name == 'Hi Score':
                 self.core.pb_info[rom_description].hiscore = int(item.text(column))
@@ -640,7 +622,7 @@ class PBSplitTreeWidget(QTreeWidget):
 
         else:
             item_index = self.indexOfTopLevelItem(item)
-            rom_description = self.hs_game_tree.currentItem().text(0)
+            rom_description = self.games_with_pb.currentItem().text(0)
             old_label = self.core.pb_info[rom_description].splits[item_index].label
             if column == 0:
                 split_names = [split.label for split in self.core.pb_info[rom_description].splits]
@@ -661,7 +643,6 @@ class PBSplitTreeWidget(QTreeWidget):
                 self.core.pb_info[rom_description].splits[item_index].label = item.text(column)
                 self.core.delete_split(rom_description, old_label)
                 self.core.save_pb_to_database()
-                # update label
 
             elif column == 1:
                 self.core.pb_info[rom_description].splits[item_index].score = int(item.text(column))
@@ -669,7 +650,6 @@ class PBSplitTreeWidget(QTreeWidget):
                 self.core.save_pb_to_database()
                 splits = self.core.pb_info[rom_description].splits
                 self.add_diffs(splits)
-                # Update score
 
             # TODO No idea why I included this dead path? Maybe it was blocking an error at one point?
             else:

@@ -148,7 +148,7 @@ def _parse_leaderboard_lines(leaderboard_lines: list, default_table: dict, colum
                 return pb
 
 
-def _get_new_pbs(hi2txt_tables: dict[str, dict[str, str]], cursor: sqlite3.Cursor) -> core.PersonalBests:
+def get_new_pbs(hi2txt_tables: dict[str, dict[str, str]], cursor: sqlite3.Cursor) -> core.PersonalBests:
     """Scan for new, possible, personal bests. Compares current Hi Score tables to game defaults."""
     new_pbs = {}
     for mame_dir in hi2txt_tables:
@@ -206,7 +206,7 @@ def save_pb(new_pb: dict[str, str], rom_name: str, connection: sqlite3.Connectio
     connection.commit()
 
 
-def _save_pbs(new_pbs: core.PersonalBests, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
+def save_pbs(new_pbs: core.PersonalBests, connection: sqlite3.Connection, cursor: sqlite3.Cursor) -> None:
     """Insert or update new PB entries into database, if new PB has a higher score."""
     for rom_name in new_pbs:
         pb = new_pbs[rom_name]
@@ -225,5 +225,5 @@ def scan_for_pb(connection: sqlite3.Connection, cursor: sqlite3.Cursor, mame_dir
     """Scan hi score tables, parse for possible PB entries and insert or update PB table in database."""
     hi_scores = _get_games_with_hs(mame_dirs)
     hi2txt_tables = _get_hs_tables(hi_scores)
-    new_pbs = _get_new_pbs(hi2txt_tables, cursor)
-    _save_pbs(new_pbs, connection, cursor)
+    new_pbs = get_new_pbs(hi2txt_tables, cursor)
+    save_pbs(new_pbs, connection, cursor)
