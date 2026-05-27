@@ -2,8 +2,11 @@
 
 This module contains the graphical user interface for the MAMEStates application.
 """
+import configparser
+import io
 import os
 import pprint
+import shutil
 import sqlite3
 import subprocess
 from pathlib import Path
@@ -1063,12 +1066,63 @@ class MainWindow(QMainWindow):
                 check=True, encoding='utf-8', creationflags=subprocess.CREATE_NO_WINDOW)
             self.pre_hs_table = hi2txt_results.stdout
 
-        # This occurs when input file name does not confirm to known schema.
+        # This occurs when input file name does not conform to known schema.
         if rom_name not in list(self.core.descriptions_and_names.values()):
             QMessageBox.critical(self, 'Error', 'Input File cannot be played back without a valid rom.')
             rom_description = self.open_rom_for_inp_search()
             if rom_description:
                 rom_name = self.core.descriptions_and_names[rom_description]
+
+        if record_input or play_back_input:
+            nvram_dir = Path(mame_dir) / 'nvram' / rom_name
+            plugins_ini = Path(mame_dir) / 'plugin.ini'
+            print(plugins_ini)
+            if nvram_dir.is_dir():
+                response = QMessageBox.question(self, 'NVRAM',
+                                                'The selected rom already has an NVRAM directory which will interfere '
+                                                'with input file recording/playback. Would you like to delete it?')
+
+
+                if response == QMessageBox.StandardButton.Yes:
+                    nvram_path = Path(mame_dir) / 'nvram' / rom_name
+                    # TODO Crude. Fix later. Only needed in cases where file is opened in app that locks file.
+                    #  Also, not a good idea to lock user into loop without a way to break out easily.
+                    while True:
+                        try:
+                            shutil.rmtree(nvram_path)
+                            break
+                        except PermissionError:
+                            QMessageBox.critical(self, 'Error', 'File open in another program, please close it and try again.')
+
+            #  TODO Not sure if editing a file while it is open elsewhere will cause error. Figure it out.
+            #   Notepad and Pycharm don't seem to lock the file. Maybe just log error and let fail silently.
+            if plugins_ini.is_file():
+                config = configparser.ConfigParser(delimiters=" ")
+                with open(plugins_ini, 'r', encoding='utf-8-sig') as ini:
+                    ini_contents = "[MAME]\n" + ini.read()
+                config.read_string(ini_contents)
+                pprint.pprint(config.items('MAME'))
+
+                if config.has_option('MAME', 'hiscore'):
+                    cur_val = config.get('MAME', 'hiscore')
+                    if cur_val == '1':
+                        response = QMessageBox.question(self, 'Hiscore', 'Hiscore plugin detected. Hiscore plugin is '
+                                                                         'not compatible with input file '
+                                                                         'recording/playback. Would you like to '
+                                                                         'disable it?')
+                        if response == QMessageBox.StandardButton.Yes:
+
+                            config.set('MAME', 'hiscore', '0')
+                            print(f'Changed hiscore to: {config.get('MAME', 'hiscore')}')
+
+                            string_buffer = io.StringIO()
+                            config.write(string_buffer)
+                            output_text = string_buffer.getvalue()
+
+                            clean_text = output_text.replace("[MAME]\n", "", 1)
+
+                            with open(plugins_ini, 'w') as ini:
+                                ini.write(clean_text)
 
         self.mame_process = widgets.MAMEProcess(Path(mame_dir), self.terminal_output_box, rom_name,
                                                 record_input=record_input, playback_input=play_back_input,

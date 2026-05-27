@@ -92,11 +92,16 @@ class MAMEProcess(QProcess):
         full_mame_version = core.get_mame_version(Path(self.mame_dir))
         short_mame_version = full_mame_version.split()[0]
 
+        # TODO Warn about Hiscore and NVRAM. Offer to turn off/delete them respectively.
+
         self.start(str(self.mame_exe),
                    [self.rom_name, '-record', f'{self.rom_name}_{formatted_date}_{short_mame_version}.inp'])
 
     def run_mame_with_inp_playback(self) -> None:
         """Playback a given rom file, for a particular game, using a particular mame.exe."""
+
+        # TODO Warn about Hiscore and NVRAM. Offer to turn off/delete them respectively.
+
         self.start(str(self.mame_exe), [self.rom_name, '-playback', f'{self.input_file_name}.inp'])
 
     def handle_stdout(self) -> None:
