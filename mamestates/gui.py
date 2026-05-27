@@ -777,6 +777,12 @@ class MainWindow(QMainWindow):
             return
         os.startfile(mame_dir)
 
+    def refresh_file_selector(self):
+        self.core.save_states = self.core.get_save_states()
+        with QSignalBlocker(self.save_state_and_inp_selector):
+            self.save_state_and_inp_viewer.clear()
+            self.fill_selector_tree()
+
     def save_state_and_inp_selector_context(self, position: QPoint) -> None:
         """Create custom context menu, connect slots, execute menu.
 
@@ -792,16 +798,19 @@ class MainWindow(QMainWindow):
             delete = QAction('Delete')
             open_ini = QAction('Open mame.ini')
             open_in_explorer = QAction('Open in Explorer')
+            refresh = QAction('Refresh')
 
             launch.triggered.connect(lambda: self.launch_mame_triggered(tree_item.data(0, Qt.ItemDataRole.UserRole)))
             delete.triggered.connect(lambda: self.remove_invalid_mame_dir(path_item=tree_item))
             open_ini.triggered.connect(self.open_ini_triggered)
             open_in_explorer.triggered.connect(lambda: self.open_mame_dir_in_explorer_triggered(tree_item))
+            refresh.triggered.connect(self.refresh_file_selector)
 
             menu.addAction(launch)
             menu.addAction(open_ini)
             menu.addAction(delete)
             menu.addAction(open_in_explorer)
+            menu.addAction(refresh)
 
         elif tree_item.text(0) == 'Input Files' or tree_item.text(0) == 'Save States':
             open_in_explorer = QAction('Open in Explorer')
