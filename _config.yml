@@ -1,3 +1,3 @@
-theme: jekyll-theme-midnight
+remote_theme: pages-themes/midnight@v0.2.0
 title: MAME States
 description: MAME utility.
