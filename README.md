@@ -1,3 +1,5 @@
+<meta name="google-site-verification" content="J_4sATUtANucGa527DojIfpuVmVMgNka7PpgSkm845Y" />
+
 # MAMEStates
 
 ## What is MAMEStates?
