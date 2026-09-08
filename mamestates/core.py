@@ -110,6 +110,7 @@ def get_mame_version(mame_dir: Path) -> str | None:
     if mame_exe.is_file():
         results = subprocess.run([mame_exe, '-version'], cwd=mame_dir, capture_output=True, text=True, creationflags=subprocess.CREATE_NO_WINDOW)
         return results.stdout
+    return None
 
 
 # TODO Consider if some of these typehints are complex enough to warrant a dataclass or type alias...something.
@@ -149,6 +150,7 @@ class MAMEStatesCore:
         for rom_description, value in self.descriptions_and_names.items():
             if value == rom_name:
                 return rom_description
+        return None
 
     ############
     # Rom Info #
