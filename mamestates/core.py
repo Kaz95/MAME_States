@@ -104,6 +104,7 @@ def get_abs_path(relative_path: str | Path) -> Path:
     return base_path / relative_path
 
 
+# FIXME What happens if run fails? Does it matter how it fails. Need to answer both.
 def get_mame_version(mame_dir: Path) -> str | None:
     """Retrieve the version for the given path's MAME.exe file."""
     mame_exe = mame_dir / 'mame.exe'

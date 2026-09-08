@@ -1,6 +1,7 @@
 """Core Logic Package
 
 TODO:
+    * Check for points of failure while writing tests.
     * Read, and update all docstrings.
     * Decide on a set of variable naming conventions and apply across project. Need consistency.
     * Testing.
