@@ -1,0 +1,2 @@
+"""MAMEStates unit tests."""
+
