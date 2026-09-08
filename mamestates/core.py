@@ -144,7 +144,7 @@ class MAMEStatesCore:
 
         return descriptions_and_names
 
-    def rom_description_from_name(self, rom_name: str) -> str:
+    def rom_description_from_name(self, rom_name: str) -> str | None:
         """Return the rom description of a given rom name."""
         for rom_description, value in self.descriptions_and_names.items():
             if value == rom_name:
