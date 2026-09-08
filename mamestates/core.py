@@ -98,7 +98,7 @@ def turn_on_logging() -> None:
 
 
 def get_abs_path(relative_path: str | Path) -> Path:
-    """Get absolute path to resource, works for dev and for PyInstaller """
+    """Get an absolute path to resource, works for dev and for PyInstaller """
     # Get the bundle directory; fallback to the script's parent directory
     base_path = Path(getattr(sys, '_MEIPASS', Path(__file__).parent.parent))
     return base_path / relative_path
@@ -130,7 +130,7 @@ class MAMEStatesCore:
     # Descriptions & Names #
     ########################
     def _get_descriptions_and_names(self) -> dict[str, str]:
-        """Construct {rom_description:rom_name} dictionary.
+        """Construct {rom_description: rom_name} dictionary.
 
         This dictionary is used as a quick in-memory reference that binds a roms description, to its name.
         The alternative would be querying them as needed.
@@ -161,7 +161,7 @@ class MAMEStatesCore:
 
     @staticmethod
     def _serialize_rom_info(raw_rom_info: list[sqlite3.Row]) -> dict[str, RomInfo]:
-        """Format raw rom info, from database, into in-memory representation."""
+        """Format raw rom info, from the database, into in-memory representation."""
         formatted_rom_info = {}
 
         for row in raw_rom_info:
@@ -181,7 +181,7 @@ class MAMEStatesCore:
         return formatted_rom_info
 
     def _get_raw_rom_info(self) -> list[sqlite3.Row]:
-        """Retrieve all rom information from database and return it raw."""
+        """Retrieve all rom information from the database and return it raw."""
         sql_statement = "SELECT * FROM roms"
         self.cursor.execute(sql_statement)
         rows = self.cursor.fetchall()
@@ -199,7 +199,7 @@ class MAMEStatesCore:
     # Paths #
     #########
     def _get_mame_dirs(self) -> list[MAMEDir]:
-        """Load paths as strings from database. Convert to Path objects before returning them.
+        """Load paths as strings from the database. Convert to Path objects before returning them.
 
         Prune invalid MAME directories from the database.
         """
@@ -323,9 +323,9 @@ class MAMEStatesCore:
         return pb_info
 
     def save_pb_to_database(self) -> None:
-        """Update database with provided personal best and split information.
+        """Update the database with provided personal best and split information.
 
-        Rows are added if they do not exist, and updated otherwise.
+        Rows are added if they do not exist and updated otherwise.
         """
         pb_insert = ("INSERT INTO personal_bests VALUES (:id, :hiscore, :other_fields, :rom_id) "
                      "ON CONFLICT(rom_id) "
@@ -344,14 +344,14 @@ class MAMEStatesCore:
         self.connection.commit()
 
     def delete_personal_best(self, rom_description: str) -> None:
-        """Delete personal best data from database, for a given rom."""
+        """Delete the personal best data from the database for a given room."""
         sql_statement = "DELETE FROM personal_bests WHERE rom_id = ?"
         rom_id = self.id_from_description(rom_description)
         self.cursor.execute(sql_statement, (rom_id,))
         self.connection.commit()
 
     def delete_splits(self, rom_description: str) -> None:
-        """Delete all 'splits' data from database, for a given rom."""
+        """Delete all 'splits' data from the database for a given rom."""
         sql_statement = "DELETE FROM splits WHERE rom_id = ?"
         rom_id = self.id_from_description(rom_description)
         self.cursor.execute(sql_statement, (rom_id,))
@@ -394,7 +394,7 @@ class MAMEStatesCore:
         return rows
 
     def export_sqlite_to_csv(self, table_name: str, output_file: Path | str) -> None:
-        """Export the contents of a given table to CSV file."""
+        """Export the contents of a given table to a CSV file."""
         self.cursor.execute(f"SELECT * FROM {table_name}")
 
         # Extract column names (headers) from cursor.description
