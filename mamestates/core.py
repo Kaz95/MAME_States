@@ -154,6 +154,13 @@ class MAMEStatesCore:
     ############
     # Rom Info #
     ############
+    def _get_raw_rom_info(self) -> list[sqlite3.Row]:
+        """Retrieve all rom information from the database and return it raw."""
+        sql_statement = "SELECT * FROM roms"
+        self.cursor.execute(sql_statement)
+        rows = self.cursor.fetchall()
+        return rows
+
     def _get_formatted_rom_info(self) -> dict[str, RomInfo]:
         """Retrieve and format raw rom info, from the database."""
         raw_rom_info = self._get_raw_rom_info()
@@ -180,13 +187,6 @@ class MAMEStatesCore:
             formatted_rom_info[rom_info.description] = rom_info
 
         return formatted_rom_info
-
-    def _get_raw_rom_info(self) -> list[sqlite3.Row]:
-        """Retrieve all rom information from the database and return it raw."""
-        sql_statement = "SELECT * FROM roms"
-        self.cursor.execute(sql_statement)
-        rows = self.cursor.fetchall()
-        return rows
 
     def id_from_description(self, description: str) -> int:
         """Retrieve the corresponding rom_id, for a given rom description, from the database."""
