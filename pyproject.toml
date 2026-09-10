@@ -1,0 +1,35 @@
+[project]
+name = "mame-states"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "kazact", email = "kazact95@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "altgraph==0.17.5",
+    "colorama==0.4.6",
+    "coverage==7.13.4",
+    "ijson==3.4.0.post0",
+    "iniconfig==2.3.0",
+    "packaging==26.0",
+    "pefile==2024.8.26",
+    "pluggy==1.6.0",
+    "pygments==2.19.2",
+    "pyinstaller==6.19.0",
+    "pyinstaller-hooks-contrib==2026.1",
+    "pyqt6==6.10.1",
+    "pyqt6-qt6==6.10.1",
+    "pyqt6-sip==13.10.3",
+    "pytest==9.0.2",
+    "pytest-cov==7.0.0",
+    "pytest-mock==3.15.1",
+    "pywin32==311",
+    "pywin32-ctypes==0.2.3",
+    "setuptools==82.0.0",
+    "xmltodict==1.0.2",
+]
+
+[tool.uv]
+package = false
