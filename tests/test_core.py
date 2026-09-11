@@ -218,3 +218,19 @@ def test_serialize_rom_info_with_multiple_rows():
     assert result["Pac-Man"].name == "pacman"
     assert result["Galaga"].manufacturer == "Namco"
 
+
+def test_get_roms_with_saves(tmp_path):
+    core = MAMEStatesCore.__new__(MAMEStatesCore)
+    save_folder = tmp_path / 'sta'
+    save_folder.mkdir()
+    (save_folder / 'pacman').mkdir()
+    (save_folder / 'galaga').mkdir()
+
+    roms_with_saves = core._get_roms_with_saves(tmp_path)
+
+    assert 'pacman' in roms_with_saves
+    assert 'galaga' in roms_with_saves
+
+
+def test_get_save_states_from_mame_dir(tmp_path):
+    assert 0 == 1
