@@ -1,4 +1,5 @@
 """MAMEStates Core unit tests."""
+import os
 import sqlite3
 from unittest.mock import MagicMock, patch
 import subprocess
@@ -233,4 +234,33 @@ def test_get_roms_with_saves(tmp_path):
 
 
 def test_get_save_states_from_mame_dir(tmp_path):
-    assert 0 == 1
+    """Test keys map correctly and list is sorted newest first."""
+    core = MAMEStatesCore.__new__(MAMEStatesCore)
+
+    roms_with_saves = ['pacman', 'galaga', 'liblrabl']
+    save_names = ['a', 'b', 'c']
+    mame_dir = tmp_path / 'mame'
+    mame_dir.mkdir()
+
+    sta_dir = mame_dir / 'sta'
+    sta_dir.mkdir()
+
+    for rom in roms_with_saves:
+        rom_dir = sta_dir / rom
+        rom_dir.mkdir()
+        for save_index, save_name in enumerate(save_names):
+            save_path = rom_dir / f"{save_name}.sta"
+            save_path.touch()
+            os.utime(save_path, (save_index, save_index))
+
+    saves_from_mame = core._get_save_states_from_mame_dir(roms_with_saves, mame_dir)
+
+    assert set(saves_from_mame) == set(roms_with_saves)
+    assert len(saves_from_mame) == 3
+
+    assert saves_from_mame['pacman'] == [sta_dir / 'pacman' / 'c.sta',
+                                         sta_dir / 'pacman' / 'b.sta',
+                                         sta_dir / 'pacman' / 'a.sta']
+
+    assert saves_from_mame["pacman"][0].name == "c.sta"
+    assert saves_from_mame["pacman"][-1].name == "a.sta"
