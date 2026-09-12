@@ -260,12 +260,12 @@ class MAMEStatesCore:
 
     @staticmethod
     def _get_save_states_from_mame_dir(roms_with_saves: list[str], mame_dir: Path) -> dict[str, list[Path]]:
-        """Retrieve and return all save state paths from a given MAME directory."""
+        """Retrieve and return all save state paths from a given MAME directory.
+
+        Results are sorted by file last modified.
+        """
         save_states = {}
-        #  TODO Not sure if this can happen anymore. Look into it.
         for rom_name in roms_with_saves:
-            if not rom_name:
-                continue
             save_state_paths = (mame_dir / 'sta' / rom_name).iterdir()
             save_state_file_paths = [x for x in save_state_paths]
             save_state_file_paths.sort(key=lambda p: p.stat().st_mtime, reverse=True)
