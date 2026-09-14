@@ -264,3 +264,7 @@ def test_get_save_states_from_mame_dir(tmp_path):
 
     assert saves_from_mame["pacman"][0].name == "c.sta"
     assert saves_from_mame["pacman"][-1].name == "a.sta"
+
+
+def test_get_abs_path(tmp_path):
+    assert 1 == 3
